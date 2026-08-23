@@ -1111,6 +1111,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Dinh dưỡng',
         partOfSpeech: 'noun',
         example: 'Proper balanced nutrition fuels your body and mind throughout the day.',
+        imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Nutritious balanced bowl with healthy fresh greens and vegetables',
       },
       {
         id: 'workout',
@@ -1120,6 +1122,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Buổi tập luyện thể thao',
         partOfSpeech: 'noun',
         example: 'A morning cardio workout gives you energetic momentum.',
+        imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Person doing training exercises in a modern fitness gym',
       },
       {
         id: 'strength-fitness',
@@ -1129,6 +1133,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Sức mạnh thể chất',
         partOfSpeech: 'noun',
         example: 'Weight training builds muscular strength and bone density.',
+        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Athlete gripping barbell building muscular physical strength',
       },
       {
         id: 'diet',
@@ -1138,6 +1144,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Chế độ ăn uống',
         partOfSpeech: 'noun',
         example: 'A Mediterranean diet includes abundant olive oil, vegetables, and fish.',
+        imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Fresh wholesome salad and healthy dietary ingredients',
       },
       {
         id: 'habit',
@@ -1147,6 +1155,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Thói quen',
         partOfSpeech: 'noun',
         example: 'Forming positive daily habits creates long-term success.',
+        imageUrl: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Person marking daily habit checklist in productivity notebook',
       },
       {
         id: 'hydrate',
@@ -1156,6 +1166,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Cung cấp nước / Uống đủ nước',
         partOfSpeech: 'verb',
         example: 'Make sure to hydrate before, during, and after strenuous exercise.',
+        imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Fresh pure drinking water being poured into glass to hydrate',
       },
       {
         id: 'routine-fitness',
@@ -1165,6 +1177,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Lịch trình đều đặn',
         partOfSpeech: 'noun',
         example: 'Consistency is the key to maintaining an effective fitness routine.',
+        imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Morning yoga routine session in calming natural light',
       },
       {
         id: 'stamina',
@@ -1174,6 +1188,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Sức bền / Thể lực',
         partOfSpeech: 'noun',
         example: 'Long-distance running requires immense physical stamina and patience.',
+        imageUrl: 'https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Long-distance athlete running outdoors demonstrating physical stamina',
       },
       {
         id: 'wellness',
@@ -1183,6 +1199,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Sức khỏe toàn diện (thể chất & tinh thần)',
         partOfSpeech: 'noun',
         example: 'Mindfulness meditation promotes emotional calmness and overall wellness.',
+        imageUrl: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Person practicing mindful meditation in peaceful wellness setting',
       },
       {
         id: 'stretch',
@@ -1192,6 +1210,8 @@ export const B1_LESSONS: Lesson[] = [
         meaning: 'Giãn cơ',
         partOfSpeech: 'verb',
         example: 'Always stretch your legs after a workout to avoid soreness.',
+        imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+        imageAlt: 'Fitness person stretching muscles on exercise mat',
       },
     ],
   },

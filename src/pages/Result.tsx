@@ -159,13 +159,15 @@ export const Result: React.FC<ResultProps> = ({
                   className="flex items-center justify-between p-3 rounded-2xl bg-rose-50/50 border border-rose-100 hover:bg-rose-50 transition-colors"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-rose-200/60">
-                      <SafeImage
-                        src={word.imageUrl}
-                        alt={word.imageAlt || word.word}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    {word.imageUrl ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-rose-200/60">
+                        <SafeImage
+                          src={word.imageUrl}
+                          alt={word.imageAlt || word.word}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : null}
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-slate-900 text-sm capitalize">{word.word}</span>

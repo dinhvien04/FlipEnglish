@@ -19,6 +19,12 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
   const isCompleted = progress?.completed ?? false;
   const bestScore = progress?.bestScore ?? 0;
 
+  const visualItemsCount = lesson.words.filter((w) => Boolean(w.imageUrl)).length;
+  const isPrimarilyVisual = visualItemsCount >= Math.ceil(lesson.words.length * 0.7);
+  const flashcardsLabel = isPrimarilyVisual
+    ? `${lesson.words.length} Visual Flashcards`
+    : `${lesson.words.length} Vocabulary Cards`;
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
       {/* Top back button */}
@@ -68,7 +74,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
               <p className="text-xs text-slate-500 font-medium">Vocabulary Cards</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{lesson.words.length} Photo Flashcards</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">{flashcardsLabel}</p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
@@ -82,7 +88,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
             </div>
           </div>
 
-          {/* Vocabulary Word List with Photographic Thumbnails */}
+          {/* Vocabulary Word List */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
@@ -95,16 +101,18 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
               {lesson.words.map((word) => (
                 <div
                   key={word.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
-                      <SafeImage
-                        src={word.imageUrl}
-                        alt={word.imageAlt || word.word}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
+                    {word.imageUrl ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
+                        <SafeImage
+                          src={word.imageUrl}
+                          alt={word.imageAlt || word.word}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ) : null}
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 capitalize">{word.word}</span>

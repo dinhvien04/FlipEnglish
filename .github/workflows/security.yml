@@ -37,6 +37,9 @@ jobs:
       - name: Exam Generator Integrity Audit
         run: npm run validate:exams
 
+      - name: Curriculum Integrity & Visual Audit
+        run: npm run validate:curriculum
+
       - name: Production Dependency Security Audit
         run: npm run security:audit
 

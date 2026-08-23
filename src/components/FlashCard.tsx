@@ -112,7 +112,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
               </div>
             </div>
 
-            {/* Photographic Image Section */}
+            {/* Photographic Image or Typography-First Section */}
             {word.imageUrl ? (
               <div className="relative w-full flex-1 max-h-[56%] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-2xs">
                 <SafeImage
@@ -122,8 +122,16 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 />
               </div>
             ) : (
-              <div className="relative w-full flex-1 max-h-[56%] rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center p-6 text-indigo-200">
-                <span className="text-sm font-semibold tracking-wider">{word.partOfSpeech || 'Lexical item'}</span>
+              <div className="relative w-full flex-1 max-h-[56%] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-slate-200/70 flex flex-col items-center justify-center p-6 text-center">
+                <span className="text-2xs font-bold uppercase tracking-widest text-indigo-600 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-2xs mb-2">
+                  {word.type && word.type !== 'word' ? word.type.replace('_', ' ') : (word.partOfSpeech || 'Lexical item')}
+                </span>
+                <span className="text-base sm:text-lg font-extrabold text-slate-800 max-w-xs line-clamp-2">
+                  {word.word}
+                </span>
+                <span className="text-xs text-slate-500 font-medium mt-1">
+                  Contextual Study Card
+                </span>
               </div>
             )}
 

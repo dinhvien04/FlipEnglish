@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
-  fallbackIconClassName?: string;
 }
 
 export const SafeImage: React.FC<SafeImageProps> = ({
@@ -10,34 +9,41 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   alt = '',
   className = '',
   fallbackSrc,
-  fallbackIconClassName,
   ...props
 }) => {
-  const [hasError, setHasError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
+  const [failed, setFailed] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Synchronize when src prop changes
+  useEffect(() => {
+    setCurrentSrc(src);
+    setFailed(false);
+    setIsLoaded(false);
+  }, [src]);
+
   const handleError = () => {
-    if (fallbackSrc && src !== fallbackSrc) {
-      setHasError(false);
+    if (fallbackSrc && currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc);
+      setIsLoaded(false);
     } else {
-      setHasError(true);
+      setFailed(true);
     }
   };
 
-  if (hasError || !src) {
+  if (failed || !currentSrc) {
     return (
       <div
-        className={`flex items-center justify-center bg-slate-100 text-slate-400 text-2xs font-semibold uppercase tracking-wider ${className}`}
-        aria-label={alt || 'Image unavailable'}
-      >
-        <span>Visual Reference</span>
-      </div>
+        className={`bg-slate-100 transition-colors ${className}`}
+        aria-label={alt || undefined}
+        role="presentation"
+      />
     );
   }
 
   return (
     <img
-      src={src}
+      src={currentSrc}
       alt={alt}
       referrerPolicy="no-referrer"
       onError={handleError}
@@ -47,4 +53,3 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     />
   );
 };
-

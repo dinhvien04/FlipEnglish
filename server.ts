@@ -12,31 +12,24 @@ import { z } from 'zod';
 dotenv.config();
 
 // ===================================================
-// 1. Startup Environment Validation (Fail-Fast Schema)
+// 1. Centralized Application Security Configuration
+// Safe defaults (NOT secrets - zero manual user setup)
 // ===================================================
-const EnvironmentSchema = z.object({
-  PORT: z.coerce.number().int().min(1000).max(65535).default(3000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  TRUST_PROXY: z.string().default('false'),
-  GEMINI_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(4),
-  RATE_LIMIT_API_MAX: z.coerce.number().int().min(10).max(1000).default(60),
-  RATE_LIMIT_PHOTO_MAX: z.coerce.number().int().min(1).max(100).default(5),
-  RATE_LIMIT_PRACTICE_MAX: z.coerce.number().int().min(1).max(100).default(10),
-  RATE_LIMIT_MISTAKE_MAX: z.coerce.number().int().min(1).max(100).default(20),
-  RATE_LIMIT_EXAM_MAX: z.coerce.number().int().min(1).max(100).default(10),
-  CSP_REPORT_ONLY: z.enum(['true', 'false']).default('false'),
-});
+const SECURITY_CONFIG = {
+  geminiMaxConcurrency: 4,
+  rateLimits: {
+    api: 60, // 60 requests / 15 minutes
+    photo: 5, // 5 requests / 10 minutes
+    practice: 10, // 10 requests / 10 minutes
+    mistake: 20, // 20 requests / 10 minutes
+    exam: 10, // 10 requests / 10 minutes
+  },
+};
 
-const envParse = EnvironmentSchema.safeParse(process.env);
-if (!envParse.success) {
-  console.error('[FATAL STARTUP] Invalid environment configuration:');
-  console.error(envParse.error.format());
-  process.exit(1);
-}
-
-const env = envParse.data;
-const PORT = env.PORT;
-const isProd = env.NODE_ENV === 'production';
+// Platform environment variables (supplied automatically by hosting environment / Cloud Run)
+const PORT = Number(process.env.PORT) || 3000;
+const isProd = process.env.NODE_ENV === 'production';
+const nodeEnv = process.env.NODE_ENV || 'development';
 
 // Declare extended Request type for request tracking
 declare global {
@@ -53,15 +46,10 @@ const app = express();
 // Security: Disable X-Powered-By header
 app.disable('x-powered-by');
 
-// Security: Environment-aware trust proxy configuration
-// In production behind Google Cloud Run, trust 1 reverse-proxy hop. In dev/direct local, false.
-if (isProd) {
-  const trustProxyVal = env.TRUST_PROXY === 'false' ? 1 : isNaN(Number(env.TRUST_PROXY)) ? env.TRUST_PROXY : Number(env.TRUST_PROXY);
-  app.set('trust proxy', trustProxyVal);
-} else {
-  const trustProxyVal = env.TRUST_PROXY === 'true' ? 1 : env.TRUST_PROXY === 'false' ? false : isNaN(Number(env.TRUST_PROXY)) ? env.TRUST_PROXY : Number(env.TRUST_PROXY);
-  app.set('trust proxy', trustProxyVal);
-}
+// Security: Explicit trust proxy configuration
+// In Google Cloud Run production, Cloud Run's Google Front End (GFE) acts as 1 trusted reverse-proxy hop.
+// In local development / AI Studio Preview, trust proxy is false to prevent IP spoofing.
+app.set('trust proxy', isProd ? 1 : false);
 
 // Helper: Sanitize strings for safe security logging (prevents log injection)
 function sanitizeForLog(val: any): string {
@@ -101,7 +89,7 @@ app.use(
     contentSecurityPolicy: {
       useDefaults: false,
       directives: cspDirectives,
-      reportOnly: env.CSP_REPORT_ONLY === 'true',
+      reportOnly: false,
     },
   })
 );
@@ -169,7 +157,7 @@ const createLimiter = (options: { windowMs: number; max: number; genericMessage:
 // API-wide rate limiter
 const apiLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: env.RATE_LIMIT_API_MAX,
+  max: SECURITY_CONFIG.rateLimits.api,
   genericMessage: 'API rate limit exceeded. Please wait a few moments before trying again.',
   name: 'API_GENERAL',
 });
@@ -177,28 +165,28 @@ const apiLimiter = createLimiter({
 // Specialized rate limiters
 const photoLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
-  max: env.RATE_LIMIT_PHOTO_MAX,
+  max: SECURITY_CONFIG.rateLimits.photo,
   genericMessage: 'Photo analysis rate limit reached. Please wait a few moments before trying again.',
   name: 'PHOTO_ANALYZE',
 });
 
 const practiceLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
-  max: env.RATE_LIMIT_PRACTICE_MAX,
+  max: SECURITY_CONFIG.rateLimits.practice,
   genericMessage: 'Practice generation rate limit reached. Please wait a few moments before trying again.',
   name: 'AI_PRACTICE',
 });
 
 const mistakeLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
-  max: env.RATE_LIMIT_MISTAKE_MAX,
+  max: SECURITY_CONFIG.rateLimits.mistake,
   genericMessage: 'Explanation rate limit reached. Please wait a few moments before trying again.',
   name: 'EXPLAIN_MISTAKE',
 });
 
 const examLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
-  max: env.RATE_LIMIT_EXAM_MAX,
+  max: SECURITY_CONFIG.rateLimits.exam,
   genericMessage: 'Exam AI analysis rate limit reached. Please wait a few moments before trying again.',
   name: 'ANALYZE_EXAM',
 });
@@ -247,7 +235,7 @@ const handleJsonErrors: express.ErrorRequestHandler = (err, req, res, next) => {
 // ==========================================
 // In-Process Concurrency Guard for Gemini
 // ==========================================
-const MAX_CONCURRENT_GEMINI = env.GEMINI_MAX_CONCURRENCY;
+const MAX_CONCURRENT_GEMINI = SECURITY_CONFIG.geminiMaxConcurrency;
 let activeGeminiCalls = 0;
 
 class HttpError extends Error {
@@ -1112,12 +1100,18 @@ async function startServer() {
       })
     );
     app.get('*', (req, res) => {
+      // If the request has a file extension or probes system paths and was not found in dist/client, return 404
+      const ext = path.extname(req.path);
+      if (ext || req.path.startsWith('/.') || req.path.includes('/..')) {
+        res.status(404).type('text/plain').send('Not Found');
+        return;
+      }
       res.sendFile(path.join(clientDistPath, 'index.html'));
     });
   }
 
   serverInstance = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`FlipEnglish hardened server (Phase 2) running on http://0.0.0.0:${PORT} [ENV: ${env.NODE_ENV}]`);
+    console.log(`FlipEnglish hardened server running on http://0.0.0.0:${PORT} [ENV: ${nodeEnv}]`);
   });
 
   // Server timeout configuration (Align with Cloud Run and prevent slowloris/hung connections)

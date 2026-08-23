@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "24.x"
   },
   "packageManager": "npm@10.9.8",
   "scripts": {
@@ -15,6 +15,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "validate:exams": "tsx scripts/validateExams.ts",
+    "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "security:audit": "npm audit --omit=dev --audit-level=high",
     "test:security": "tsx scripts/securitySmokeTest.ts"
   },
@@ -36,7 +37,7 @@
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
+    "@types/node": "^24.13.3",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",

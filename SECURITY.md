@@ -8,7 +8,7 @@ FlipEnglish is engineered with defense-in-depth security principles to safeguard
 ## 1. Secrets Management & Server-Side Isolation
 - **Server-Side Exclusivity**: The Google Gemini API key (`process.env.GEMINI_API_KEY`) is strictly confined to server-side code (`server.ts`). It is never bundled into client JavaScript, exposed in public endpoints, logged in console outputs, or stored in browser storage.
 - **Client Build Separation**: The production client is bundled into `dist/client` and the backend is bundled into `dist/server.cjs`. The backend serves *only* `dist/client` as static assets, preventing any accidental exposure of server bundles or configuration files.
-- **Environment Declarations**: Required environment variables are documented strictly via `.env.example`. Secrets are never committed to source control.
+- **Environment Declarations**: Required environment variables are documented strictly via `.env.example` (only `GEMINI_API_KEY`, `APP_URL`, `PORT`, `NODE_ENV`). Rate limits, concurrency limits, and security headers utilize centralized application defaults with zero configuration friction. Secrets are never committed to source control.
 
 ---
 
