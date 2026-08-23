@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lesson, VocabWord } from '../types';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
-import { batchAddLessonWordsToReview } from '../utils/reviewStorage';
+import { batchAddLessonWordsToReview, batchAddItemsToReview } from '../utils/reviewStorage';
 
 interface LearnProps {
   lesson: Lesson;
@@ -29,7 +29,11 @@ export const Learn: React.FC<LearnProps> = ({
     if (currentIndex < totalWords - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      batchAddLessonWordsToReview(lesson.id);
+      if (isReviewMistakesMode) {
+        batchAddItemsToReview(wordsToLearn.map((w) => w.id));
+      } else {
+        batchAddLessonWordsToReview(lesson.id);
+      }
       setHasCompletedAll(true);
     }
   };

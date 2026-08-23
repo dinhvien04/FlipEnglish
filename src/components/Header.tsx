@@ -6,6 +6,7 @@ import { LESSONS } from '../data/lessons';
 interface HeaderProps {
   onNavigateHome: () => void;
   onNavigateReview?: () => void;
+  onNavigateConversation?: () => void;
   onNavigateFlipLens?: () => void;
   onNavigateExamCenter?: () => void;
   currentView: string;
@@ -14,6 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onNavigateHome,
   onNavigateReview,
+  onNavigateConversation,
   onNavigateFlipLens,
   onNavigateExamCenter,
   currentView,
@@ -30,13 +32,22 @@ export const Header: React.FC<HeaderProps> = ({
       setReviewStats(getReviewDashboardStats());
     };
 
+    const handleStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === 'flipenglish_progress_v1') {
+        setStats(getOverallStats(LESSONS.length));
+      }
+      if (!e.key || e.key === 'flipenglish_review_v1') {
+        setReviewStats(getReviewDashboardStats());
+      }
+    };
+
     window.addEventListener('flipenglish_progress_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('storage', handleStorage);
     window.addEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdate);
 
     return () => {
       window.removeEventListener('flipenglish_progress_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdate);
     };
   }, []);
@@ -95,6 +106,20 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {onNavigateConversation && (
+            <button
+              id="header-nav-conversation"
+              onClick={onNavigateConversation}
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                currentView.startsWith('conversation')
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              Conversation
+            </button>
+          )}
+
           {onNavigateExamCenter && (
             <button
               id="header-nav-exam-center"
@@ -115,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onNavigateFlipLens}
               className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'flip-lens'
-                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  ? 'bg-slate-900 text-white'
                   : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/50'
               }`}
             >

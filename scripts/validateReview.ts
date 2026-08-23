@@ -16,11 +16,14 @@ import {
   loadReviewStorage,
   saveReviewStorage,
   getDueReviewItems,
+  getAllTrackedReviewItems,
   ensureReviewItem,
   applyReviewRatingToItem,
   recordQuizMistake,
   getReviewDashboardStats,
   resetReviewStorage,
+  batchAddLessonWordsToReview,
+  batchAddItemsToReview,
 } from '../src/utils/reviewStorage';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
 import { ReviewItemState } from '../src/types/review';
@@ -250,5 +253,46 @@ const dueItems = getDueReviewItems(20, T0);
 assert(dueItems.length === 2, 'Only due items selected (2 of 3)');
 assert(dueItems[0].word.id === 'brother', 'Lapsed learning item prioritized first in queue');
 assert(dueItems[1].word.id === 'father', 'Overdue review item included second');
+
+// 9. Recent Accuracy & Calendar Days Boundaries
+console.log('\nTest Suite 9: Recent Accuracy (Hard/Good/Easy vs Again) & Calendar Day Boundaries');
+resetReviewStorage();
+
+// Add items and apply ratings
+ensureReviewItem('hello', T0);
+applyReviewRatingToItem('hello', 'hard', T0); // hard = successful
+
+ensureReviewItem('family', T0);
+applyReviewRatingToItem('family', 'again', T0); // again = failed
+
+ensureReviewItem('friend', T0);
+applyReviewRatingToItem('friend', 'good', T0); // good = successful
+
+ensureReviewItem('water', T0);
+applyReviewRatingToItem('water', 'easy', T0); // easy = successful
+
+const statsAfter4 = getReviewDashboardStats(T0);
+// 3 successful out of 4 = 75%
+assert(statsAfter4.recentAccuracy === 75, `Recent accuracy correctly counts hard/good/easy as success (expected 75%, got ${statsAfter4.recentAccuracy}%)`);
+
+// Test calendar day tomorrow count
+const tStart = new Date(T0);
+tStart.setHours(0, 0, 0, 0);
+const tomStartMs = tStart.getTime() + 24 * 60 * 60 * 1000;
+const tomMidMs = tomStartMs + 12 * 60 * 60 * 1000;
+
+const loadedStorage = loadReviewStorage(T0);
+loadedStorage.items['hello'].nextReviewAt = tomMidMs;
+saveReviewStorage(loadedStorage);
+
+const statsTom = getReviewDashboardStats(T0);
+assert(statsTom.dueTomorrowCount === 1, 'Item scheduled in tomorrow calendar window correctly counted in dueTomorrowCount');
+
+// 10. Bounded Session Limit & Batch Add Items
+console.log('\nTest Suite 10: Bounded Session Limit & Batch Add Items');
+resetReviewStorage();
+batchAddLessonWordsToReview('greetings', T0);
+const allTracked = getAllTrackedReviewItems(20, T0);
+assert(allTracked.length <= 20, 'getAllTrackedReviewItems is bounded by maxCount');
 
 console.log('\n✅ All FlipEnglish Smart Review tests and scheduler invariants passed successfully!');

@@ -33,8 +33,17 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
 
   useEffect(() => {
     refreshStats();
+    const handleStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === 'flipenglish_review_v1') {
+        refreshStats();
+      }
+    };
     window.addEventListener(REVIEW_UPDATED_EVENT, refreshStats);
-    return () => window.removeEventListener(REVIEW_UPDATED_EVENT, refreshStats);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(REVIEW_UPDATED_EVENT, refreshStats);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const handleStartDueReview = () => {
@@ -46,7 +55,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
   };
 
   const handleStartAllReview = () => {
-    const queue = getAllTrackedReviewItems();
+    const queue = getAllTrackedReviewItems(DEFAULT_SESSION_MAX_DUE);
     if (queue.length > 0) {
       setSessionSummary(null);
       setActiveQueue(queue);
@@ -115,7 +124,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
             Smart Review
           </h1>
           <p className="text-sm text-slate-500 mt-1 max-w-xl">
-            Retain vocabulary permanently using spaced repetition intervals optimized for your memory.
+            Review vocabulary at increasing intervals based on your recall history.
           </p>
         </div>
 
@@ -220,14 +229,14 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
       ) : hasTrackedItems ? (
         /* Up to date state */
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center space-y-4 shadow-xs">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 font-bold text-xl">
-            ✓
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs uppercase tracking-wider">
+            All Caught Up
           </div>
           <h2 className="text-xl font-bold text-slate-900">
-            You are all caught up!
+            No items are due for review right now
           </h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto">
-            No items are due right now. Next review items are scheduled for {stats.dueTomorrowCount > 0 ? 'tomorrow' : 'the coming days'}.
+            Next review items are scheduled for {stats.dueTomorrowCount > 0 ? 'tomorrow' : 'the coming days'}.
           </p>
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -237,7 +246,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
               onClick={handleStartAllReview}
               className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-colors cursor-pointer text-xs"
             >
-              Practice all tracked ({stats.totalTracked} items)
+              Practice tracked ({Math.min(stats.totalTracked, DEFAULT_SESSION_MAX_DUE)} of {stats.totalTracked} items)
             </button>
 
             <button
@@ -253,8 +262,8 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
       ) : (
         /* Empty state: No tracked items */
         <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-5 shadow-xs">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 text-indigo-600 font-black text-2xl flex items-center justify-center">
-            ✦
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wider">
+            Smart Review Queue
           </div>
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-slate-900">
@@ -319,7 +328,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
             <div className="text-2xl font-black text-slate-800">
               {stats.recentAccuracy !== null ? `${stats.recentAccuracy}%` : 'N/A'}
             </div>
-            <p className="text-2xs text-slate-500">Good & Easy ratings in last 50 reviews</p>
+            <p className="text-2xs text-slate-500">Successful recalls (Hard, Good, Easy) in last 50 reviews</p>
           </div>
         </div>
       )}

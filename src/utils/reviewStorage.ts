@@ -265,8 +265,12 @@ export function getDueReviewItems(
 
 /**
  * Retrieves all tracked items for full review mode or browsing.
+ * Bounded by maxCount (default 20) to prevent oversized sessions.
  */
-export function getAllTrackedReviewItems(now: number = Date.now()): ResolvedReviewItem[] {
+export function getAllTrackedReviewItems(
+  maxCount: number = DEFAULT_SESSION_MAX_DUE,
+  now: number = Date.now()
+): ResolvedReviewItem[] {
   const storage = loadReviewStorage(now);
   const list: ResolvedReviewItem[] = [];
 
@@ -284,11 +288,17 @@ export function getAllTrackedReviewItems(now: number = Date.now()): ResolvedRevi
     return a.word.word.localeCompare(b.word.word);
   });
 
-  return list;
+  const limit = Math.max(1, maxCount);
+  return list.slice(0, limit);
 }
 
 /**
  * Computes live dashboard metrics from stored review items.
+ * Uses exact local calendar day boundaries:
+ * - todayStart: 00:00:00 today
+ * - tomorrowStart: 00:00:00 tomorrow
+ * - dayAfterTomorrowStart: 00:00:00 day after tomorrow
+ * - next7DaysEnd: 00:00:00 8 days from today (covering 7 upcoming days)
  */
 export function getReviewDashboardStats(now: number = Date.now()): ReviewDashboardStats {
   const storage = loadReviewStorage(now);
@@ -300,12 +310,21 @@ export function getReviewDashboardStats(now: number = Date.now()): ReviewDashboa
   let dueTomorrowCount = 0;
   let dueNext7DaysCount = 0;
 
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const startOfTodayMs = startOfToday.getTime();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
 
-  const tomorrowEndMs = startOfTodayMs + 2 * 24 * 60 * 60 * 1000;
-  const next7DaysEndMs = startOfTodayMs + 8 * 24 * 60 * 60 * 1000;
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const tomorrowStartMs = tomorrowStart.getTime();
+
+  const dayAfterTomorrowStart = new Date(todayStart);
+  dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 2);
+  const dayAfterTomorrowStartMs = dayAfterTomorrowStart.getTime();
+
+  const next7DaysEnd = new Date(todayStart);
+  next7DaysEnd.setDate(next7DaysEnd.getDate() + 8);
+  const next7DaysEndMs = next7DaysEnd.getTime();
 
   const items = Object.values(storage.items);
   const totalTracked = items.length;
@@ -322,27 +341,32 @@ export function getReviewDashboardStats(now: number = Date.now()): ReviewDashboa
     if (item.nextReviewAt <= now) {
       dueCount++;
     } else {
-      // Upcoming intervals
-      if (item.nextReviewAt > now && item.nextReviewAt <= tomorrowEndMs) {
+      // Upcoming intervals based on exact calendar boundaries:
+      // Tomorrow: nextReviewAt >= tomorrowStart AND nextReviewAt < dayAfterTomorrowStart
+      if (item.nextReviewAt >= tomorrowStartMs && item.nextReviewAt < dayAfterTomorrowStartMs) {
         dueTomorrowCount++;
       }
-      if (item.nextReviewAt > now && item.nextReviewAt <= next7DaysEndMs) {
+      // Next 7 calendar days: nextReviewAt >= tomorrowStart AND nextReviewAt < next7DaysEnd
+      if (item.nextReviewAt >= tomorrowStartMs && item.nextReviewAt < next7DaysEndMs) {
         dueNext7DaysCount++;
       }
     }
 
-    if (item.lastReviewedAt && item.lastReviewedAt >= startOfTodayMs) {
+    if (item.lastReviewedAt && item.lastReviewedAt >= todayStartMs) {
       reviewedTodayCount++;
     }
   }
 
   // Compute recent accuracy from logs (last 50 reviews)
+  // successful = hard OR good OR easy; failed = again
   let recentAccuracy: number | null = null;
   const logs = storage.recentLogs || [];
   if (logs.length > 0) {
     const recentSample = logs.slice(-50);
-    const correctCount = recentSample.filter((l) => l.rating === 'good' || l.rating === 'easy').length;
-    recentAccuracy = Math.round((correctCount / recentSample.length) * 100);
+    const successfulCount = recentSample.filter(
+      (l) => l.rating === 'hard' || l.rating === 'good' || l.rating === 'easy'
+    ).length;
+    recentAccuracy = Math.round((successfulCount / recentSample.length) * 100);
   }
 
   return {
@@ -459,6 +483,38 @@ export function applyReviewRatingToItem(
 
   saveReviewStorage(storage);
   return updated;
+}
+
+/**
+ * Batch adds specific item IDs to Smart Review (e.g. upon reviewing mistake items).
+ * Ensures only valid canonical curriculum items are added.
+ */
+export function batchAddItemsToReview(itemIds: string[], now: number = Date.now()): number {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) return 0;
+
+  const storage = loadReviewStorage();
+  let addedCount = 0;
+
+  for (const rawId of itemIds) {
+    if (typeof rawId !== 'string') continue;
+    const itemId = rawId.trim();
+    if (!itemId) continue;
+
+    // Verify it exists in canonical curriculum
+    const resolved = resolveCurriculumItem(itemId);
+    if (!resolved) continue;
+
+    if (!storage.items[itemId]) {
+      storage.items[itemId] = createInitialReviewState(itemId, now, 0);
+      addedCount++;
+    }
+  }
+
+  if (addedCount > 0) {
+    saveReviewStorage(storage);
+  }
+
+  return addedCount;
 }
 
 /**
