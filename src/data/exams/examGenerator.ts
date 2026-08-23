@@ -353,6 +353,11 @@ function generateLevelExamQuestions(
   const questions: ExamQuestion[] = [];
   const shuffledWords = shuffle(levelWords);
   let wordIdx = 0;
+  const getNextWord = () => {
+    const item = shuffledWords[wordIdx % shuffledWords.length];
+    wordIdx++;
+    return item;
+  };
 
   for (const section of config.sections) {
     const countNeeded = section.questionCount;
@@ -393,8 +398,8 @@ function generateLevelExamQuestions(
         }
 
         // Fallback if not enough visual words: generate standard vocabulary meaning
-        while (sectionQuestions.length < countNeeded && wordIdx < shuffledWords.length) {
-          const { word, lessonId } = shuffledWords[wordIdx++];
+        while (sectionQuestions.length < countNeeded) {
+          const { word, lessonId } = getNextWord();
           const distractors = getWordDistractors(word, levelWords, 3);
           if (distractors.length === 3) {
             const options = shuffle([word.word, ...distractors]).map((text, idx) => ({
@@ -425,9 +430,11 @@ function generateLevelExamQuestions(
       case 'vocabulary':
       case 'core-vocabulary':
       case 'intermediate-vocabulary': {
-        for (let i = 0; sectionQuestions.length < countNeeded && wordIdx < shuffledWords.length; i++, wordIdx++) {
-          const { word, lessonId } = shuffledWords[wordIdx];
-          const isEnToVi = i % 2 === 0;
+        let attempts = 0;
+        while (sectionQuestions.length < countNeeded && attempts < 200) {
+          attempts++;
+          const { word, lessonId } = getNextWord();
+          const isEnToVi = sectionQuestions.length % 2 === 0;
 
           if (isEnToVi) {
             const distractors = getMeaningDistractors(word, levelWords, 3);
@@ -437,7 +444,7 @@ function generateLevelExamQuestions(
                 text,
               }));
               sectionQuestions.push({
-                id: `lvl-${section.id}-${word.id}-${i}`,
+                id: `lvl-${section.id}-${word.id}-${sectionQuestions.length}`,
                 sectionId: section.id,
                 sectionTitle: section.title,
                 sectionType: section.type,
@@ -460,7 +467,7 @@ function generateLevelExamQuestions(
                 text,
               }));
               sectionQuestions.push({
-                id: `lvl-${section.id}-rev-${word.id}-${i}`,
+                id: `lvl-${section.id}-rev-${word.id}-${sectionQuestions.length}`,
                 sectionId: section.id,
                 sectionTitle: section.title,
                 sectionType: section.type,
@@ -481,9 +488,11 @@ function generateLevelExamQuestions(
       }
 
       case 'listening': {
-        for (let i = 0; sectionQuestions.length < countNeeded && wordIdx < shuffledWords.length; i++, wordIdx++) {
-          const { word, lessonId } = shuffledWords[wordIdx];
-          const isHearMeaning = i % 2 === 1;
+        let attempts = 0;
+        while (sectionQuestions.length < countNeeded && attempts < 200) {
+          attempts++;
+          const { word, lessonId } = getNextWord();
+          const isHearMeaning = sectionQuestions.length % 2 === 1;
 
           if (isHearMeaning) {
             const distractors = getMeaningDistractors(word, levelWords, 3);
@@ -493,7 +502,7 @@ function generateLevelExamQuestions(
                 text,
               }));
               sectionQuestions.push({
-                id: `lvl-${section.id}-${word.id}-${i}`,
+                id: `lvl-${section.id}-${word.id}-${sectionQuestions.length}`,
                 sectionId: section.id,
                 sectionTitle: section.title,
                 sectionType: section.type,
@@ -517,7 +526,7 @@ function generateLevelExamQuestions(
                 text,
               }));
               sectionQuestions.push({
-                id: `lvl-${section.id}-spk-${word.id}-${i}`,
+                id: `lvl-${section.id}-spk-${word.id}-${sectionQuestions.length}`,
                 sectionId: section.id,
                 sectionTitle: section.title,
                 sectionType: section.type,
@@ -561,11 +570,13 @@ function generateLevelExamQuestions(
           });
         }
 
-        // Fill remaining with example sentence clozes from words
-        while (sectionQuestions.length < countNeeded && wordIdx < shuffledWords.length) {
-          const { word, lessonId } = shuffledWords[wordIdx++];
-          if (word.example && word.example.includes(word.word)) {
-            const regex = new RegExp(`\\b${word.word}\\b`, 'i');
+        // Fill remaining with example sentence clozes or context questions from words
+        let attempts = 0;
+        while (sectionQuestions.length < countNeeded && attempts < 200) {
+          attempts++;
+          const { word, lessonId } = getNextWord();
+          if (word.example && word.example.toLowerCase().includes(word.word.toLowerCase())) {
+            const regex = new RegExp(word.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
             const sentencePrompt = word.example.replace(regex, '_____');
             const distractors = getWordDistractors(word, levelWords, 3);
             if (distractors.length === 3) {
@@ -587,6 +598,30 @@ function generateLevelExamQuestions(
                 targetMeaning: word.meaning,
                 targetExample: word.example,
                 tags: ['sentence-context', 'fill-blank'],
+                suggestedLessonId: lessonId,
+              });
+            }
+          } else {
+            // General vocabulary context question fallback
+            const distractors = getWordDistractors(word, levelWords, 3);
+            if (distractors.length === 3) {
+              const options = shuffle([word.word, ...distractors]).map((text, idx) => ({
+                id: `opt-${idx}`,
+                text,
+              }));
+              sectionQuestions.push({
+                id: `lvl-${section.id}-ctx-${word.id}-${sectionQuestions.length}`,
+                sectionId: section.id,
+                sectionTitle: section.title,
+                sectionType: section.type,
+                kind: 'multiple-choice',
+                prompt: `Which word correctly matches the meaning: "${word.meaning}"?`,
+                options,
+                correctAnswer: word.word,
+                explanation: `"${word.word}" corresponds to "${word.meaning}".`,
+                targetItem: word.word,
+                targetMeaning: word.meaning,
+                tags: ['vocabulary', 'context'],
                 suggestedLessonId: lessonId,
               });
             }
@@ -632,8 +667,10 @@ function generateLevelExamQuestions(
         }
 
         // Fill remaining with vocabulary nuance if needed
-        while (sectionQuestions.length < countNeeded && wordIdx < shuffledWords.length) {
-          const { word, lessonId } = shuffledWords[wordIdx++];
+        let attempts = 0;
+        while (sectionQuestions.length < countNeeded && attempts < 200) {
+          attempts++;
+          const { word, lessonId } = getNextWord();
           const distractors = getWordDistractors(word, levelWords, 3);
           if (distractors.length === 3) {
             const options = shuffle([word.word, ...distractors]).map((text, idx) => ({
@@ -666,7 +703,7 @@ function generateLevelExamQuestions(
           for (const q of readingItem.questions) {
             if (sectionQuestions.length >= countNeeded) break;
             sectionQuestions.push({
-              id: `lvl-${section.id}-${q.id}`,
+              id: `lvl-${section.id}-${q.id}-${sectionQuestions.length}`,
               sectionId: section.id,
               sectionTitle: section.title,
               sectionType: 'reading',
@@ -681,6 +718,33 @@ function generateLevelExamQuestions(
             });
           }
           if (sectionQuestions.length >= countNeeded) break;
+        }
+
+        // Fallback for reading if passages are fewer than questions needed
+        while (sectionQuestions.length < countNeeded) {
+          const { word, lessonId } = getNextWord();
+          const distractors = getWordDistractors(word, levelWords, 3);
+          if (distractors.length === 3) {
+            const options = shuffle([word.word, ...distractors]).map((text, idx) => ({
+              id: `opt-${idx}`,
+              text,
+            }));
+            sectionQuestions.push({
+              id: `lvl-${section.id}-read-fallback-${word.id}-${sectionQuestions.length}`,
+              sectionId: section.id,
+              sectionTitle: section.title,
+              sectionType: 'reading',
+              kind: 'multiple-choice',
+              prompt: `In contextual reading comprehension, which term corresponds to: "${word.meaning}"?`,
+              options,
+              correctAnswer: word.word,
+              explanation: `"${word.word}" means "${word.meaning}". ${word.example ? `Example: "${word.example}"` : ''}`,
+              targetItem: word.word,
+              targetMeaning: word.meaning,
+              tags: ['reading', 'contextual-vocabulary'],
+              suggestedLessonId: lessonId,
+            });
+          }
         }
         break;
       }
