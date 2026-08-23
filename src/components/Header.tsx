@@ -1,9 +1,11 @@
 import React from 'react';
 import { getOverallStats } from '../utils/storage';
+import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { LESSONS } from '../data/lessons';
 
 interface HeaderProps {
   onNavigateHome: () => void;
+  onNavigateReview?: () => void;
   onNavigateFlipLens?: () => void;
   onNavigateExamCenter?: () => void;
   currentView: string;
@@ -11,23 +13,31 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onNavigateHome,
+  onNavigateReview,
   onNavigateFlipLens,
   onNavigateExamCenter,
   currentView,
 }) => {
   const [stats, setStats] = React.useState(() => getOverallStats(LESSONS.length));
+  const [reviewStats, setReviewStats] = React.useState(() => getReviewDashboardStats());
 
   React.useEffect(() => {
     const handleUpdate = () => {
       setStats(getOverallStats(LESSONS.length));
     };
 
+    const handleReviewUpdate = () => {
+      setReviewStats(getReviewDashboardStats());
+    };
+
     window.addEventListener('flipenglish_progress_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
+    window.addEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdate);
 
     return () => {
       window.removeEventListener('flipenglish_progress_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdate);
     };
   }, []);
 
@@ -38,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="header-brand-logo"
           onClick={onNavigateHome}
-          className="flex items-center text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1 transition-opacity hover:opacity-85"
+          className="flex items-center text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1 transition-opacity hover:opacity-85 cursor-pointer"
           title="Return to Curriculum"
         >
           <span className="text-xl font-black tracking-tight text-slate-900">
@@ -47,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Navigation & Progress Indicator */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <button
             id="header-nav-learning-path"
             onClick={onNavigateHome}
@@ -59,6 +69,31 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Curriculum
           </button>
+
+          {onNavigateReview && (
+            <button
+              id="header-nav-review"
+              onClick={onNavigateReview}
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentView === 'review'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span>Review</span>
+              {reviewStats.dueCount > 0 && (
+                <span
+                  className={`text-2xs font-extrabold px-1.5 py-0.2 rounded-full ${
+                    currentView === 'review'
+                      ? 'bg-white text-indigo-700'
+                      : 'bg-indigo-600 text-white'
+                  }`}
+                >
+                  {reviewStats.dueCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {onNavigateExamCenter && (
             <button
@@ -91,11 +126,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Progress Indicator - Pure text */}
           <div
             id="header-progress-indicator"
-            className="flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
+            className="hidden sm:flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
             title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
           >
             <span>
-              {stats.completedCount} / {stats.totalLessonsCount} Completed
+              {stats.completedCount}/{stats.totalLessonsCount} Completed
             </span>
           </div>
         </div>
@@ -103,4 +138,5 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
 

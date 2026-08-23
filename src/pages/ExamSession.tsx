@@ -6,6 +6,8 @@ import { ExamQuestionView } from '../components/exam/ExamQuestionView';
 import { ExamReviewModal } from '../components/exam/ExamReviewModal';
 import { saveActiveExam, clearActiveExam, saveExamResultToHistory } from '../utils/examStorage';
 import { calculateExamResult } from '../utils/examScoring';
+import { recordQuizMistake } from '../utils/reviewStorage';
+import { resolveCurriculumItem, resolveCurriculumItemByText } from '../utils/curriculumIndex';
 
 interface ExamSessionProps {
   initialSession: ExamSession;
@@ -41,6 +43,20 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
     const report = calculateExamResult(finalSession);
     saveExamResultToHistory(report);
     clearActiveExam();
+
+    // Auto-feed missed vocabulary items into Smart Review
+    for (const missed of report.missedQuestions) {
+      const target = missed.question?.targetItem;
+      if (target) {
+        const match =
+          resolveCurriculumItem(target) ||
+          resolveCurriculumItemByText(target);
+        if (match) {
+          recordQuizMistake(match.word.id);
+        }
+      }
+    }
+
     onFinishExam(report);
   }, [session, onFinishExam]);
 

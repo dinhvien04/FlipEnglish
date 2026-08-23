@@ -171,6 +171,7 @@ export type AppView =
   | 'result'
   | 'review-mistakes'
   | 'flip-lens'
+  | 'review'
   | 'exam-center'
   | 'exam-intro'
   | 'exam-session'
@@ -178,4 +179,5 @@ export type AppView =
   | 'exam-history';
 
 export * from './exam';
+export * from './review';
 

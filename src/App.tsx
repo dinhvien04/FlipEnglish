@@ -18,6 +18,7 @@ import { ExamSessionPage } from './pages/ExamSession';
 import { ExamResultPage } from './pages/ExamResult';
 import { ExamHistoryPage } from './pages/ExamHistory';
 import { ResumeExamModal } from './components/exam/ResumeExamModal';
+import { ReviewDashboard } from './features/review/ReviewDashboard';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -63,6 +64,13 @@ export default function App() {
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
+  };
+
+  const handleNavigateReview = () => {
+    setSelectedLessonId(null);
+    setIsReviewMistakesMode(false);
+    setQuizResults(null);
+    setCurrentView('review');
   };
 
   const handleOpenFlipLens = () => {
@@ -206,6 +214,7 @@ export default function App() {
       {currentView !== 'exam-session' && (
         <Header
           onNavigateHome={handleNavigateHome}
+          onNavigateReview={handleNavigateReview}
           onNavigateFlipLens={handleOpenFlipLens}
           onNavigateExamCenter={handleNavigateExamCenter}
           currentView={currentView}
@@ -220,6 +229,15 @@ export default function App() {
             onSelectLesson={handleSelectLesson}
             onOpenFlipLens={handleOpenFlipLens}
             onOpenExamCenter={handleNavigateExamCenter}
+            onNavigateReview={handleNavigateReview}
+          />
+        )}
+
+        {/* Smart Review (Spaced Repetition) View */}
+        {currentView === 'review' && (
+          <ReviewDashboard
+            onSelectLesson={handleSelectLesson}
+            onBackToHome={handleNavigateHome}
           />
         )}
 

@@ -3,10 +3,11 @@ import { Lesson, QuizQuestion, VocabWord } from '../types';
 import { generateQuiz } from '../utils/quizGenerator';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
 import { ProgressBar } from '../components/ProgressBar';
+import { recordQuizMistake, batchAddLessonWordsToReview } from '../utils/reviewStorage';
 
 interface ExerciseProps {
   lesson: Lesson;
-  onFinishQuiz: (results: {
+  onFinishQuiz: (result: {
     score: number;
     correctCount: number;
     incorrectCount: number;
@@ -45,6 +46,11 @@ export const Exercise: React.FC<ExerciseProps> = ({
       nextCorrect += 1;
       setCorrectCount(nextCorrect);
     } else {
+      // Record mistake signal in Smart Review
+      if (currentQuestion?.word?.id) {
+        recordQuizMistake(currentQuestion.word.id);
+      }
+
       // Add word to mistake list if not already present
       if (!nextMistakes.some((w) => w.id === currentQuestion.word.id)) {
         nextMistakes.push(currentQuestion.word);
@@ -56,6 +62,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
       setCurrentIndex((prev) => prev + 1);
     } else {
       // Finished all questions!
+      batchAddLessonWordsToReview(lesson.id);
       const finalScore = totalQuestions > 0 ? Math.round((nextCorrect / totalQuestions) * 100) : 0;
       onFinishQuiz({
         score: finalScore,

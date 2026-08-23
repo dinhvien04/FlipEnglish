@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Lesson, AllProgress, CEFRLevel } from '../types';
 import { LESSONS } from '../data/lessons';
 import { getStoredProgress, getOverallStats } from '../utils/storage';
+import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { CEFR_LEVELS_INFO } from '../data/curriculum/curriculumMeta';
 import { CourseShelf } from '../components/CourseShelf';
 import { LevelLibraryView } from '../components/LevelLibraryView';
@@ -11,6 +12,7 @@ interface HomeProps {
   onSelectLesson: (lesson: Lesson) => void;
   onOpenFlipLens: () => void;
   onOpenExamCenter?: () => void;
+  onNavigateReview?: () => void;
 }
 
 const ALL_LEVEL_KEYS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -25,9 +27,15 @@ const POPULAR_STARTING_IDS = [
   'career-workplace',
 ];
 
-export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOpenExamCenter }) => {
+export const Home: React.FC<HomeProps> = ({
+  onSelectLesson,
+  onOpenFlipLens,
+  onOpenExamCenter,
+  onNavigateReview,
+}) => {
   const [progress, setProgress] = useState<AllProgress>(() => getStoredProgress());
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
+  const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
   const [selectedLevelTab, setSelectedLevelTab] = useState<CEFRLevel | 'ALL'>('ALL');
   const [viewAllLevel, setViewAllLevel] = useState<CEFRLevel | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -39,11 +47,17 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
       setStats(getOverallStats(LESSONS.length));
     };
 
+    const refreshReview = () => {
+      setReviewStats(getReviewDashboardStats());
+    };
+
     window.addEventListener('flipenglish_progress_updated', refresh);
     window.addEventListener('storage', refresh);
+    window.addEventListener(REVIEW_UPDATED_EVENT, refreshReview);
     return () => {
       window.removeEventListener('flipenglish_progress_updated', refresh);
       window.removeEventListener('storage', refresh);
+      window.removeEventListener(REVIEW_UPDATED_EVENT, refreshReview);
     };
   }, []);
 
@@ -179,20 +193,54 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
         </div>
       </section>
 
-      {/* Feature Entry Cards: FlipLens & Exam Center */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: FlipLens */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 p-6 sm:p-7 text-white border border-indigo-500/30 shadow-lg shadow-indigo-950/20 flex flex-col justify-between space-y-6">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Feature Entry Cards: Smart Review, FlipLens & Exam Center */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Card 1: Smart Review */}
+        <div className="relative overflow-hidden rounded-3xl bg-indigo-900 p-6 sm:p-7 text-white border border-indigo-700/50 shadow-lg shadow-indigo-950/20 flex flex-col justify-between space-y-6">
+          <div className="relative z-10 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/15 text-indigo-200 border border-white/20 text-xs font-bold uppercase tracking-wider">
+                <span>Spaced Repetition</span>
+              </div>
+              {reviewStats.dueCount > 0 && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-2xs font-extrabold shadow-2xs">
+                  {reviewStats.dueCount} Due Now
+                </span>
+              )}
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              Smart Review
+            </h2>
+            <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
+              Active memory recall with automated spaced repetition schedules. Keep mastered vocabulary permanent.
+            </p>
+          </div>
+
+          {onNavigateReview && (
+            <button
+              type="button"
+              id="home-open-review-btn"
+              onClick={onNavigateReview}
+              className="self-start px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            >
+              {reviewStats.dueCount > 0
+                ? `Review ${reviewStats.dueCount} Due Items`
+                : 'Open Review'}
+            </button>
+          )}
+        </div>
+
+        {/* Card 2: FlipLens */}
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
           <div className="relative z-10 space-y-2.5">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
               <span>FlipLens</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Learn English from a real-world photo.
+              Visual Learning from Photos
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Take or upload a photo and turn visible objects into vocabulary you can study.
+              Take or upload a photo and turn real-world objects into vocabulary you can study.
             </p>
           </div>
 
@@ -206,15 +254,14 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
           </button>
         </div>
 
-        {/* Card 2: Practice Exam Center */}
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Card 3: Practice Exam Center */}
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6 md:col-span-2 lg:col-span-1">
           <div className="relative z-10 space-y-2.5">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
               <span>Practice Exams</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Timed CEFR Practice Exams
+              Timed CEFR Assessments
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Test your vocabulary, Use of English, reading and listening with timed A1–C2 practice exams.

@@ -16,6 +16,7 @@
     "lint": "tsc --noEmit",
     "validate:exams": "tsx scripts/validateExams.ts",
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
+    "validate:review": "tsx scripts/validateReview.ts",
     "security:audit": "npm audit --omit=dev --audit-level=high",
     "test:security": "tsx scripts/securitySmokeTest.ts"
   },

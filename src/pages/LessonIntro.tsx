@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lesson, LessonProgress } from '../types';
 import { speakWord } from '../utils/speech';
 import { SafeImage } from '../components/SafeImage';
+import {
+  isItemInReview,
+  toggleItemInReview,
+  batchAddLessonWordsToReview,
+  REVIEW_UPDATED_EVENT,
+} from '../utils/reviewStorage';
 
 interface LessonIntroProps {
   lesson: Lesson;
@@ -18,6 +24,44 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
 }) => {
   const isCompleted = progress?.completed ?? false;
   const bestScore = progress?.bestScore ?? 0;
+
+  const [reviewStateMap, setReviewStateMap] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    lesson.words.forEach((w) => {
+      map[w.id] = isItemInReview(w.id);
+    });
+    return map;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const map: Record<string, boolean> = {};
+      lesson.words.forEach((w) => {
+        map[w.id] = isItemInReview(w.id);
+      });
+      setReviewStateMap(map);
+    };
+
+    window.addEventListener(REVIEW_UPDATED_EVENT, update);
+    return () => window.removeEventListener(REVIEW_UPDATED_EVENT, update);
+  }, [lesson.words]);
+
+  const handleToggleReview = (wordId: string) => {
+    toggleItemInReview(wordId);
+    setReviewStateMap((prev) => ({
+      ...prev,
+      [wordId]: !prev[wordId],
+    }));
+  };
+
+  const handleAddAllToReview = () => {
+    batchAddLessonWordsToReview(lesson.id);
+    const map: Record<string, boolean> = {};
+    lesson.words.forEach((w) => {
+      map[w.id] = true;
+    });
+    setReviewStateMap(map);
+  };
 
   const visualItemsCount = lesson.words.filter((w) => Boolean(w.imageUrl)).length;
   const isPrimarilyVisual = visualItemsCount >= Math.ceil(lesson.words.length * 0.7);
@@ -94,43 +138,71 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Words in this lesson ({lesson.words.length})
               </h3>
-              <span className="text-xs text-slate-400 font-medium">Click Play to preview pronunciation</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="add-all-lesson-to-review-btn"
+                  onClick={handleAddAllToReview}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                >
+                  Add all to Review
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {lesson.words.map((word) => (
-                <div
-                  key={word.id}
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    {word.imageUrl ? (
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
-                        <SafeImage
-                          src={word.imageUrl}
-                          alt={word.imageAlt || word.word}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+              {lesson.words.map((word) => {
+                const inReview = Boolean(reviewStateMap[word.id]);
+                return (
+                  <div
+                    key={word.id}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      {word.imageUrl ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
+                          <SafeImage
+                            src={word.imageUrl}
+                            alt={word.imageAlt || word.word}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      ) : null}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 capitalize">{word.word}</span>
+                          <span className="text-2xs text-slate-400 font-mono">{word.pronunciation}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium">{word.meaning}</p>
                       </div>
-                    ) : null}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 capitalize">{word.word}</span>
-                        <span className="text-2xs text-slate-400 font-mono">{word.pronunciation}</span>
-                      </div>
-                      <p className="text-xs text-slate-600 font-medium">{word.meaning}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleReview(word.id)}
+                        title={inReview ? 'Remove from Smart Review' : 'Add to Smart Review'}
+                        className={`px-2.5 py-1 rounded-lg text-2xs font-bold transition-colors cursor-pointer border ${
+                          inReview
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                            : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        {inReview ? 'In Review' : '+ Review'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => speakWord(word.word)}
+                        title={`Play pronunciation for ${word.word}`}
+                        className="px-2.5 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-2xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer"
+                      >
+                        Play
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => speakWord(word.word)}
-                    title={`Play pronunciation for ${word.word}`}
-                    className="px-3 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer"
-                  >
-                    Play
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
