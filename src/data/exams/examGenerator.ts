@@ -193,10 +193,15 @@ function generateQuickTestQuestions(
   const questions: ExamQuestion[] = [];
   const shuffledWords = shuffle(levelWords);
   let wordIdx = 0;
+  const getNextWord = () => {
+    const item = shuffledWords[wordIdx % shuffledWords.length];
+    wordIdx++;
+    return item;
+  };
 
   // 1. Vocabulary & Meaning (6 questions)
-  for (let i = 0; i < 6 && wordIdx < shuffledWords.length; i++) {
-    const { word, lessonId } = shuffledWords[wordIdx++];
+  for (let i = 0; i < 6; i++) {
+    const { word, lessonId } = getNextWord();
     const isEnToVi = i % 2 === 0;
 
     if (isEnToVi) {
@@ -274,8 +279,10 @@ function generateQuickTestQuestions(
   }
 
   // If UoE bank had fewer than 5, supplement with sentence cloze
-  while (uoeCount < 5 && wordIdx < shuffledWords.length) {
-    const { word, lessonId } = shuffledWords[wordIdx++];
+  let attemptCloze = 0;
+  while (uoeCount < 5 && attemptCloze < shuffledWords.length * 2) {
+    attemptCloze++;
+    const { word, lessonId } = getNextWord();
     if (word.example && word.example.includes(word.word)) {
       const regex = new RegExp(`\\b${word.word}\\b`, 'i');
       const sentencePrompt = word.example.replace(regex, '_____');
@@ -308,8 +315,10 @@ function generateQuickTestQuestions(
 
   // 3. Listening Recognition (4 questions)
   let listenCount = 0;
-  while (listenCount < 4 && wordIdx < shuffledWords.length) {
-    const { word, lessonId } = shuffledWords[wordIdx++];
+  let attemptListen = 0;
+  while (listenCount < 4 && attemptListen < shuffledWords.length * 2) {
+    attemptListen++;
+    const { word, lessonId } = getNextWord();
     const distractors = getMeaningDistractors(word, levelWords, 3);
     if (distractors.length === 3) {
       const options = shuffle([word.meaning, ...distractors]).map((text, idx) => ({
