@@ -1,0 +1,10 @@
+{
+  "name": "FlipEnglish",
+  "description": "Interactive English vocabulary learning app with comprehensive CEFR A1-C2 curriculum, 3D flip cards, FlipLens photo learning, Listening Challenge, and Gemini AI mistake explanations.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
