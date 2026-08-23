@@ -35,6 +35,7 @@ export interface VocabWord {
   example: string; // English example sentence
   imageUrl?: string;
   imageAlt?: string;
+  visualQuizEligible?: boolean;
   emoji?: string;
   definition?: string;
   collocations?: string[];

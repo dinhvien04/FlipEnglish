@@ -14,8 +14,238 @@ export interface ExamReadingItem {
 }
 
 export const READING_PASSAGES_BANK: Record<CEFRLevel, ExamReadingItem[]> = {
-  A1: [],
-  A2: [],
+  A1: [
+    {
+      passage: {
+        id: 'read-a1-1',
+        level: 'A1',
+        title: "Elena's Morning Routine",
+        topic: 'Daily Life',
+        wordCount: 110,
+        passage: `Elena is a university student in Madrid. She wakes up at seven o'clock every morning. First, she washes her face and prepares a simple breakfast of toast, eggs, and hot green tea. 
+
+At eight o'clock, she walks to the bus station near her apartment. The bus ride to university takes twenty minutes. In the morning, Elena has two English classes. She loves learning new vocabulary and speaking with her classmates. At lunchtime, she eats a fresh salad in the campus park with her friend Sarah.`,
+      },
+      questions: [
+        {
+          id: 'read-a1-1-q1',
+          prompt: 'What time does Elena wake up every morning?',
+          options: [
+            "At six o'clock.",
+            "At seven o'clock.",
+            "At eight o'clock.",
+            "At nine o'clock.",
+          ],
+          correctAnswer: "At seven o'clock.",
+          explanation: "The passage states: 'She wakes up at seven o'clock every morning.'",
+          tags: ['reading', 'detail', 'daily-routine'],
+          suggestedLessonId: 'daily-routine',
+        },
+        {
+          id: 'read-a1-1-q2',
+          prompt: 'How does Elena travel to her university?',
+          options: [
+            'She rides her bicycle.',
+            'She takes the bus.',
+            'She drives a car.',
+            'She walks the whole way.',
+          ],
+          correctAnswer: 'She takes the bus.',
+          explanation: 'The passage explains she walks to the bus station and takes a 20-minute bus ride to university.',
+          tags: ['reading', 'detail', 'transport'],
+          suggestedLessonId: 'travel',
+        },
+        {
+          id: 'read-a1-1-q3',
+          prompt: 'Where does Elena eat lunch?',
+          options: [
+            'In a restaurant downtown.',
+            'At home in her apartment.',
+            'In the campus park.',
+            'In the university library.',
+          ],
+          correctAnswer: 'In the campus park.',
+          explanation: 'The text notes: "At lunchtime, she eats a fresh salad in the campus park with her friend Sarah."',
+          tags: ['reading', 'detail', 'food'],
+          suggestedLessonId: 'food',
+        },
+      ],
+    },
+    {
+      passage: {
+        id: 'read-a1-2',
+        level: 'A1',
+        title: 'A Visit to the City Library',
+        topic: 'Places & Hobbies',
+        wordCount: 115,
+        passage: `The central library in our town is a very quiet and comfortable building. It is open from Monday to Saturday, from nine in the morning until six in the evening. 
+
+There are thousands of books, magazines, and newspapers for children and adults. Visitors can sit on soft armchairs near the big windows. Many students bring their laptops to do homework because the internet connection is fast and free. You can borrow up to four books for two weeks with a library card.`,
+      },
+      questions: [
+        {
+          id: 'read-a1-2-q1',
+          prompt: 'When is the town library open?',
+          options: [
+            'Every day of the week including Sunday.',
+            'Monday to Saturday from 9:00 AM to 6:00 PM.',
+            'Only on weekend mornings.',
+            'Tuesday to Friday in the afternoon only.',
+          ],
+          correctAnswer: 'Monday to Saturday from 9:00 AM to 6:00 PM.',
+          explanation: 'The passage explicitly says: "It is open from Monday to Saturday, from nine in the morning until six in the evening."',
+          tags: ['reading', 'detail', 'time'],
+          suggestedLessonId: 'places',
+        },
+        {
+          id: 'read-a1-2-q2',
+          prompt: 'Why do students like to do homework at the library?',
+          options: [
+            'Because food and drinks are free for everyone.',
+            'Because the internet connection is fast and free.',
+            'Because all classes are held inside the library.',
+            'Because there are no chairs in the building.',
+          ],
+          correctAnswer: 'Because the internet connection is fast and free.',
+          explanation: 'The text states: "Many students bring their laptops to do homework because the internet connection is fast and free."',
+          tags: ['reading', 'reason', 'study'],
+          suggestedLessonId: 'school',
+        },
+        {
+          id: 'read-a1-2-q3',
+          prompt: 'How many books can a visitor borrow at one time?',
+          options: [
+            'Only one book for one week.',
+            'Up to four books for two weeks.',
+            'Up to ten books for one month.',
+            'Unlimited books with no return date.',
+          ],
+          correctAnswer: 'Up to four books for two weeks.',
+          explanation: 'The text states: "You can borrow up to four books for two weeks with a library card."',
+          tags: ['reading', 'detail', 'numbers'],
+          suggestedLessonId: 'places',
+        },
+      ],
+    },
+  ],
+  A2: [
+    {
+      passage: {
+        id: 'read-a2-1',
+        level: 'A2',
+        title: 'Planning a Weekend Hiking Trip',
+        topic: 'Travel & Nature',
+        wordCount: 165,
+        passage: `Last weekend, Marcus and his brother Daniel decided to go hiking in the Green Valley National Park. Before leaving home on Saturday morning, they carefully packed their backpacks with water bottles, energy bars, a small first-aid kit, and a paper map of the mountain trails.
+
+The weather forecast predicted clear blue skies in the morning but possible rain showers in the late afternoon. Because of this, both hikers packed lightweight waterproof jackets. 
+
+They started hiking along the Pine Trail at eight-thirty. The trail was steep, but the view of the lake from the summit was amazing. They stopped at a wooden picnic table at noon to eat lunch and take photographs. By three o'clock, dark clouds appeared, so they followed the path back down and reached their car safely before the rain began.`,
+      },
+      questions: [
+        {
+          id: 'read-a2-1-q1',
+          prompt: 'What did Marcus and Daniel do before leaving home?',
+          options: [
+            'They bought new hiking boots at a shopping center.',
+            'They packed essential items and a trail map in their backpacks.',
+            'They called a taxi to drive them to the mountain top.',
+            'They rented a cabin inside the national park.',
+          ],
+          correctAnswer: 'They packed essential items and a trail map in their backpacks.',
+          explanation: 'Paragraph 1 notes they carefully packed water bottles, energy bars, a first-aid kit, and a paper map.',
+          tags: ['reading', 'detail', 'travel'],
+          suggestedLessonId: 'travel',
+        },
+        {
+          id: 'read-a2-1-q2',
+          prompt: 'Why did the hikers pack waterproof jackets?',
+          options: [
+            'Because it was snowing heavily on the summit.',
+            'Because the forecast predicted possible rain in the late afternoon.',
+            'Because jackets were required by the park rangers.',
+            'Because they planned to swim in the mountain lake.',
+          ],
+          correctAnswer: 'Because the forecast predicted possible rain in the late afternoon.',
+          explanation: 'Paragraph 2 explains the forecast warned of possible afternoon showers, prompting them to pack rain jackets.',
+          tags: ['reading', 'reason', 'weather'],
+          suggestedLessonId: 'weather',
+        },
+        {
+          id: 'read-a2-1-q3',
+          prompt: 'Why did Marcus and Daniel head back to their car at three o\'clock?',
+          options: [
+            'They lost their map on the trail.',
+            'Dark clouds appeared, suggesting approaching rain.',
+            'Daniel injured his foot on a rock.',
+            'The park gates were closing early.',
+          ],
+          correctAnswer: 'Dark clouds appeared, suggesting approaching rain.',
+          explanation: 'The text says: "By three o\'clock, dark clouds appeared, so they followed the path back down and reached their car safely before the rain began."',
+          tags: ['reading', 'inference', 'nature'],
+          suggestedLessonId: 'outdoor-activities',
+        },
+      ],
+    },
+    {
+      passage: {
+        id: 'read-a2-2',
+        level: 'A2',
+        title: 'Working at the Corner Cafe',
+        topic: 'Work & Daily Life',
+        wordCount: 170,
+        passage: `Sophia started working part-time as a barista at the Corner Cafe two months ago. She works three shifts a week while attending college classes in the mornings. 
+
+Her main responsibilities include taking customer orders at the register, preparing hot drinks like cappuccinos and lattes, and keeping the seating tables clean and tidy. In the beginning, Sophia was nervous about memorizing all the coffee recipes and operating the large espresso machine. However, her manager gave her practical training during her first week.
+
+Now, Sophia feels confident and enjoys chatting with regular neighborhood customers who visit every morning. She says the best part of her job is learning good communication skills and working in a friendly team. In the future, she hopes to open her own bakery and coffee shop.`,
+      },
+      questions: [
+        {
+          id: 'read-a2-2-q1',
+          prompt: 'How often does Sophia work at the cafe?',
+          options: [
+            'Full-time every weekday from morning to night.',
+            'Three shifts per week alongside her college classes.',
+            'Only on Sunday afternoons.',
+            'Every weekend for twelve hours a day.',
+          ],
+          correctAnswer: 'Three shifts per week alongside her college classes.',
+          explanation: 'Paragraph 1 mentions she works part-time three shifts a week while taking morning college classes.',
+          tags: ['reading', 'detail', 'work'],
+          suggestedLessonId: 'jobs',
+        },
+        {
+          id: 'read-a2-2-q2',
+          prompt: 'What was difficult for Sophia when she first started the job?',
+          options: [
+            'Arriving on time for morning shifts.',
+            'Memorizing recipes and using the espresso machine.',
+            'Walking to the cafe from her apartment.',
+            'Finding clean clothes for work.',
+          ],
+          correctAnswer: 'Memorizing recipes and using the espresso machine.',
+          explanation: 'Paragraph 2 notes she was nervous about memorizing all coffee recipes and operating the large espresso machine.',
+          tags: ['reading', 'detail', 'career'],
+          suggestedLessonId: 'career',
+        },
+        {
+          id: 'read-a2-2-q3',
+          prompt: 'What is Sophia\'s long-term dream mentioned in the passage?',
+          options: [
+            'To become a full-time university professor.',
+            'To open her own bakery and coffee shop one day.',
+            'To move to another country immediately.',
+            'To stop working and travel forever.',
+          ],
+          correctAnswer: 'To open her own bakery and coffee shop one day.',
+          explanation: 'The final sentence states: "In the future, she hopes to open her own bakery and coffee shop."',
+          tags: ['reading', 'inference', 'goals'],
+          suggestedLessonId: 'future-plans',
+        },
+      ],
+    },
+  ],
   B1: [
     {
       passage: {
@@ -359,6 +589,78 @@ Proposals for structural remediation increasingly emphasize algorithmic transpar
         },
       ],
     },
+    {
+      passage: {
+        id: 'read-c1-2',
+        level: 'C1',
+        title: 'Microclimates, Urban Heat Islands, and Biophilic Architecture',
+        topic: 'Architecture & Environmental Science',
+        wordCount: 310,
+        passage: `The intensification of the urban heat island (UHI) effect represents one of the most critical structural challenges confronting 21st-century civil engineering. Densely built urban cores, characterized by extensive impermeable surfaces, dark asphalt pavements, and high thermal mass concrete, absorb and re-radiate solar irradiance at rates vastly exceeding surrounding rural landscapes. Anthropogenic heat emissions from vehicular combustion and building HVAC systems further compound thermal distress during nocturnal cooling periods.
+
+To counteract this escalating microclimatic degradation, contemporary architects are transcending conventional greenwashing by integrating biophilic design principles into core structural envelopes. Rather than merely applying superficial ornamental greenery, progressive civic frameworks incorporate living wall bio-filters, high-albedo reflective coatings, and passive evaporative wind corridors engineered to channel ambient prevailing breezes through high-density residential blocks.
+
+Empirical studies indicate that strategically deployed urban forestry and vegetative canopies can reduce localized surface temperatures by up to 8 degrees Celsius while simultaneously sequestering particulate pollutants. However, successful scaling demands comprehensive municipal policy reforms, including statutory biodiversity mandates and subsidized retrofit incentives for commercial real estate developers. Without concerted cross-sectoral interventions, the confluence of climate disruption and urban densification will exacerbate public health inequities in vulnerable metropolitan communities.`,
+      },
+      questions: [
+        {
+          id: 'read-c1-2-q1',
+          prompt: 'What primary physical factors drive the urban heat island effect according to paragraph 1?',
+          options: [
+            'Excessive cloud cover and subterranean geothermal activity.',
+            'Impermeable surfaces, high thermal mass materials, and anthropogenic heat emissions.',
+            'The complete lack of underground public transportation systems.',
+            'High wind velocities that trap cool air in high-altitude zones.',
+          ],
+          correctAnswer: 'Impermeable surfaces, high thermal mass materials, and anthropogenic heat emissions.',
+          explanation: 'Paragraph 1 identifies impermeable surfaces, dark asphalt, high thermal mass concrete, and HVAC/vehicular emissions as the core drivers.',
+          tags: ['reading', 'detail', 'science'],
+          suggestedLessonId: 'environment-climate',
+        },
+        {
+          id: 'read-c1-2-q2',
+          prompt: 'How does the author characterize "biophilic design" in progressive architectural frameworks (paragraph 2)?',
+          options: [
+            'As an expensive luxury reserved exclusively for suburban homes.',
+            'As an engineered structural integration of bio-filters and passive wind corridors rather than superficial ornament.',
+            'As a temporary trend that increases building maintenance costs.',
+            'As a replacement for standard fire safety regulations.',
+          ],
+          correctAnswer: 'As an engineered structural integration of bio-filters and passive wind corridors rather than superficial ornament.',
+          explanation: 'Paragraph 2 contrasts superficial greenery with integrated living wall bio-filters, reflective coatings, and engineered wind corridors.',
+          tags: ['reading', 'inference', 'architecture'],
+          suggestedLessonId: 'architecture-design',
+        },
+        {
+          id: 'read-c1-2-q3',
+          prompt: 'What quantitative impact of urban forestry is cited in paragraph 3?',
+          options: [
+            'A 50% decrease in municipal water consumption.',
+            'A reduction of localized surface temperatures by up to 8 degrees Celsius.',
+            'An immediate doubling of commercial real estate values.',
+            'A complete elimination of all airborne particulate matter.',
+          ],
+          correctAnswer: 'A reduction of localized surface temperatures by up to 8 degrees Celsius.',
+          explanation: 'The text notes studies show urban forestry can reduce localized surface temperatures by up to 8 degrees Celsius.',
+          tags: ['reading', 'detail', 'data'],
+          suggestedLessonId: 'science-nature',
+        },
+        {
+          id: 'read-c1-2-q4',
+          prompt: 'What is the author\'s main conclusion in the final paragraph?',
+          options: [
+            'Individual homeowners alone can solve metropolitan warming without government support.',
+            'Cross-sectoral interventions and municipal policy reforms are indispensable to prevent worsening public health inequities.',
+            'Urban living should be abandoned in favor of rural resettlement.',
+            'Commercial real estate development should be outlawed entirely.',
+          ],
+          correctAnswer: 'Cross-sectoral interventions and municipal policy reforms are indispensable to prevent worsening public health inequities.',
+          explanation: 'The conclusion emphasizes that comprehensive policy reforms, biodiversity mandates, and cross-sectoral interventions are essential.',
+          tags: ['reading', 'purpose', 'synthesis'],
+          suggestedLessonId: 'society-politics',
+        },
+      ],
+    },
   ],
   C2: [
     {
@@ -432,6 +734,80 @@ Far from succumbing to paralyzing historical relativism, acknowledging radical c
           explanation: 'The conclusion emphasizes that present equilibria are provisional, susceptible to perturbations, and reliant on intentional civic stewardship.',
           tags: ['reading', 'inference', 'synthesis'],
           suggestedLessonId: 'politics-society',
+        },
+      ],
+    },
+    {
+      passage: {
+        id: 'read-c2-2',
+        level: 'C2',
+        title: 'Cognitive Cartography, Linguistic Relativity, and Epistemic Diversity',
+        topic: 'Linguistics & Cognitive Philosophy',
+        wordCount: 410,
+        passage: `The Sapir-Whorf hypothesis, or linguistic relativity, has experienced a profound renaissance in contemporary cognitive neuroscience. While early twentieth-century formulations were frequently caricatured as rigid linguistic determinism—the dubious assertion that language circumscribes the absolute boundaries of thought—nuanced empirical investigations now demonstrate that lexical structures and morphosyntactic categories modulate perceptual salience, attentional allocation, and mnemonic encoding.
+
+Consider cross-linguistic variations in spatial orientation systems. Whereas languages utilizing egocentric coordinates (e.g., relative left/right distinctions) tether spatial memory to the observer's momentary somatic orientation, languages reliant on absolute geocentric coordinates (e.g., cardinal directions) require speakers to maintain a subconscious, perpetual dead-reckoning awareness of ambient compass bearings. Cognitive experiments reveal that speakers of geocentric systems demonstrate extraordinary spatial orientation fidelity even in unfamiliar, subterranean environments, reflecting a cognitive habitus deeply scaffolded by linguistic idiom.
+
+Similarly, grammatical aspect and lexical aspectual framing shape how events are parsed and retrospectively reconstructed. Languages that consistently mandate grammatical marking of endpoint completion prime speakers to prioritize teleological agentive intentions over ambient circumstantial background. These perceptual divergences are not immutable cognitive prisons, but rather habitual cognitive grooves—probabilistic biases that channel mental computation along paths of least semantic resistance.
+
+The implications of these findings transcend academic linguistics, bearing directly on epistemic diversity and global knowledge preservation. The accelerating extinction of indigenous language families entails not merely the vanishing of phonetic inventories or folklore, but the irreversible erasure of unique epistemological architectures. Each idiosyncratic language embodies an irreplaceable cognitive taxonomy—a centuries-old intellectual cartography for conceptualizing ecological dynamics, temporal progression, and human relationality.`,
+      },
+      questions: [
+        {
+          id: 'read-c2-2-q1',
+          prompt: 'How does contemporary cognitive neuroscience differentiate modern linguistic relativity from early formulations (paragraph 1)?',
+          options: [
+            'By proving language completely dictates genetic brain structures.',
+            'By moving away from rigid determinism toward subtle modulation of attention, perception, and memory.',
+            'By dismissing all cross-linguistic differences as superficial translation artifacts.',
+            'By asserting that all human languages share identical grammatical categories.',
+          ],
+          correctAnswer: 'By moving away from rigid determinism toward subtle modulation of attention, perception, and memory.',
+          explanation: 'Paragraph 1 contrasts rigid determinism with nuanced evidence that linguistic structures modulate perceptual salience, attention, and memory encoding.',
+          tags: ['reading', 'contrast', 'linguistics'],
+          suggestedLessonId: 'mind-learning',
+        },
+        {
+          id: 'read-c2-2-q2',
+          prompt: 'What does the comparison between egocentric and geocentric spatial languages demonstrate in paragraph 2?',
+          options: [
+            'That speakers of relative systems have superior navigational equipment.',
+            'That linguistic orientation conventions cultivate subconscious, enduring perceptual habits and competencies.',
+            'That subterranean environments permanently disable human memory.',
+            'That cardinal directions cannot be translated across different language families.',
+          ],
+          correctAnswer: 'That linguistic orientation conventions cultivate subconscious, enduring perceptual habits and competencies.',
+          explanation: 'Paragraph 2 demonstrates geocentric language speakers maintain constant spatial awareness as a cognitive habitus scaffolded by linguistic idiom.',
+          tags: ['reading', 'argument', 'cognitive-science'],
+          suggestedLessonId: 'academic-research',
+        },
+        {
+          id: 'read-c2-2-q3',
+          prompt: 'How does the author describe the influence of linguistic structures on thought in paragraph 3?',
+          options: [
+            'As impenetrable cognitive barriers that forbid alternative conceptualizations.',
+            'As habitual pathways that channel mental processing along probabilistic trajectories.',
+            'As biological defects that inhibit mathematical reasoning.',
+            'As arbitrary stylistic choices with zero cognitive ramifications.',
+          ],
+          correctAnswer: 'As habitual pathways that channel mental processing along probabilistic trajectories.',
+          explanation: 'Paragraph 3 defines them as "habitual cognitive grooves—probabilistic biases that channel mental computation along paths of least semantic resistance."',
+          tags: ['reading', 'nuance', 'metaphor'],
+          suggestedLessonId: 'mind-learning',
+        },
+        {
+          id: 'read-c2-2-q4',
+          prompt: 'What broader cultural and epistemological crisis does the final paragraph articulate?',
+          options: [
+            'The excessive proliferation of regional dialects in major cities.',
+            'The loss of unique cognitive taxonomies and intellectual cartographies through language extinction.',
+            'The economic burden of funding global translation software.',
+            'The declining interest in studying foreign languages in modern universities.',
+          ],
+          correctAnswer: 'The loss of unique cognitive taxonomies and intellectual cartographies through language extinction.',
+          explanation: 'The conclusion argues language extinction erases unique epistemological architectures and intellectual cartographies for understanding the world.',
+          tags: ['reading', 'inference', 'epistemology'],
+          suggestedLessonId: 'culture-society',
         },
       ],
     },

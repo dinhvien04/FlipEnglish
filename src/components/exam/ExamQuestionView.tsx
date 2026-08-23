@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExamQuestion } from '../../types/exam';
 
 interface ExamQuestionViewProps {
@@ -29,6 +29,12 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
   isLast,
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error state when question changes
+  useEffect(() => {
+    setImageError(false);
+  }, [question.id]);
 
   const handlePlayAudio = (rate = 0.9) => {
     if (!question.audioPromptText || !window.speechSynthesis) return;
@@ -178,6 +184,30 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
               </div>
             )}
 
+            {/* Visual Frame for Picture-choice Questions */}
+            {question.visualUrl && !imageError ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center space-y-3">
+                <img
+                  src={question.visualUrl}
+                  alt="Visual question prompt"
+                  onError={() => setImageError(true)}
+                  className="w-full max-w-md h-56 sm:h-64 object-cover rounded-2xl border border-slate-200 shadow-2xs"
+                />
+                <p className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Select the English word matching the image above
+                </p>
+              </div>
+            ) : imageError && question.targetMeaning ? (
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-center space-y-1">
+                <p className="text-2xs font-bold text-amber-800 uppercase tracking-wider">
+                  Visual Item Unavailable — Meaning Provided
+                </p>
+                <p className="text-sm font-bold text-slate-900">
+                  Target Vietnamese Meaning: &quot;{question.targetMeaning}&quot;
+                </p>
+              </div>
+            ) : null}
+
             {/* Question Prompt */}
             <div className="space-y-3 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-2xs">
               <h3 className="text-base sm:text-xl font-bold text-slate-900 leading-relaxed whitespace-pre-line">
@@ -212,15 +242,6 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                     >
                       {letter}
                     </span>
-
-                    {/* Image if available */}
-                    {opt.imageUrl && (
-                      <img
-                        src={opt.imageUrl}
-                        alt="Option visual"
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
-                      />
-                    )}
 
                     <div className="flex-1 pt-1">
                       <span className="text-sm sm:text-base font-medium text-slate-800 leading-relaxed">
@@ -259,3 +280,4 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
     </div>
   );
 };
+

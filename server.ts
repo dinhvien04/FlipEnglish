@@ -45,10 +45,10 @@ async function generateContentWithFallback(params: {
 
   // Priority order of models to try
   const candidateModels = [
-    params.primaryModel || 'gemini-3.7-flash',
-    'gemini-flash-latest',
-    'gemini-3.1-flash-lite',
+    params.primaryModel || 'gemini-2.5-flash',
     'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-3-flash',
   ];
 
   // Deduplicate candidate models
@@ -131,7 +131,7 @@ For each question:
 5. Specify the target word being tested.`;
 
     const response = await generateContentWithFallback({
-      primaryModel: 'gemini-3.7-flash',
+      primaryModel: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: 'You are an expert English language tutor creating personalized mistake-targeted quizzes with structured output.',
@@ -211,7 +211,7 @@ Please provide a clear, compact explanation in structured JSON:
 4. "tip": One simple, memorable memory tip (e.g. "Think: ${targetWord} = ...") in Vietnamese or simple English.`;
 
     const response = await generateContentWithFallback({
-      primaryModel: 'gemini-3.7-flash',
+      primaryModel: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: `You are a concise English vocabulary tutor. A learner has answered one vocabulary exercise incorrectly. Explain why their selected answer was incorrect and why the correct answer is appropriate. Use language suitable for the supplied CEFR level. For A1 and A2, explain in short, friendly Vietnamese while keeping English vocabulary words and example sentences in English. For B1, concise Vietnamese with English context is fine. Give one short correct example sentence and one simple memory tip. Keep the entire explanation concise and encouraging. Never criticize or shame the learner.`,
@@ -302,7 +302,7 @@ Return 5 to 10 high-quality vocabulary items when the image contains enough usef
 Avoid duplicates and near-duplicate synonyms.`;
 
     const response = await generateContentWithFallback({
-      primaryModel: 'gemini-3.7-flash',
+      primaryModel: 'gemini-2.5-flash',
       contents: [
         { text: prompt },
         {
@@ -443,7 +443,7 @@ Please deliver an insightful, encouraging diagnostic evaluation in structured JS
 5. "studyTip": One high-impact, practical learning strategy (e.g. "When learning collocations, record full 4-word collocations in your notebook instead of isolated adjectives.").`;
 
     const response = await generateContentWithFallback({
-      primaryModel: 'gemini-3.7-flash',
+      primaryModel: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: `You are an expert English language diagnostic tutor for FlipEnglish practice exams. Evaluate user performance objectively, identify specific linguistic patterns in their mistakes, and offer constructive, motivating study strategies. Always respond in valid JSON matching the requested schema.`,

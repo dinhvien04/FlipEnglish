@@ -34,6 +34,7 @@ export interface ExamLevelConfig {
   level: CEFRLevel;
   title: string;
   questionCount: number;
+  totalQuestions?: number;
   durationMinutes: number;
   sections: ExamSectionConfig[];
 }
@@ -51,7 +52,6 @@ export type ExamQuestionKind =
 export interface ExamQuestionOption {
   id: string;
   text: string;
-  imageUrl?: string;
 }
 
 export interface ReadingPassage {
@@ -70,6 +70,8 @@ export interface ExamQuestion {
   sectionType: ExamSectionType;
   kind: ExamQuestionKind;
   prompt: string;
+  visualUrl?: string;
+  visualType?: 'photo';
   passage?: ReadingPassage;
   audioPromptText?: string;
   audioSlowAvailable?: boolean;
@@ -87,6 +89,7 @@ export type ExamStatus = 'notStarted' | 'active' | 'submitted' | 'expired';
 
 export interface ExamSession {
   id: string;
+  schemaVersion?: number; // Schema version (2 for current visualUrl architecture)
   mode: ExamMode;
   level: CEFRLevel;
   title: string;

@@ -26,6 +26,11 @@ export function getActiveExam(): ExamSession | null {
     if (!session || !session.id || !session.questions || session.questions.length === 0) {
       return null;
     }
+    // Invalidate sessions created under deprecated schema (prior to schemaVersion 2)
+    if (session.schemaVersion !== 2) {
+      localStorage.removeItem(ACTIVE_EXAM_KEY);
+      return null;
+    }
     return session;
   } catch (err) {
     console.error('Failed to read active exam session from localStorage', err);

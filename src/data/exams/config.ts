@@ -81,12 +81,14 @@ export const LEVEL_EXAM_CONFIGS: Record<CEFRLevel, ExamLevelConfig> = {
 
 export const QUICK_TEST_CONFIG = {
   questionCount: 15,
+  totalQuestions: 15,
   durationMinutes: 10,
   title: 'Quick Test',
 };
 
 export const FULL_MOCK_CONFIG = {
   questionCount: 50,
+  totalQuestions: 50,
   durationMinutes: 45,
   title: 'Full Mock Exam',
 };
