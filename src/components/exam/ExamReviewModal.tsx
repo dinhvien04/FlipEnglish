@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Flag, CheckCircle2, AlertCircle, Send, ArrowLeft, Clock } from 'lucide-react';
 import { ExamQuestion } from '../../types/exam';
 
 interface ExamReviewModalProps {
@@ -45,10 +44,6 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
         {showConfirmSubmit ? (
           /* Confirmation Prompt */
           <div className="space-y-6 text-center py-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
-              <Send className="w-7 h-7" />
-            </div>
-
             <div className="space-y-2">
               <h3 className="text-xl sm:text-2xl font-black text-slate-900">
                 {unansweredIndices.length > 0 ? 'Submit your exam?' : 'Ready to submit?'}
@@ -93,7 +88,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="confirm-submit-exam-btn"
                 onClick={onConfirmSubmit}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition-all cursor-pointer active:scale-98"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
               >
                 {unansweredIndices.length > 0 ? 'Submit Anyway' : 'Submit Final Answers'}
               </button>
@@ -155,9 +150,8 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
               {/* Unanswered List */}
               {unansweredIndices.length > 0 && (
                 <div className="bg-rose-50/60 border border-rose-200 rounded-2xl p-4 space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-rose-800">
-                    <AlertCircle className="w-4 h-4 text-rose-600" />
-                    <span>Unanswered Questions ({unansweredIndices.length})</span>
+                  <div className="text-xs font-extrabold text-rose-800">
+                    Unanswered Questions ({unansweredIndices.length})
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {unansweredIndices.map((idx) => (
@@ -180,9 +174,8 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
               {/* Flagged List */}
               {flaggedIndices.length > 0 && (
                 <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-800">
-                    <Flag className="w-4 h-4 text-amber-600" />
-                    <span>Flagged for Review ({flaggedIndices.length})</span>
+                  <div className="text-xs font-extrabold text-amber-800">
+                    Flagged for Review ({flaggedIndices.length})
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {flaggedIndices.map((idx) => (
@@ -209,20 +202,18 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="return-to-questions-btn"
                 onClick={onClose}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Return to Questions</span>
+                Return to Questions
               </button>
 
               <button
                 type="button"
                 id="proceed-to-submit-btn"
                 onClick={() => setShowConfirmSubmit(true)}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer active:scale-98"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98"
               >
-                <Send className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Submit Final Answers</span>
+                Submit Final Answers
               </button>
             </div>
           </>

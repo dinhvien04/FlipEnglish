@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Sparkles, RotateCcw, CheckCircle2, Trophy, BookOpen } from 'lucide-react';
 import { Lesson, VocabWord } from '../types';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
@@ -50,7 +49,7 @@ export const Learn: React.FC<LearnProps> = ({
         <p className="text-slate-500">No vocabulary words found for this session.</p>
         <button
           onClick={onBackToIntro}
-          className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl"
+          className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl cursor-pointer"
         >
           Return to Lesson
         </button>
@@ -65,10 +64,9 @@ export const Learn: React.FC<LearnProps> = ({
         <button
           id="learn-back-btn"
           onClick={onBackToIntro}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          className="text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Exit Lesson</span>
+          Exit Lesson
         </button>
 
         <div className="text-center">
@@ -120,10 +118,10 @@ export const Learn: React.FC<LearnProps> = ({
         /* Completion State */
         <div
           id="flashcard-completion-card"
-          className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-md text-center max-w-lg mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-300"
+          className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-2xs text-center max-w-lg mx-auto space-y-6"
         >
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs">
-            <CheckCircle2 className="w-9 h-9" />
+          <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider">
+            Completed
           </div>
 
           <div className="space-y-2">
@@ -143,19 +141,17 @@ export const Learn: React.FC<LearnProps> = ({
             <button
               id="review-cards-again-btn"
               onClick={handleRestartCards}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+              className="px-6 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Review Cards Again</span>
+              Review Cards Again
             </button>
 
             <button
               id="start-exercises-btn"
               onClick={onFinishFlashcards}
-              className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-98"
+              className="px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>{isReviewMistakesMode ? 'Retake Exercises' : 'Start Exercises'}</span>
+              {isReviewMistakesMode ? 'Retake Exercises' : 'Start Exercises'}
             </button>
           </div>
         </div>

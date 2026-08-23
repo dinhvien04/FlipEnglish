@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Volume2, Flag, ArrowLeft, ArrowRight, BookOpen, AlertCircle } from 'lucide-react';
 import { ExamQuestion } from '../../types/exam';
 
 interface ExamQuestionViewProps {
@@ -65,15 +64,14 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
           type="button"
           id={`flag-question-btn-${question.id}`}
           onClick={onToggleFlag}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
             isFlagged
-              ? 'bg-amber-50 text-amber-700 border-amber-300 shadow-2xs'
+              ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-2xs font-extrabold'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
           }`}
           title="Flag this question to review before final submission"
         >
-          <Flag className={`w-3.5 h-3.5 ${isFlagged ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
-          <span>{isFlagged ? 'Flagged for Review' : 'Flag for Review'}</span>
+          {isFlagged ? 'Flagged for Review' : 'Flag for Review'}
         </button>
       </div>
 
@@ -84,10 +82,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
             {/* Reading Passage Left Column */}
             <div className="lg:col-span-6 bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200 max-h-[500px] overflow-y-auto space-y-4 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-indigo-600" />
-                  <h4 className="text-sm font-extrabold text-slate-900">{question.passage.title}</h4>
-                </div>
+                <h4 className="text-sm font-extrabold text-slate-900">{question.passage.title}</h4>
                 <span className="text-2xs font-semibold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
                   {question.passage.wordCount} words
                 </span>
@@ -149,18 +144,13 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
             {/* Listening audio controller if applicable */}
             {question.audioPromptText && (
               <div className="bg-indigo-50/60 rounded-2xl p-5 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Volume2 className={`w-5 h-5 ${isPlayingAudio ? 'animate-pulse' : ''}`} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-indigo-900">
-                      Listening Audio Track
-                    </p>
-                    <p className="text-2xs text-indigo-600">
-                      Click below to play the natural native pronunciation.
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-900">
+                    Listening Audio Track
+                  </p>
+                  <p className="text-2xs text-indigo-600 mt-0.5">
+                    Click below to play the natural native pronunciation.
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -169,10 +159,9 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                     id="exam-play-audio-btn"
                     onClick={() => handlePlayAudio(0.9)}
                     disabled={isPlayingAudio}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <Volume2 className="w-4 h-4" />
-                    <span>{isPlayingAudio ? 'Playing...' : 'Play Audio'}</span>
+                    {isPlayingAudio ? 'Playing...' : 'Play Audio'}
                   </button>
 
                   <button
@@ -253,20 +242,18 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
           id="exam-prev-btn"
           onClick={onPrev}
           disabled={isFirst}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <ArrowLeft className="w-4 h-4 text-slate-500" />
-          <span>Previous</span>
+          Previous
         </button>
 
         <button
           type="button"
           id="exam-next-btn"
           onClick={onNext}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer active:scale-98"
+          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98"
         >
-          <span>{isLast ? 'Review Exam →' : 'Next Question'}</span>
-          {!isLast && <ArrowRight className="w-4 h-4 text-indigo-200" />}
+          {isLast ? 'Review Exam' : 'Next Question'}
         </button>
       </div>
     </div>

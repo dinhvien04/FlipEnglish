@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Sparkles, Check, X, ArrowRight, RotateCcw, Volume2, HelpCircle } from 'lucide-react';
 import { AIPracticeQuestion, VocabWord } from '../types';
 import { speakWord } from '../utils/speech';
 
@@ -65,26 +64,20 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
       <div className="relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-2xl my-8 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900 leading-tight">
-                Gemini AI Targeted Practice
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Tailored for {lessonTitle} mistakes
-              </p>
-            </div>
+          <div className="space-y-0.5">
+            <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+              Gemini AI Targeted Practice
+            </h3>
+            <p className="text-xs text-slate-500 font-medium">
+              Tailored for {lessonTitle} mistakes
+            </p>
           </div>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors"
-            title="Close"
+            className="px-3 py-1 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            Close
           </button>
         </div>
 
@@ -122,7 +115,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                 const isSelected = selectedOption === option;
                 const isOptionCorrect = option.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
 
-                let style = 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300 text-slate-800';
+                let style = 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300 text-slate-800 cursor-pointer';
 
                 if (isAnswerChecked) {
                   if (isOptionCorrect) {
@@ -130,7 +123,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   } else if (isSelected && !isCorrect) {
                     style = 'border-rose-500 bg-rose-50 text-rose-900';
                   } else {
-                    style = 'border-slate-200 opacity-40 text-slate-400';
+                    style = 'border-slate-200 opacity-40 text-slate-400 cursor-default';
                   }
                 } else if (isSelected) {
                   style = 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20';
@@ -150,10 +143,14 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   >
                     <span className="text-sm sm:text-base leading-snug">{option}</span>
                     {isAnswerChecked && isOptionCorrect && (
-                      <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                        Correct
+                      </span>
                     )}
                     {isAnswerChecked && isSelected && !isCorrect && (
-                      <X className="w-5 h-5 text-rose-600 shrink-0" />
+                      <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                        Incorrect
+                      </span>
                     )}
                   </button>
                 );
@@ -172,16 +169,15 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider">
-                      {isCorrect ? '✓ Well Done!' : '✕ Explanation'}
+                      {isCorrect ? 'Well Done!' : 'Explanation'}
                     </span>
                     <button
                       type="button"
                       onClick={() => speakWord(currentQuestion.targetWord)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-white/70 hover:bg-white transition-colors"
+                      className="text-xs font-semibold px-2 py-0.5 rounded bg-white/70 hover:bg-white transition-colors cursor-pointer"
                       title="Hear word"
                     >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>{currentQuestion.targetWord}</span>
+                      Listen: {currentQuestion.targetWord}
                     </button>
                   </div>
                   <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-95">
@@ -198,9 +194,9 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   type="button"
                   onClick={handleCheckAnswer}
                   disabled={!selectedOption}
-                  className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm transition-all focus:outline-hidden ${
+                  className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm transition-all focus:outline-hidden cursor-pointer ${
                     selectedOption
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200'
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
@@ -211,10 +207,9 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   type="button"
                   onClick={handleNext}
                   autoFocus
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all active:scale-98"
+                  className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
                 >
-                  <span>{currentIndex + 1 < questions.length ? 'Next Question' : 'View AI Summary'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {currentIndex + 1 < questions.length ? 'Next Question' : 'View AI Summary'}
                 </button>
               )}
             </div>
@@ -222,13 +217,9 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
         ) : (
           /* Completion Summary */
           <div className="mt-8 text-center space-y-6">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-8 h-8 text-indigo-600" />
-            </div>
-
             <div className="space-y-2">
               <h4 className="text-2xl font-black text-slate-900 tracking-tight">
-                AI Practice Complete!
+                AI Practice Complete
               </h4>
               <p className="text-sm text-slate-600 max-w-sm mx-auto">
                 You successfully practiced your mistake words with Gemini AI.
@@ -243,19 +234,17 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
               <button
                 type="button"
                 onClick={handleRestart}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4" />
-                <span>Retake AI Practice</span>
+                Retake AI Practice
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all"
+                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all cursor-pointer"
               >
-                <span>Done</span>
-                <Check className="w-4 h-4" />
+                Done
               </button>
             </div>
           </div>

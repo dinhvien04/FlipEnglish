@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, AlertTriangle } from 'lucide-react';
 
 interface ExamTimerProps {
   endsAt: number; // absolute timestamp in ms
@@ -49,20 +48,15 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({ endsAt, onExpire }) => {
       aria-label={`Time remaining: ${minutes} minutes and ${seconds} seconds`}
       className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-mono font-black text-sm sm:text-base border transition-all ${
         isLowTime
-          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/10'
+          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-2xs'
           : 'bg-slate-800 border-slate-700 text-indigo-300 shadow-2xs'
       }`}
     >
-      {isLowTime ? (
-        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-      ) : (
-        <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
-      )}
       <div className="flex items-baseline gap-1.5">
-        <span className="text-2xs uppercase tracking-wider font-sans font-bold text-slate-400 hidden sm:inline">
-          Time Left:
+        <span className="text-2xs uppercase tracking-wider font-sans font-bold text-slate-400">
+          {isLowTime ? 'Expiring:' : 'Time Left:'}
         </span>
-        <span className="tracking-widest text-white text-base sm:text-lg">{formattedTime}</span>
+        <span className="tracking-widest text-white text-base sm:text-lg font-mono">{formattedTime}</span>
       </div>
     </div>
   );

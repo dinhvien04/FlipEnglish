@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layers, Menu, X, Flag, Send } from 'lucide-react';
 import { ExamResultReport, ExamSession } from '../types/exam';
 import { ExamTimer } from '../components/exam/ExamTimer';
 import { QuestionNavigator } from '../components/exam/QuestionNavigator';
@@ -122,10 +121,9 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
               type="button"
               id="mobile-questions-drawer-btn"
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 cursor-pointer"
+              className="lg:hidden px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 cursor-pointer"
             >
-              <Menu className="w-4 h-4" />
-              <span>Questions</span>
+              Questions
             </button>
           </div>
         </div>
@@ -180,9 +178,9 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
               <button
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                Close
               </button>
             </div>
 

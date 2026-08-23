@@ -1,18 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Trophy,
-  BookOpen,
-  Layers,
-  Award,
-  Sparkles,
-  Camera,
-  ArrowRight,
-  Search,
-  CheckCircle2,
-  Clock,
-  Compass,
-  Flame,
-} from 'lucide-react';
 import { Lesson, AllProgress, CEFRLevel } from '../types';
 import { LESSONS } from '../data/lessons';
 import { getStoredProgress, getOverallStats } from '../utils/storage';
@@ -137,8 +123,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
 
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="max-w-2xl space-y-4 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
               <span>Comprehensive CEFR A1 — C2 Curriculum</span>
             </div>
 
@@ -151,17 +136,14 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
               From beginner essentials to executive precision and native eloquence. Flip through realistic photographic cards, hear native pronunciations, take listening challenges, and learn from mistakes with Gemini AI.
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-300">
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <BookOpen className="w-4 h-4 text-indigo-400" />
+            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-slate-300">
+              <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                 <span>{LESSONS.length} Structured Lessons</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <Layers className="w-4 h-4 text-emerald-400" />
+              <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                 <span>{totalWordsInApp}+ Curated Items</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <Award className="w-4 h-4 text-amber-400" />
+              <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                 <span>Zero Sign-up Required</span>
               </div>
             </div>
@@ -170,16 +152,11 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
           {/* Quick Progress Tracker Box */}
           <div className="w-full lg:w-80 shrink-0 bg-slate-800/90 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-lg space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold">
-                  <Trophy className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Progress</p>
-                  <p className="text-xl font-black text-white">
-                    {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} Lessons</span>
-                  </p>
-                </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Progress</p>
+                <p className="text-xl font-black text-white">
+                  {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} Lessons</span>
+                </p>
               </div>
               <span className="text-sm font-extrabold text-indigo-400">{stats.percentage}%</span>
             </div>
@@ -204,19 +181,18 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
 
       {/* Feature Entry Cards: FlipLens & Exam Center */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: ✨ FlipLens */}
+        {/* Card 1: FlipLens */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 p-6 sm:p-7 text-white border border-indigo-500/30 shadow-lg shadow-indigo-950/20 flex flex-col justify-between space-y-6">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 space-y-2.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>✨ FlipLens</span>
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
+              <span>FlipLens</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Learn English From Your World
+              Learn English from a real-world photo.
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Take or upload a real-world photo. Gemini AI detects objects in the image and generates interactive flashcards and quizzes instantly.
+              Take or upload a photo and turn visible objects into vocabulary you can study.
             </p>
           </div>
 
@@ -224,27 +200,24 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
             type="button"
             id="home-try-fliplens-btn"
             onClick={onOpenFlipLens}
-            className="self-start inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer group"
+            className="self-start px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
           >
-            <Camera className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
-            <span>Try FlipLens</span>
-            <ArrowRight className="w-4 h-4 text-indigo-200 group-hover:translate-x-0.5 transition-transform" />
+            Try FlipLens
           </button>
         </div>
 
-        {/* Card 2: 🎯 Exam Center */}
+        {/* Card 2: Practice Exam Center */}
         <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 space-y-2.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span>🎯 Practice Exam Center</span>
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
+              <span>Practice Exams</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               Timed CEFR Practice Exams
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Test your vocabulary, Use of English, and reading with authentic timers, question navigator, and Gemini diagnostic breakdown.
+              Test your vocabulary, Use of English, reading and listening with timed A1–C2 practice exams.
             </p>
           </div>
 
@@ -253,11 +226,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
               type="button"
               id="home-open-exam-center-btn"
               onClick={onOpenExamCenter}
-              className="self-start inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer group"
+              className="self-start px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer"
             >
-              <Trophy className="w-4 h-4 text-slate-950 group-hover:scale-110 transition-transform" />
-              <span>Go to Exam Center</span>
-              <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-0.5 transition-transform" />
+              Go to Exam Center
             </button>
           )}
         </div>
@@ -279,20 +250,22 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
 
             {/* Global Search Bar */}
             <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <label htmlFor="home-search-input" className="sr-only">
+                Search lessons, words or topics
+              </label>
               <input
-                type="text"
+                type="search"
                 id="home-search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search lessons, words or topics..."
-                className="w-full pl-10 pr-10 py-2.5 bg-white rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
+                className="w-full px-4 py-2.5 bg-white rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
                 >
                   Clear
                 </button>
@@ -380,7 +353,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
                 ))}
               </div>
             ) : (
-              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xs">
+              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
                 <p className="text-base font-bold text-slate-700">No lessons matched "{searchQuery}"</p>
                 <p className="text-xs text-slate-500 mt-1">Try searching for other words like "business", "food", "travel", or "idiom".</p>
                 <button
@@ -412,7 +385,6 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
                 title="Continue Learning"
                 badgeLabel="Recent"
                 badgeStyle="bg-emerald-600 text-white"
-                icon={<Clock className="w-5 h-5 text-emerald-600" />}
                 description="Pick up right where you left off with your recently practiced vocabulary topics."
                 lessons={continueLearningLessons}
                 progress={progress}
@@ -427,7 +399,6 @@ export const Home: React.FC<HomeProps> = ({ onSelectLesson, onOpenFlipLens, onOp
                 title="Start Here — Popular Foundations"
                 badgeLabel="Recommended"
                 badgeStyle="bg-amber-600 text-white"
-                icon={<Flame className="w-5 h-5 text-amber-500" />}
                 description="Essential starter topics covering high-frequency daily conversations, travel, food, and workplace skills."
                 lessons={popularLessons}
                 progress={progress}

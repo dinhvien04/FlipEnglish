@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Brain, HelpCircle } from 'lucide-react';
 import { Lesson, QuizQuestion, VocabWord } from '../types';
 import { generateQuiz } from '../utils/quizGenerator';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
@@ -83,16 +82,14 @@ export const Exercise: React.FC<ExerciseProps> = ({
         <button
           id="exercise-exit-btn"
           onClick={onExitQuiz}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          className="text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Exit Quiz</span>
+          Exit Quiz
         </button>
 
         <div className="text-center">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center justify-center gap-1.5">
-            <Brain className="w-4 h-4 text-indigo-600" />
-            <span>{lesson.title} Practice</span>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">
+            {lesson.title} Practice
           </h2>
         </div>
 

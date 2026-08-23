@@ -1,25 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Sparkles,
-  Camera,
-  Upload,
-  ArrowLeft,
-  Check,
-  RotateCcw,
-  Volume2,
-  AlertCircle,
-  Loader2,
-  Layers,
-  HelpCircle,
-  CheckCircle2,
-  Trophy,
-  ArrowRight,
-  ShieldCheck,
-  Tag,
-  Scan,
-  RefreshCw,
-} from 'lucide-react';
-import {
   DetectedObject,
   Lesson,
   VocabWord,
@@ -326,15 +306,13 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
         <button
           type="button"
           onClick={onBackToHome}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors"
+          className="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Learning Path</span>
+          Back to Learning Path
         </button>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-violet-500/10 border border-indigo-200 text-indigo-700 text-xs font-black tracking-wide uppercase">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-          <span>FlipLens AI Vision</span>
+        <div className="px-3.5 py-1.5 rounded-full bg-slate-900 text-white text-xs font-black tracking-wide uppercase">
+          FlipLens AI Vision
         </div>
       </div>
 
@@ -344,13 +322,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       {step === 'upload' && (
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* Hero Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 border border-indigo-500/20 shadow-xl">
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-6 sm:p-10 border border-slate-800 shadow-xl">
             <div className="relative z-10 max-w-2xl space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Real-World Learning</span>
-              </div>
+              <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
+                Real-World Learning
+              </span>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
                 Learn English <span className="text-indigo-400">From Your World</span>
               </h1>
@@ -406,12 +382,8 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             />
 
             <div className="max-w-md mx-auto space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
-                {isCompressing ? (
-                  <Loader2 className="w-8 h-8 animate-spin" />
-                ) : (
-                  <Camera className="w-8 h-8" />
-                )}
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-700 font-black text-xs uppercase tracking-wider shadow-xs">
+                {isCompressing ? '...' : 'Photo'}
               </div>
 
               <div className="space-y-1.5">
@@ -430,10 +402,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   id="fliplens-upload-file-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <Upload className="w-4 h-4" />
-                  <span>Choose Image File</span>
+                  Choose Image File
                 </button>
 
                 <button
@@ -441,10 +412,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   id="fliplens-camera-btn"
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <Camera className="w-4 h-4" />
-                  <span>Take Photo (Camera)</span>
+                  Take Photo (Camera)
                 </button>
               </div>
 
@@ -452,11 +422,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-2">
                 <p className="font-semibold text-slate-700">Recommended scenes to photograph:</p>
                 <div className="flex flex-wrap items-center justify-center gap-2 text-2xs font-semibold">
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">💻 Study Desk</span>
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">🍳 Kitchen Table</span>
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">🛋️ Living Room</span>
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">🍜 Food & Drinks</span>
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">🏫 Classroom</span>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">Study Desk</span>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">Kitchen Table</span>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">Living Room</span>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">Food & Drinks</span>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700">Classroom</span>
                 </div>
               </div>
             </div>
@@ -504,14 +474,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
           {/* Error Banner */}
           {errorMessage && (
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
-                <div>
-                  <p className="font-semibold">{errorMessage}</p>
-                  <p className="text-rose-700/80 text-xs mt-0.5">
-                    High demand spikes are usually brief. You can retry or choose another photo.
-                  </p>
-                </div>
+              <div>
+                <p className="font-semibold">{errorMessage}</p>
+                <p className="text-rose-700/80 text-xs mt-0.5">
+                  High demand spikes are usually brief. You can retry or choose another photo.
+                </p>
               </div>
             </div>
           )}
@@ -541,8 +508,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             </div>
 
             {/* Privacy Note */}
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-900">
-              <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
+            <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-900">
               <p className="leading-relaxed">
                 <strong>Privacy Assurance:</strong> Your photo is analyzed securely only to create this lesson and is <strong>not saved</strong> by FlipEnglish.
               </p>
@@ -553,7 +519,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
               >
                 Choose Another Photo
               </button>
@@ -562,24 +528,20 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 type="button"
                 id="fliplens-analyze-btn"
                 onClick={handleAnalyzePhoto}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Analyze Photo with Gemini</span>
+                Analyze Photo with Gemini
               </button>
             </div>
           </div>
 
           {errorMessage && (
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
-                <div>
-                  <p className="font-semibold">{errorMessage}</p>
-                  <p className="text-rose-700/80 text-xs mt-0.5">
-                    Temporary high demand spikes usually resolve quickly. Click below to retry.
-                  </p>
-                </div>
+              <div>
+                <p className="font-semibold">{errorMessage}</p>
+                <p className="text-rose-700/80 text-xs mt-0.5">
+                  Temporary high demand spikes usually resolve quickly. Click below to retry.
+                </p>
               </div>
               <button
                 type="button"
@@ -613,11 +575,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_#818cf8] animate-bounce" />
 
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-indigo-400/40">
-                  <Scan className="w-7 h-7 animate-pulse text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-indigo-400/40 text-xs font-black tracking-wider uppercase">
+                  Scan
                 </div>
                 <div className="space-y-1">
-                  <p className="text-lg font-black tracking-tight">✨ Looking around...</p>
+                  <p className="text-lg font-black tracking-tight">Looking around...</p>
                   <p className="text-xs text-indigo-200">
                     Gemini is finding English words in your photo
                   </p>
@@ -626,7 +588,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             </div>
 
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
               <span>Detecting concrete vocabulary, IPA notation, and Vietnamese meanings...</span>
             </div>
           </div>
@@ -653,14 +615,14 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Select All
               </button>
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Clear
               </button>
@@ -739,10 +701,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="text-slate-500 hover:text-slate-900 font-semibold text-xs transition-colors flex items-center gap-1"
+                  className="text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors cursor-pointer"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Use different photo</span>
+                  Use different photo
                 </button>
                 <span className="text-2xs text-slate-400">
                   {detectedObjects.filter((o) => o.box_2d).length} mapped regions
@@ -769,15 +730,15 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                         : 'border-slate-200 hover:border-slate-300 opacity-80'
                     } ${isHovered ? 'border-amber-400 ring-2 ring-amber-200' : ''}`}
                   >
-                    {/* Checkbox */}
+                    {/* Checkbox text badge */}
                     <div
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-2xs font-extrabold transition-all ${
                         isSelected
                           ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'border-2 border-slate-300 bg-white'
+                          : 'border-2 border-slate-300 bg-white text-transparent'
                       }`}
                     >
-                      {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                      {isSelected ? '✓' : ''}
                     </div>
 
                     {/* Word Details */}
@@ -798,10 +759,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                               e.stopPropagation();
                               speakWord(obj.word);
                             }}
-                            className="p-1 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            className="px-2 py-0.5 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
                             title="Hear pronunciation"
                           >
-                            <Volume2 className="w-4 h-4" />
+                            Listen
                           </button>
                         </div>
 
@@ -849,14 +810,13 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     id="fliplens-create-lesson-btn"
                     onClick={handleCreateLesson}
                     disabled={selectedWordIds.size === 0}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                    className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm transition-all ${
                       selectedWordIds.size > 0
                         ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/30 cursor-pointer active:scale-98'
                         : 'bg-slate-700 text-slate-400 cursor-not-allowed'
                     }`}
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Create My Lesson · {selectedWordIds.size} Words</span>
+                    Create My Lesson · {selectedWordIds.size} Words
                   </button>
                 </div>
               </div>
@@ -871,10 +831,6 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       {step === 'empty-result' && (
         <div className="max-w-md mx-auto py-8 text-center space-y-6 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-md space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 border-2 border-amber-100 flex items-center justify-center text-amber-600">
-              <HelpCircle className="w-8 h-8" />
-            </div>
-
             <div className="space-y-2">
               <h3 className="text-xl font-black text-slate-900">
                 We couldn't find enough clear vocabulary in this photo
@@ -902,7 +858,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="w-full py-2.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors"
+                className="w-full py-2.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors cursor-pointer"
               >
                 Back to Learning Path
               </button>
@@ -920,10 +876,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             <button
               type="button"
               onClick={() => setStep('detected')}
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+              className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Word List</span>
+              Back to Word List
             </button>
 
             <div className="text-center">
@@ -964,10 +919,6 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             </div>
           ) : (
             <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-md text-center max-w-lg mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-300">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs">
-                <CheckCircle2 className="w-9 h-9" />
-              </div>
-
               <div className="space-y-2">
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
                   {isReviewingMistakes ? 'Mistakes Reviewed!' : 'All Cards Completed!'}
@@ -984,20 +935,18 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     setCurrentCardIndex(0);
                     setHasCompletedCards(false);
                   }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Review Cards Again</span>
+                  Review Cards Again
                 </button>
 
                 <button
                   type="button"
                   id="fliplens-start-quiz-btn"
                   onClick={handleStartPhotoQuiz}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer"
                 >
-                  <span>Start Photo Quiz</span>
-                  <ArrowRight className="w-4 h-4" />
+                  Start Photo Quiz
                 </button>
               </div>
             </div>
@@ -1014,10 +963,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             <button
               type="button"
               onClick={() => setStep('learn')}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Cards</span>
+              Back to Cards
             </button>
 
             <div className="text-center">
@@ -1055,15 +1003,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       {step === 'result' && (
         <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-md text-center space-y-6">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 shadow-md">
-              <Trophy className="w-10 h-10 text-amber-500" />
-            </div>
-
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Photo Lesson Complete</span>
-              </div>
+              <span className="inline-block px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+                Photo Lesson Complete
+              </span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                 {quizScore} / {quizQuestions.length}
               </h2>
@@ -1093,10 +1036,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     <button
                       type="button"
                       onClick={() => speakWord(word.word)}
-                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50"
+                      className="px-2 py-0.5 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
                       title="Hear audio"
                     >
-                      <Volume2 className="w-4 h-4" />
+                      Listen
                     </button>
                   </div>
                 ))}
@@ -1109,7 +1052,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 <button
                   type="button"
                   onClick={handleStartReviewMistakes}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all active:scale-98"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all active:scale-98 cursor-pointer"
                 >
                   Review {quizMistakes.length} Mistakes
                 </button>
@@ -1118,7 +1061,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer"
               >
                 Try Another Photo
               </button>
@@ -1126,7 +1069,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
               >
                 Back to Learning Path
               </button>

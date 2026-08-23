@@ -1,19 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Trophy,
-  Zap,
-  Target,
-  Award,
-  Clock,
-  ArrowRight,
-  TrendingUp,
-  History,
-  Sparkles,
-  Layers,
-  ChevronRight,
-  CheckCircle2,
-  BookOpen,
-} from 'lucide-react';
 import { CEFRLevel } from '../types';
 import { ExamMode, ExamResultReport } from '../types/exam';
 import { EXAM_DISCLAIMER, LEVEL_EXAM_CONFIGS } from '../data/exams/config';
@@ -62,8 +47,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.25),rgba(255,255,255,0))]" />
 
         <div className="relative z-10 space-y-4 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+          <div className="inline-flex items-center px-3.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
             <span>FlipEnglish Assessment & Practice Center</span>
           </div>
 
@@ -75,13 +59,11 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
             Challenge yourself with timed, exam-style practice from A1 to C2. Experience authentic question formats, discover your strengths and weaknesses, and receive targeted study recommendations.
           </p>
 
-          <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-300">
+            <span className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
               Realistic Timed Countdown
             </span>
-            <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
               Detailed Skill Breakdown & Gemini Analysis
             </span>
           </div>
@@ -99,16 +81,14 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Mode 1: Quick Test */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-6 group">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-6 group">
             <div className="space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
-                <Zap className="w-6 h-6 fill-amber-500 text-amber-500" />
+              <div className="inline-block px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold uppercase tracking-wider">
+                Fast Paced
               </div>
 
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-black text-slate-900">⚡ Quick Test</h3>
-                </div>
+                <h3 className="text-xl font-black text-slate-900">Quick Test</h3>
                 <p className="text-xs font-bold text-amber-600 mt-0.5">15 Questions • 10 Minutes</p>
               </div>
 
@@ -126,10 +106,9 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-quick-test-btn"
               onClick={() => setSelectedModalMode('quick')}
-              className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-sm transition-all cursor-pointer active:scale-98"
+              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
             >
-              <span>Start Quick Test</span>
-              <ArrowRight className="w-4 h-4" />
+              Start Quick Test
             </button>
           </div>
 
@@ -139,16 +118,13 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
 
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/60 border border-indigo-400/40 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                  <Target className="w-6 h-6 text-indigo-300" />
-                </div>
-                <span className="text-2xs font-extrabold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2.5 py-1 rounded-full">
+                <div className="inline-block px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-2xs font-extrabold uppercase tracking-wider">
                   Primary Experience
-                </span>
+                </div>
               </div>
 
               <div>
-                <h3 className="text-xl sm:text-2xl font-black text-white">🎯 Level Exam</h3>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Level Exam</h3>
                 <p className="text-xs font-bold text-indigo-300 mt-0.5">20–40 Questions • 15–40 Minutes</p>
               </div>
 
@@ -166,22 +142,21 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-level-exam-btn"
               onClick={() => setSelectedModalMode('level')}
-              className="relative z-10 w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-98"
+              className="relative z-10 w-full py-3.5 px-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-98"
             >
-              <span>Choose Level & Start</span>
-              <ArrowRight className="w-4 h-4" />
+              Choose Level & Start
             </button>
           </div>
 
           {/* Mode 3: Full Mock Exam */}
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-6 group">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-6 group">
             <div className="space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
-                <Award className="w-6 h-6 text-purple-600" />
+              <div className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold uppercase tracking-wider">
+                Full Simulation
               </div>
 
               <div>
-                <h3 className="text-xl font-black text-slate-900">🏆 Full Mock Exam</h3>
+                <h3 className="text-xl font-black text-slate-900">Full Mock Exam</h3>
                 <p className="text-xs font-bold text-purple-600 mt-0.5">50 Questions • 45 Minutes</p>
               </div>
 
@@ -199,10 +174,9 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-full-mock-btn"
               onClick={() => setSelectedModalMode('mock')}
-              className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-sm transition-all cursor-pointer active:scale-98"
+              className="w-full py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
             >
-              <span>Start Mock Exam</span>
-              <ArrowRight className="w-4 h-4 text-indigo-400" />
+              Start Mock Exam
             </button>
           </div>
         </div>
@@ -212,14 +186,9 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
       {levelTrend && (
         <section className="bg-slate-50 rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900">Level Progress Trend</h3>
-                <p className="text-xs text-slate-500">Track score improvement over successive attempts.</p>
-              </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Level Progress Trend</h3>
+              <p className="text-xs text-slate-500">Track score improvement over successive attempts.</p>
             </div>
 
             {/* Level Selector Pills */}
@@ -257,7 +226,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               ))}
             </div>
 
-            <div className="bg-indigo-600 text-white rounded-2xl p-5 shadow-sm space-y-1">
+            <div className="bg-indigo-600 text-white rounded-2xl p-5 shadow-2xs space-y-1">
               <p className="text-2xs font-extrabold uppercase tracking-wider text-indigo-200">
                 {trendLevel} Score Delta
               </p>
@@ -285,10 +254,9 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="view-all-exam-history-btn"
               onClick={onViewAllHistory}
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
             >
-              <span>View All History ({examHistory.length})</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              View All History ({examHistory.length})
             </button>
           </div>
 
@@ -327,10 +295,9 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                 <button
                   type="button"
                   onClick={() => onViewResultReport(report)}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer text-center"
                 >
-                  <span>View Report</span>
-                  <ChevronRight className="w-3 h-3 text-slate-500" />
+                  View Report
                 </button>
               </div>
             ))}
@@ -353,10 +320,10 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               <div>
                 <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-600">
                   {selectedModalMode === 'quick'
-                    ? '⚡ Quick Test'
+                    ? 'Quick Test'
                     : selectedModalMode === 'mock'
-                    ? '🏆 Full Mock Exam'
-                    : '🎯 Level Exam'}
+                    ? 'Full Mock Exam'
+                    : 'Level Exam'}
                 </span>
                 <h3 className="text-xl font-black text-slate-900">Select Target CEFR Level</h3>
               </div>
@@ -385,7 +352,6 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                       <span className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {lvl}
                       </span>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
                     </div>
                     <p className="text-xs font-bold text-slate-700">{config.title.split('—')[1] || lvl}</p>
                     <p className="text-2xs text-slate-400">

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, CheckCircle, XCircle, RotateCcw, ArrowRight, Volume2, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Lesson, VocabWord, AIPracticeQuestion } from '../types';
 import { saveLessonProgress } from '../utils/storage';
 import { speakWord } from '../utils/speech';
@@ -107,18 +106,14 @@ export const Result: React.FC<ResultProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 animate-in fade-in zoom-in-98 duration-300">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
       {/* Top Results Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-md text-center space-y-6">
-        {/* Trophy / Badge */}
-        <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center text-3xl shadow-md shadow-indigo-200">
-          <Trophy className="w-10 h-10 text-amber-300" />
+      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-2xs text-center space-y-6">
+        <div className="inline-block px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold uppercase tracking-wider">
+          {lesson.level} • {lesson.title}
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-black uppercase tracking-wider text-indigo-600">
-            {lesson.level} • {lesson.title}
-          </p>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Lesson Completed
           </h1>
@@ -139,13 +134,11 @@ export const Result: React.FC<ResultProps> = ({
 
         {/* Breakdown Stats */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-sm">
-          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-center gap-2 text-emerald-800 font-bold">
-            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Correct: {correctCount}</span>
+          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100 text-center text-emerald-800 font-bold">
+            Correct: {correctCount}
           </div>
-          <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 flex items-center justify-center gap-2 text-rose-800 font-bold">
-            <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>Incorrect: {incorrectCount}</span>
+          <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 text-center text-rose-800 font-bold">
+            Incorrect: {incorrectCount}
           </div>
         </div>
 
@@ -153,9 +146,8 @@ export const Result: React.FC<ResultProps> = ({
         {mistakeWords.length > 0 && (
           <div className="mt-8 pt-6 border-t border-slate-100 text-left space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-wider text-rose-600 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                <span>Words to review ({mistakeWords.length})</span>
+              <h3 className="text-sm font-black uppercase tracking-wider text-rose-600">
+                Words to review ({mistakeWords.length})
               </h3>
               <span className="text-xs font-medium text-slate-500">Reinforce your memory</span>
             </div>
@@ -185,10 +177,10 @@ export const Result: React.FC<ResultProps> = ({
 
                   <button
                     onClick={() => speakWord(word.word)}
-                    title="Hear pronunciation"
-                    className="w-8 h-8 rounded-lg bg-white hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors shrink-0 shadow-2xs border border-rose-200/60"
+                    title={`Play pronunciation for ${word.word}`}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-rose-200/60 cursor-pointer"
                   >
-                    <Volume2 className="w-4 h-4" />
+                    Play
                   </button>
                 </div>
               ))}
@@ -198,12 +190,9 @@ export const Result: React.FC<ResultProps> = ({
 
         {/* AI Error Alert if occurred */}
         {aiError && (
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-bold">AI Practice Note</p>
-              <p>{aiError}</p>
-            </div>
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left">
+            <p className="font-bold">AI Practice Note</p>
+            <p className="mt-1">{aiError}</p>
           </div>
         )}
 
@@ -215,19 +204,9 @@ export const Result: React.FC<ResultProps> = ({
               id="result-ai-practice-btn"
               onClick={handleGenerateAiPractice}
               disabled={isGeneratingAi}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 hover:opacity-95 shadow-md shadow-indigo-200 transition-all active:scale-98 disabled:opacity-60"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
             >
-              {isGeneratingAi ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Gemini is generating practice...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>Generate AI Practice</span>
-                </>
-              )}
+              {isGeneratingAi ? 'Generating Practice...' : 'Generate AI Practice'}
             </button>
           )}
 
@@ -235,32 +214,30 @@ export const Result: React.FC<ResultProps> = ({
             <button
               id="result-review-mistakes-btn"
               onClick={onReviewMistakes}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer"
             >
-              <span>Flashcard Review</span>
+              Flashcard Review
             </button>
           )}
 
           <button
             id="result-try-again-btn"
             onClick={onTryAgain}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98"
+            className="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>Retake Quiz</span>
+            Retake Quiz
           </button>
 
           <button
             id="result-back-home-btn"
             onClick={onBackToHome}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-98 ${
+            className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-98 cursor-pointer ${
               mistakeWords.length === 0
-                ? 'text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200'
+                ? 'text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <span>Back to Path</span>
-            <ArrowRight className="w-4 h-4" />
+            Back to Path
           </button>
         </div>
       </div>

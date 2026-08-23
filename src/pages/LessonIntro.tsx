@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowLeft, Play, BookOpen, CheckCircle2, Volume2, Sparkles } from 'lucide-react';
 import { Lesson, LessonProgress } from '../types';
 import { speakWord } from '../utils/speech';
 import { SafeImage } from '../components/SafeImage';
@@ -26,14 +25,13 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
       <button
         id="intro-back-btn"
         onClick={onBackToHome}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden"
+        className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden cursor-pointer"
       >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Learning Path</span>
+        Back to Learning Path
       </button>
 
       {/* Main Introduction Card with photographic cover banner */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
         {/* Photographic Hero Banner */}
         <div className="relative w-full h-48 sm:h-64 bg-slate-900 overflow-hidden">
           <SafeImage
@@ -50,8 +48,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
                 {lesson.level} Level
               </span>
               {isCompleted && (
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-600 text-white flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-600 text-white">
                   Best Score: {bestScore}%
                 </span>
               )}
@@ -69,34 +66,19 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
         <div className="p-6 sm:p-8 space-y-8">
           {/* Feature summary points */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Vocabulary Cards</p>
-                <p className="text-sm font-bold text-slate-800">{lesson.words.length} Photo Flashcards</p>
-              </div>
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <p className="text-xs text-slate-500 font-medium">Vocabulary Cards</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">{lesson.words.length} Photo Flashcards</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Interactive Exercises</p>
-                <p className="text-sm font-bold text-slate-800">Quiz & Fill-in-the-blank</p>
-              </div>
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <p className="text-xs text-slate-500 font-medium">Interactive Exercises</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">Quiz & Fill-in-the-blank</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Spaced Recall</p>
-                <p className="text-sm font-bold text-slate-800">Mistake-Targeted Review</p>
-              </div>
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <p className="text-xs text-slate-500 font-medium">Spaced Recall</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">Mistake-Targeted Review</p>
             </div>
           </div>
 
@@ -106,7 +88,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Words in this lesson ({lesson.words.length})
               </h3>
-              <span className="text-xs text-slate-400 font-medium">Click audio to preview pronunciation</span>
+              <span className="text-xs text-slate-400 font-medium">Click Play to preview pronunciation</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -134,10 +116,10 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
 
                   <button
                     onClick={() => speakWord(word.word)}
-                    title="Listen to word"
-                    className="w-8 h-8 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors shrink-0 shadow-2xs border border-slate-200/60"
+                    title={`Play pronunciation for ${word.word}`}
+                    className="px-3 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer"
                   >
-                    <Volume2 className="w-4 h-4" />
+                    Play
                   </button>
                 </div>
               ))}
@@ -149,7 +131,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
             <button
               id="intro-back-secondary-btn"
               onClick={onBackToHome}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Back to Learning Path
             </button>
@@ -157,10 +139,9 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
             <button
               id="intro-start-learning-btn"
               onClick={onStartLearning}
-              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-98"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
             >
-              <Play className="w-4 h-4 fill-white" />
-              <span>Start Flashcards</span>
+              Start Flashcards
             </button>
           </div>
         </div>

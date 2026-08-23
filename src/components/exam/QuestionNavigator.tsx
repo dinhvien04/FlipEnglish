@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle2, Flag, Circle, Send } from 'lucide-react';
 import { ExamQuestion } from '../../types/exam';
 
 interface QuestionNavigatorProps {
@@ -49,7 +48,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
             btnClass = 'bg-indigo-50 text-indigo-700 border-indigo-300 font-bold';
           }
           if (isCurrent) {
-            btnClass = 'bg-indigo-600 text-white border-indigo-700 font-black shadow-sm ring-2 ring-indigo-300';
+            btnClass = 'bg-indigo-600 text-white border-indigo-700 font-black shadow-xs ring-2 ring-indigo-300';
           }
 
           return (
@@ -63,14 +62,12 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
             >
               <span>{String(idx + 1).padStart(2, '0')}</span>
 
-              {/* Status Indicator Icon */}
+              {/* Status Indicator Tag */}
               {isFlagged && (
                 <span
                   title="Flagged for review"
-                  className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-2xs"
-                >
-                  <Flag className="w-2 h-2 fill-white" />
-                </span>
+                  className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border border-white"
+                />
               )}
 
               {isAnswered && !isCurrent && (
@@ -113,10 +110,9 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
         type="button"
         id="exam-review-submit-btn"
         onClick={onRequestReview}
-        className="w-full mt-auto inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer active:scale-98"
+        className="w-full mt-auto py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider shadow-2xs transition-all cursor-pointer active:scale-98"
       >
-        <Send className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Review & Submit</span>
+        Review & Submit
       </button>
     </div>
   );
