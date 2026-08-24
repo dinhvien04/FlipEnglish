@@ -1,131 +1,148 @@
-# FlipEnglish 🎓✨
+# FlipEnglish
 
-**FlipEnglish** là nền tảng học từ vựng và luyện tập tiếng Anh tương tác cao cấp theo chuẩn khung tham chiếu Châu Âu (**CEFR A1 — C2**), tích hợp công nghệ trí tuệ nhân tạo **Google Gemini AI**, phương pháp lặp lại ngắt quãng (**Spaced Repetition System - SRS**), cùng hệ thống hình ảnh thực tế và phòng thi mô phỏng toàn diện.
+FlipEnglish is a web application for English vocabulary learning, interactive practice, and assessment aligned with the Common European Framework of Reference for Languages (CEFR A1–C2). It incorporates spaced repetition study, reading comprehension, context-driven vocabulary exercises, speech playback, and an adaptive placement check.
 
----
-
-## 🌟 Tính Năng Nổi Bật (Key Features)
-
-### 1. 📚 Giáo Trình CEFR Toàn Diện (A1 — C2 Curriculum)
-- **72 bài học** được cấu trúc bài bản với **720+ từ vựng & cụm từ** cốt lõi từ cơ bản đến nâng cao.
-- **A1 — A2**: 100% hình ảnh minh họa chân thực, trực quan.
-- **B1 — C2**: Tập trung ngữ cảnh chuyên sâu, từ vựng học thuật, thành ngữ, collocations, nuances và từ đồng nghĩa.
-- Phát âm chuẩn bản xứ với hỗ trợ điều chỉnh tốc độ nghe (Normal 0.9x / Slow 0.65x).
-
-### 2. 📇 Flashcard 3D & Quiz Đa Dạng
-- Thẻ học từ vựng hiệu ứng lật 3D mượt mà, hỗ trợ thao tác chạm và phím tắt (Spacebar, Phím mũi tên).
-- Hệ thống bài tập kiểm tra phong phú:
-  - Trắc nghiệm Anh → Việt & Việt → Anh
-  - Điền từ vào chỗ trống (Fill in the Blank)
-  - Thử thách nghe phát âm (Listening Challenge)
-  - Nhận diện qua ảnh thực tế (Picture Quiz)
-
-### 3. 🤖 Gemini AI Trợ Giảng Thông Minh (AI Powered)
-- **Explain My Mistake**: Phân tích lỗi sai ngữ cảnh tức thì, giải thích lý do đáp án chưa chính xác và gợi ý ví dụ đúng.
-- **AI Targeted Practice**: Tự động sinh bộ câu hỏi luyện tập bổ trợ tức thời dựa trên các từ vựng người học làm sai.
-- **AI Conversation Lab**: Luyện hội thoại ngữ cảnh thực tế (Du lịch, Phỏng vấn, Đàm phán, Học tập) với khả năng chấm điểm, sửa lỗi phát âm và ngữ pháp theo thời gian thực.
-- **FlipLens (AI Vision)**: Chụp hoặc tải ảnh thực tế để Gemini AI phát hiện đồ vật xung quanh và chuyển đổi thành bài học từ vựng tức thì.
-
-### 4. 🧠 Ôn Tập Thông Minh SRS (Spaced Repetition System)
-- Thuật toán lặp lại ngắt quãng khoa học với 4 mức đánh giá: `Again` (10 phút), `Hard` (1 ngày), `Good` (3 ngày), `Easy` (7 ngày).
-- Tự động ưu tiên từ vựng đến hạn ôn tập và từ vựng hay làm sai trong các bài kiểm tra.
-- Lưu trữ tiến độ học tập an toàn, độc lập ngay trên trình duyệt (Local Persistence).
-
-### 5. 🎯 Trung Tâm Thi & Đánh Giá (Practice Exam Center)
-- Đa dạng chế độ thi: **Quick Test** (10 câu), **Level Exam** (25 câu), **Mock Exam** (50 câu).
-- Đồng hồ bấm giờ thực tế, bảng điều hướng câu hỏi (Question Navigator), gắn cờ câu hỏi (Flag for Review).
-- Báo cáo kết quả phân tích chi tiết kỹ năng, tự động chuyển từ vựng làm sai vào hàng đợi Smart Review.
-
-### 6. 📱 Tối Ưu Responsive & Trải Nghiệm Cảm Ứng (Touch & Mobile First)
-- Thiết kế thích ứng mượt mà trên **Điện thoại**, **iPad / Máy tính bảng**, và **Máy tính để bàn**.
-- Tuân thủ tiêu chuẩn tiếp cận **WCAG 2.2**: Touch target $\ge 44\text{px} - 48\text{px}$, loại bỏ độ trễ chạm 300ms với `touch-action: manipulation`.
-- Hỗ trợ đầy đủ vùng an toàn thiết bị (`safe-area-inset`) và chiều cao động (`100dvh`).
+FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It is not an official CEFR certification provider.
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+## Core Features
 
-- **Frontend**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS v4](https://tailwindcss.com/)
-- **Build Tool**: [Vite 6](https://vite.dev/), [esbuild](https://esbuild.github.io/)
-- **Backend / API**: [Express](https://expressjs.com/), [Node.js](https://nodejs.org/), [Helmet](https://helmetjs.github.io/), [Express Rate Limit](https://github.com/express-rate-limit/express-rate-limit)
-- **AI Integration**: [@google/genai](https://www.npmjs.com/package/@google/genai) (Google Gemini Interactions & Multimodal Vision API)
-- **Schema Validation**: [Zod](https://zod.dev/)
+### Curriculum (A1–C2)
+- 72 structured lessons containing 720 core vocabulary and phrase items.
+- **A1–A2**: Visual-first learning with contextual imagery and everyday vocabulary.
+- **B1–C2**: Academic, professional, collocation, phrasal verb, nuance, and idiom focus.
+- English pronunciation playback using the browser Web Speech API, including Normal (0.9x) and Slow (0.65x) playback speeds.
+
+### Learning & Quiz
+- Flashcard study interface with flip interactions and keyboard shortcuts (Spacebar to flip, Arrow keys to navigate).
+- Diverse exercise modalities:
+  - English to Vietnamese and Vietnamese to English multiple choice
+  - Fill in the blank (sentence context)
+  - Listening challenge (speech playback to meaning)
+  - Picture quiz (image-to-word matching for A1–A2 items)
+
+### Adaptive English Placement Check (A1–C2)
+- Multistage adaptive assessment to estimate an appropriate starting CEFR level (A1 to C2) inside FlipEnglish.
+- 4 stages of 6 questions each (maximum 24 questions total), starting at B1.
+- Evaluates four skill areas: Vocabulary, Use of English, Reading, and Listening.
+- 100% deterministic client-side execution with zero external AI latency or API costs.
+- Generates qualitative evidence assessments (Strong evidence, Moderate evidence, Tentative estimate), Can-Do descriptors, and targeted lesson recommendations.
+- Missed canonical vocabulary can be exported directly into the Smart Review queue.
+- *Disclaimer: This short placement check recommends a starting level inside FlipEnglish. It is not an official CEFR certification.*
+
+### Smart Review (Spaced Repetition System)
+- Interval-based recall scheduling with four self-assessment ratings: `Again` (10 minutes), `Hard` (1 day), `Good` (3 days), `Easy` (7 days).
+- Prioritizes due items and automatically schedules mistakes recorded during quiz exercises, exams, and the placement check.
+- Safe client-side storage persistence in the browser.
+
+### Exam Center
+- Three dedicated practice modes:
+  - **Quick Test**: 15 questions across mixed topics
+  - **Level Exam**: Tailored question counts by CEFR level (A1: 20, A2: 25, B1: 30, B2: 35, C1: 40, C2: 40)
+  - **Full Mock Exam**: 50 questions with timer, question flag, and review navigator
+- Comprehensive post-exam diagnostics and direct mistake export to Smart Review.
+
+### AI Features (Optional Google Gemini Integration)
+- **Explain My Mistake**: Contextual grammatical and lexical explanations for incorrect quiz answers.
+- **AI Targeted Practice**: Dynamically generated reinforcement exercises focusing on weak vocabulary.
+- **AI Conversation Lab**: Text-first contextual conversation scenarios (Travel, Work, Study, Everyday, Advanced) offering feedback on grammar, vocabulary precision, natural expression, and communication goals.
+- **FlipLens (Vision)**: Object recognition from uploaded images to generate personalized vocabulary study items.
+
+### Mobile & Accessibility
+- Responsive layout optimized for smartphones, tablets, and desktop displays.
+- Designed with accessibility-conscious touch targets (~44–48px minimum touch targets), keyboard navigation, focus states, and responsive layouts.
+- Styled with Tailwind CSS and CSS safe-area viewport insets.
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Chạy Dự Án (Getting Started)
+## Tech Stack
 
-### 1. Yêu cầu môi trường
-- **Node.js**: Phiên bản 20.x hoặc 24.x
-- **npm**: Phiên bản 10.x trở lên
+- **Frontend**: React 19, TypeScript, Tailwind CSS v4
+- **Build Tool**: Vite 6, esbuild
+- **Backend / API**: Express, Node.js, Helmet, Express Rate Limit
+- **AI Integration**: @google/genai (Google Gemini Interactions & Multimodal Vision API)
+- **Schema Validation**: Zod
 
-### 2. Cài đặt dependencies
+---
+
+## Getting Started
+
+### 1. Prerequisites
+- **Node.js**: 24.x
+- **npm**: 10.x or higher
+
+### 2. Install Dependencies
 ```bash
 git clone https://github.com/dinhvien04/FlipEnglish.git
 cd FlipEnglish
 npm install
 ```
 
-### 3. Cấu hình biến môi trường
-Tạo file `.env` tại thư mục gốc của dự án:
+### 3. Environment Configuration
+Create a `.env` file in the project root:
 ```env
 PORT=5173
 GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
+*(Note: Core features, including Curriculum, Flashcards, Exams, Smart Review, and the Placement Check, operate entirely without a Gemini API key).*
 
-### 4. Chạy môi trường phát triển (Development)
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
-Truy cập ứng dụng tại: **`http://localhost:5173`**
+Open your browser at: `http://localhost:5173`
 
-### 5. Build và chạy Production
+### 5. Production Build
 ```bash
-# Build dự án (Vite client + Express server)
+# Build Vite client and Express server bundle
 npm run build
 
-# Khởi chạy server production
+# Start production server
 npm run start
 ```
 
 ---
 
-## 🧪 Kiểm Thử & Xác Thực (Validation & Tests)
+## Validation & Testing
 
-Dự án bao gồm bộ kiểm thử chất lượng và toàn vẹn dữ liệu:
+The project includes an automated suite of integrity, curriculum, exam, placement, and security tests:
 
 ```bash
-# Kiểm tra TypeScript type checking
+# TypeScript type checking
 npm run lint
 
-# Xác thực tính toàn vẹn 72 bài học & 720 từ vựng CEFR
+# Validate 24-question adaptive Placement Check engine, question pool, and routing
+npm run validate:placement
+
+# Validate 72 lessons and 720 curriculum items
 npm run validate:curriculum
 
-# Kiểm thử bộ sinh đề thi và cấu hình phòng thi
+# Validate practice exam generation quotas and question pools
 npm run validate:exams
 
-# Kiểm thử thuật toán lặp lại ngắt quãng Smart Review (SRS)
+# Validate Spaced Repetition System (SRS) intervals and storage invariants
 npm run validate:review
 
-# Xác thực schema và kịch bản hội thoại AI Conversation Lab
+# Validate AI Conversation Lab scenarios and Zod schemas
 npm run validate:conversation
 
-# Kiểm thử bảo mật (Security Smoke Tests & Audit)
+# Run dependency audit and security smoke tests
 npm run security:audit
 npm run test:security
 ```
 
 ---
 
-## 🔒 Bảo Mật (Security Hardening)
+## Security & Architecture
 
-- **Content Security Policy (CSP)** & HTTP Security Headers thông qua `Helmet`.
-- **Chống tấn công Brute-force & DoS**: Tích hợp `express-rate-limit` với giới hạn riêng biệt cho từng endpoint AI.
-- **Xác thực dữ liệu nghiêm ngặt**: Xác thực toàn bộ payload đầu vào bằng Zod schema `.strict()`, từ chối các trường lạ và kiểm tra magic bytes của ảnh tải lên.
-- **Bảo vệ quyền riêng tư**: Toàn bộ dữ liệu hội thoại và ảnh tải lên được xử lý bảo mật trực tiếp theo phiên, không lưu trữ ảnh nhạy cảm lên máy chủ.
+- **Security Headers**: HTTP headers and strict Content Security Policy managed via `Helmet`.
+- **Rate Limiting**: Tiered IP-based rate limiting on all API routes with `express-rate-limit`.
+- **Strict Input Validation**: Zod `.strict()` schema enforcement rejecting unexpected properties and validating image magic bytes.
+- **Client-Side Persistence**: Placement, Exam history, and Smart Review records are maintained locally with schema validation and corruption protection.
 
 ---
 
-## 📄 Bản Quyền (License)
+## License
 
-Dự án được xây dựng phục vụ mục đích giáo dục và nghiên cứu. Mọi quyền được bảo lưu bởi FlipEnglish.
+Educational and research project. All rights reserved.

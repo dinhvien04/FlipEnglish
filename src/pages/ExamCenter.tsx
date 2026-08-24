@@ -8,6 +8,7 @@ interface ExamCenterProps {
   onStartExamFlow: (mode: ExamMode, level: CEFRLevel) => void;
   onViewResultReport: (report: ExamResultReport) => void;
   onViewAllHistory: () => void;
+  onStartPlacement?: () => void;
 }
 
 const ALL_LEVELS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -16,6 +17,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
   onStartExamFlow,
   onViewResultReport,
   onViewAllHistory,
+  onStartPlacement,
 }) => {
   const [examHistory, setExamHistory] = useState<ExamResultReport[]>(() => getExamHistory());
   const [selectedModalMode, setSelectedModalMode] = useState<ExamMode | null>(null);
@@ -72,11 +74,35 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
 
       {/* 3 Main Exam Modes */}
       <section className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Choose Your Exam Mode</h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Select a mode below to begin your self-assessment.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Choose Your Exam Mode</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Select a mode below to begin your self-assessment.
+            </p>
+          </div>
+
+          {/* Secondary Placement Entry Point */}
+          {onStartPlacement && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 max-w-md">
+              <div className="space-y-0.5">
+                <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-700">
+                  Placement Check
+                </span>
+                <p className="text-xs font-semibold text-slate-700">
+                  Not sure which CEFR level fits you?
+                </p>
+              </div>
+              <button
+                type="button"
+                id="exam-center-placement-btn"
+                onClick={onStartPlacement}
+                className="min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
+              >
+                Find My Level
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

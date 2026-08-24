@@ -15,6 +15,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "validate:exams": "tsx scripts/validateExams.ts",
+    "validate:placement": "tsx scripts/validatePlacement.ts",
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "validate:review": "tsx scripts/validateReview.ts",
     "validate:conversation": "tsx scripts/validateConversation.ts",

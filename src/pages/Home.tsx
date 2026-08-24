@@ -3,6 +3,8 @@ import { Lesson, AllProgress, CEFRLevel } from '../types';
 import { LESSONS } from '../data/lessons';
 import { getStoredProgress, getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
+import { getLatestPlacementResult, PLACEMENT_UPDATED_EVENT } from '../features/placement/placementStorage';
+import { CompactPlacementHistoryItem } from '../features/placement/placementTypes';
 import { CEFR_LEVELS_INFO } from '../data/curriculum/curriculumMeta';
 import { CourseShelf } from '../components/CourseShelf';
 import { LevelLibraryView } from '../components/LevelLibraryView';
@@ -13,6 +15,9 @@ interface HomeProps {
   onOpenFlipLens: () => void;
   onOpenExamCenter?: () => void;
   onNavigateReview?: () => void;
+  onStartPlacement?: () => void;
+  onViewPlacementResult?: () => void;
+  initialLevelTab?: CEFRLevel | 'ALL';
 }
 
 const ALL_LEVEL_KEYS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -32,13 +37,29 @@ export const Home: React.FC<HomeProps> = ({
   onOpenFlipLens,
   onOpenExamCenter,
   onNavigateReview,
+  onStartPlacement,
+  onViewPlacementResult,
+  initialLevelTab = 'ALL',
 }) => {
   const [progress, setProgress] = useState<AllProgress>(() => getStoredProgress());
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
-  const [selectedLevelTab, setSelectedLevelTab] = useState<CEFRLevel | 'ALL'>('ALL');
-  const [viewAllLevel, setViewAllLevel] = useState<CEFRLevel | null>(null);
+  const [latestPlacement, setLatestPlacement] = useState<CompactPlacementHistoryItem | null>(() =>
+    getLatestPlacementResult()
+  );
+  const [selectedLevelTab, setSelectedLevelTab] = useState<CEFRLevel | 'ALL'>(initialLevelTab);
+  const [viewAllLevel, setViewAllLevel] = useState<CEFRLevel | null>(
+    initialLevelTab !== 'ALL' ? initialLevelTab : null
+  );
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Update selectedLevelTab if initialLevelTab prop changes
+  useEffect(() => {
+    if (initialLevelTab !== 'ALL') {
+      setSelectedLevelTab(initialLevelTab);
+      setViewAllLevel(initialLevelTab);
+    }
+  }, [initialLevelTab]);
 
   // Listen to storage events to keep progress in sync
   useEffect(() => {
@@ -51,13 +72,19 @@ export const Home: React.FC<HomeProps> = ({
       setReviewStats(getReviewDashboardStats());
     };
 
+    const refreshPlacement = () => {
+      setLatestPlacement(getLatestPlacementResult());
+    };
+
     window.addEventListener('flipenglish_progress_updated', refresh);
     window.addEventListener('storage', refresh);
     window.addEventListener(REVIEW_UPDATED_EVENT, refreshReview);
+    window.addEventListener(PLACEMENT_UPDATED_EVENT, refreshPlacement);
     return () => {
       window.removeEventListener('flipenglish_progress_updated', refresh);
       window.removeEventListener('storage', refresh);
       window.removeEventListener(REVIEW_UPDATED_EVENT, refreshReview);
+      window.removeEventListener(PLACEMENT_UPDATED_EVENT, refreshPlacement);
     };
   }, []);
 
@@ -163,31 +190,104 @@ export const Home: React.FC<HomeProps> = ({
             </div>
           </div>
 
-          {/* Quick Progress Tracker Box */}
-          <div className="w-full lg:w-80 shrink-0 bg-slate-800/90 backdrop-blur-md p-6 rounded-2xl border border-slate-700 shadow-lg space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Progress</p>
-                <p className="text-xl font-black text-white">
-                  {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} Lessons</span>
+          {/* Right Column: Placement Result Box OR Progress Tracker */}
+          <div className="w-full lg:w-84 shrink-0 space-y-4">
+            {latestPlacement ? (
+              /* Compact Placement Result Widget */
+              <div className="bg-slate-800/95 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-400">
+                    Estimated Starting Level
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    {latestPlacement.confidence}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-md">
+                    {latestPlacement.estimatedLevel}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white leading-tight">
+                      {latestPlacement.estimatedLevel} Starting Foundation
+                    </h3>
+                    <p className="text-2xs text-slate-400 mt-0.5">
+                      Score: {latestPlacement.overallPercentage}% • {latestPlacement.date}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex items-center gap-2">
+                  <button
+                    type="button"
+                    id="home-continue-level-btn"
+                    onClick={() => handleOpenViewAll(latestPlacement.estimatedLevel)}
+                    className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center"
+                  >
+                    Continue {latestPlacement.estimatedLevel}
+                  </button>
+                  {onViewPlacementResult && (
+                    <button
+                      type="button"
+                      id="home-view-placement-result-btn"
+                      onClick={onViewPlacementResult}
+                      className="min-h-11 px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors cursor-pointer inline-flex items-center justify-center"
+                    >
+                      View Result
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : onStartPlacement ? (
+              /* Onboarding Placement Check CTA */
+              <div className="bg-slate-800/95 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-2xs font-bold uppercase tracking-wider">
+                  Not sure where to start?
+                </div>
+                <h3 className="text-base font-bold text-white leading-snug">
+                  Take a short English level check and get a recommended learning path.
+                </h3>
+                <p className="text-2xs text-slate-300">
+                  24 adaptive questions • 10–15 minutes • A1 to C2
+                </p>
+                <button
+                  type="button"
+                  id="home-find-my-level-btn"
+                  onClick={onStartPlacement}
+                  className="w-full min-h-12 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+                >
+                  Find My Level
+                </button>
+              </div>
+            ) : null}
+
+            {/* Quick Progress Tracker Box */}
+            <div className="bg-slate-800/90 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xs font-bold uppercase tracking-wider text-slate-400">Curriculum Progress</p>
+                  <p className="text-lg font-black text-white">
+                    {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} Lessons</span>
+                  </p>
+                </div>
+                <span className="text-xs font-extrabold text-indigo-400">{stats.percentage}%</span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1">
+                <div className="h-2 w-full bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-400 rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${stats.percentage}%` }}
+                  />
+                </div>
+                <p className="text-2xs text-slate-400 text-right">
+                  {stats.completedCount === stats.totalLessonsCount && stats.totalLessonsCount > 0
+                    ? 'All lessons completed!'
+                    : `${stats.totalLessonsCount - stats.completedCount} lessons remaining`}
                 </p>
               </div>
-              <span className="text-sm font-extrabold text-indigo-400">{stats.percentage}%</span>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="space-y-1.5">
-              <div className="h-2.5 w-full bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-400 rounded-full transition-all duration-700 ease-out"
-                  style={{ width: `${stats.percentage}%` }}
-                />
-              </div>
-              <p className="text-2xs text-slate-400 text-right">
-                {stats.completedCount === stats.totalLessonsCount && stats.totalLessonsCount > 0
-                  ? 'All lessons completed! Outstanding work.'
-                  : `${stats.totalLessonsCount - stats.completedCount} lessons remaining`}
-              </p>
             </div>
           </div>
         </div>

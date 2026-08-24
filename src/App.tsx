@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { AppView, Lesson, VocabWord, LessonProgress, CEFRLevel } from './types';
 import { ExamMode, ExamResultReport, ExamSession } from './types/exam';
 import { ConversationScenario, ConversationTurn, ConversationEvaluation } from './types/conversation';
+import {
+  PlacementSession,
+  PlacementResultReport,
+} from './features/placement/placementTypes';
+import {
+  loadActivePlacement,
+  clearActivePlacement,
+  getLatestPlacementResult,
+} from './features/placement/placementStorage';
+import { selectPlacementQuestionsForStage } from './data/placement/placementPool';
 import { LESSONS, getLessonById } from './data/lessons';
 import { getLessonProgress } from './utils/storage';
 import { getActiveExam, clearActiveExam } from './utils/examStorage';
@@ -25,6 +35,9 @@ import { ConversationHome } from './features/conversation/ConversationHome';
 import { ConversationSetup } from './features/conversation/ConversationSetup';
 import { ConversationSession } from './features/conversation/ConversationSession';
 import { ConversationResult } from './features/conversation/ConversationResult';
+import { PlacementIntro } from './features/placement/PlacementIntro';
+import { PlacementSessionPage } from './features/placement/PlacementSession';
+import { PlacementResultPage } from './features/placement/PlacementResult';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -46,6 +59,11 @@ export default function App() {
   const [examResultReport, setExamResultReport] = useState<ExamResultReport | null>(null);
   const [pendingResumeSession, setPendingResumeSession] = useState<ExamSession | null>(null);
 
+  // Placement States
+  const [activePlacementSession, setActivePlacementSession] = useState<PlacementSession | null>(null);
+  const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
+  const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
+
   // Conversation States
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
   const [conversationLevel, setConversationLevel] = useState<CEFRLevel>('A1');
@@ -56,13 +74,18 @@ export default function App() {
   const selectedLesson: Lesson | null = selectedLessonId ? getLessonById(selectedLessonId) || null : null;
   const currentLessonProgress: LessonProgress | null = selectedLessonId ? getLessonProgress(selectedLessonId) : null;
 
-  // Check for active unfinished exam on initial load
+  // Check for active unfinished exam or placement on initial load
   useEffect(() => {
     const active = getActiveExam();
     if (active && active.status === 'active' && active.endsAt > Date.now()) {
       setPendingResumeSession(active);
     } else if (active && active.endsAt <= Date.now()) {
       clearActiveExam();
+    }
+
+    const activePlacement = loadActivePlacement();
+    if (activePlacement && activePlacement.status === 'active') {
+      setPendingResumePlacement(activePlacement);
     }
   }, []);
 
@@ -279,6 +302,80 @@ export default function App() {
     setCurrentView('exam-center');
   };
 
+  // Placement Handlers
+  const handleStartPlacementIntro = () => {
+    setSelectedLessonId(null);
+    setIsReviewMistakesMode(false);
+    setCurrentView('placement-intro');
+  };
+
+  const handleStartPlacementSession = () => {
+    const seed = Date.now() ^ Math.floor(Math.random() * 1000000);
+    const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
+
+    const initialSession: PlacementSession = {
+      schemaVersion: 1,
+      id: `placement-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      status: 'active',
+      sessionSeed: seed,
+      startedAt: Date.now(),
+      currentStageIndex: 0,
+      currentQuestionInStageIndex: 0,
+      currentLevel: 'B1',
+      stages: [
+        {
+          stageIndex: 0,
+          level: 'B1',
+          questions: initialStageQuestions,
+          isLocked: false,
+        },
+      ],
+      stageResults: [],
+      answers: {},
+    };
+
+    setActivePlacementSession(initialSession);
+    setPendingResumePlacement(null);
+    setCurrentView('placement-session');
+  };
+
+  const handleFinishPlacementSession = (report: PlacementResultReport) => {
+    setPlacementResultReport(report);
+    setActivePlacementSession(null);
+    setPendingResumePlacement(null);
+    setCurrentView('placement-result');
+  };
+
+  const handleResumeActivePlacement = () => {
+    if (pendingResumePlacement) {
+      setActivePlacementSession(pendingResumePlacement);
+      setPendingResumePlacement(null);
+      setCurrentView('placement-session');
+    }
+  };
+
+  const handleDiscardActivePlacement = () => {
+    clearActivePlacement();
+    setPendingResumePlacement(null);
+  };
+
+  const handleStartCurriculumAtLevel = (level: CEFRLevel) => {
+    setCurrentView('home');
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
+
+  const handleViewPlacementResult = () => {
+    if (placementResultReport) {
+      setCurrentView('placement-result');
+    } else {
+      const latest = getLatestPlacementResult();
+      if (latest) {
+        // Navigate to intro which displays summary or start
+        setCurrentView('placement-intro');
+      }
+    }
+  };
+
   const handleStartExamFlow = (mode: ExamMode, level: CEFRLevel) => {
     setExamMode(mode);
     setExamLevel(level);
@@ -350,7 +447,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
       {/* Resume Pending Active Exam Modal */}
-      {pendingResumeSession && currentView !== 'exam-session' && (
+      {pendingResumeSession && currentView !== 'exam-session' && currentView !== 'placement-session' && (
         <ResumeExamModal
           session={pendingResumeSession}
           onResume={handleResumeActiveExam}
@@ -358,8 +455,47 @@ export default function App() {
         />
       )}
 
+      {/* Resume Pending Active Placement Modal */}
+      {pendingResumePlacement && currentView !== 'placement-session' && currentView !== 'exam-session' && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+            <div className="space-y-2">
+              <span className="text-2xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Incomplete Check Found
+              </span>
+              <h3 className="text-xl font-black text-slate-900">
+                Resume Placement Check?
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                You have an unfinished Placement Check at Stage {pendingResumePlacement.currentStageIndex + 1} of 4 (Question {pendingResumePlacement.currentStageIndex * 6 + pendingResumePlacement.currentQuestionInStageIndex + 1} of 24).
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                id="resume-placement-btn"
+                onClick={handleResumeActivePlacement}
+                className="flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+              >
+                Resume
+              </button>
+
+              <button
+                type="button"
+                id="discard-placement-btn"
+                onClick={handleDiscardActivePlacement}
+                className="min-h-12 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Header */}
-      {currentView !== 'exam-session' && currentView !== 'conversation-session' && (
+      {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && (
         <Header
           onNavigateHome={handleNavigateHome}
           onNavigateReview={handleNavigateReview}
@@ -378,6 +514,36 @@ export default function App() {
             onSelectLesson={handleSelectLesson}
             onOpenFlipLens={handleOpenFlipLens}
             onOpenExamCenter={handleNavigateExamCenter}
+            onNavigateReview={handleNavigateReview}
+            onStartPlacement={handleStartPlacementIntro}
+            onViewPlacementResult={handleViewPlacementResult}
+          />
+        )}
+
+        {/* Placement Test Views */}
+        {currentView === 'placement-intro' && (
+          <PlacementIntro
+            onStartPlacement={handleStartPlacementSession}
+            onBack={handleNavigateHome}
+            latestHistoryItem={getLatestPlacementResult()}
+            onViewPreviousResult={handleViewPlacementResult}
+          />
+        )}
+
+        {currentView === 'placement-session' && activePlacementSession && (
+          <PlacementSessionPage
+            initialSession={activePlacementSession}
+            onFinishPlacement={handleFinishPlacementSession}
+            onExitPlacement={handleNavigateHome}
+          />
+        )}
+
+        {currentView === 'placement-result' && placementResultReport && (
+          <PlacementResultPage
+            report={placementResultReport}
+            onRetake={handleStartPlacementIntro}
+            onStartCurriculum={handleStartCurriculumAtLevel}
+            onSelectLesson={handleSelectLesson}
             onNavigateReview={handleNavigateReview}
           />
         )}
@@ -478,6 +644,7 @@ export default function App() {
             onStartExamFlow={handleStartExamFlow}
             onViewResultReport={handleViewResultReport}
             onViewAllHistory={handleViewAllHistory}
+            onStartPlacement={handleStartPlacementIntro}
           />
         )}
 

@@ -176,6 +176,9 @@ export type AppView =
   | 'conversation-setup'
   | 'conversation-session'
   | 'conversation-result'
+  | 'placement-intro'
+  | 'placement-session'
+  | 'placement-result'
   | 'exam-center'
   | 'exam-intro'
   | 'exam-session'
@@ -185,4 +188,18 @@ export type AppView =
 export * from './exam';
 export * from './review';
 export * from './conversation';
+export type {
+  PlacementSkill,
+  PlacementQuestionOption,
+  PlacementQuestion,
+  PlacementStageResult,
+  PlacementStage,
+  SkillScoreSummary,
+  PlacementConfidence,
+  RecommendedLessonItem,
+  PlacementResultReport,
+  PlacementSession,
+  CompactPlacementHistoryItem,
+} from '../features/placement/placementTypes';
+export { ORDERED_CEFR_LEVELS } from '../features/placement/placementTypes';
 
