@@ -163,7 +163,7 @@ export interface SpecialGoalCollection {
   color: string;
 }
 
-export type AppView = 
+export type AppView =
   | 'home'
   | 'lesson-intro'
   | 'learn'
@@ -172,6 +172,10 @@ export type AppView =
   | 'review-mistakes'
   | 'flip-lens'
   | 'review'
+  | 'conversation'
+  | 'conversation-setup'
+  | 'conversation-session'
+  | 'conversation-result'
   | 'exam-center'
   | 'exam-intro'
   | 'exam-session'
@@ -180,4 +184,5 @@ export type AppView =
 
 export * from './exam';
 export * from './review';
+export * from './conversation';
 

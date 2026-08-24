@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { AppView, Lesson, VocabWord, LessonProgress, CEFRLevel } from './types';
 import { ExamMode, ExamResultReport, ExamSession } from './types/exam';
+import { ConversationScenario, ConversationTurn, ConversationEvaluation } from './types/conversation';
 import { LESSONS, getLessonById } from './data/lessons';
 import { getLessonProgress } from './utils/storage';
 import { getActiveExam, clearActiveExam } from './utils/examStorage';
 import { generateExamSession } from './data/exams/examGenerator';
+import { saveConversationSummary } from './utils/conversationStorage';
 import { Header } from './components/Header';
 import { Home } from './pages/Home';
 import { LessonIntro } from './pages/LessonIntro';
@@ -19,6 +21,10 @@ import { ExamResultPage } from './pages/ExamResult';
 import { ExamHistoryPage } from './pages/ExamHistory';
 import { ResumeExamModal } from './components/exam/ResumeExamModal';
 import { ReviewDashboard } from './features/review/ReviewDashboard';
+import { ConversationHome } from './features/conversation/ConversationHome';
+import { ConversationSetup } from './features/conversation/ConversationSetup';
+import { ConversationSession } from './features/conversation/ConversationSession';
+import { ConversationResult } from './features/conversation/ConversationResult';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -39,6 +45,13 @@ export default function App() {
   const [activeExamSession, setActiveExamSession] = useState<ExamSession | null>(null);
   const [examResultReport, setExamResultReport] = useState<ExamResultReport | null>(null);
   const [pendingResumeSession, setPendingResumeSession] = useState<ExamSession | null>(null);
+
+  // Conversation States
+  const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
+  const [conversationLevel, setConversationLevel] = useState<CEFRLevel>('A1');
+  const [conversationTurns, setConversationTurns] = useState<ConversationTurn[]>([]);
+  const [conversationEvaluation, setConversationEvaluation] = useState<ConversationEvaluation | null>(null);
+  const [isEvaluatingConversation, setIsEvaluatingConversation] = useState<boolean>(false);
 
   const selectedLesson: Lesson | null = selectedLessonId ? getLessonById(selectedLessonId) || null : null;
   const currentLessonProgress: LessonProgress | null = selectedLessonId ? getLessonProgress(selectedLessonId) : null;
@@ -71,6 +84,13 @@ export default function App() {
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setCurrentView('review');
+  };
+
+  const handleNavigateConversation = () => {
+    setSelectedLessonId(null);
+    setIsReviewMistakesMode(false);
+    setQuizResults(null);
+    setCurrentView('conversation');
   };
 
   const handleOpenFlipLens = () => {
@@ -121,6 +141,116 @@ export default function App() {
   const handleBackToIntro = () => {
     setIsReviewMistakesMode(false);
     setCurrentView('lesson-intro');
+  };
+
+  // Conversation Handlers
+  const handleSelectScenario = (scenario: ConversationScenario) => {
+    setSelectedScenario(scenario);
+    setConversationLevel(scenario.supportedLevels[0] || 'A1');
+    setCurrentView('conversation-setup');
+  };
+
+  const handleStartConversation = (scenario: ConversationScenario, level: CEFRLevel) => {
+    setSelectedScenario(scenario);
+    setConversationLevel(level);
+    setConversationTurns([]);
+    setConversationEvaluation(null);
+    setCurrentView('conversation-session');
+  };
+
+  const handleFinishConversation = async (turns: ConversationTurn[], interactionId?: string) => {
+    if (!selectedScenario) return;
+
+    setConversationTurns(turns);
+    setIsEvaluatingConversation(true);
+
+    const learnerTurns = turns.filter((t) => t.role === 'user');
+    const transcriptSummary = turns
+      .map((t) => `${t.role === 'user' ? 'Learner' : selectedScenario.aiRole}: ${t.text}`)
+      .join('\n');
+
+    try {
+      const response = await fetch('/api/conversation/evaluate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenarioId: selectedScenario.id,
+          level: conversationLevel,
+          turnsCount: Math.max(2, learnerTurns.length),
+          previousInteractionId: interactionId || null,
+          transcriptSummary,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to evaluate conversation');
+      }
+
+      const evalData: ConversationEvaluation = await response.json();
+      setConversationEvaluation(evalData);
+
+      // Save summary in storage
+      saveConversationSummary({
+        scenarioId: selectedScenario.id,
+        scenarioTitle: selectedScenario.title,
+        category: selectedScenario.category,
+        level: conversationLevel,
+        overallScore: evalData.overallScore,
+        turnsCount: learnerTurns.length,
+        summary: evalData.summary,
+      });
+
+      setCurrentView('conversation-result');
+    } catch (err) {
+      // Fallback local evaluation summary if AI is offline/exhausted
+      const fallbackEval: ConversationEvaluation = {
+        summary: `Completed ${learnerTurns.length} conversation turns in "${selectedScenario.title}". AI evaluation is temporarily unavailable, but your speaking practice was recorded.`,
+        scores: {
+          communication: 80,
+          vocabulary: 75,
+          grammar: 75,
+          naturalExpression: 70,
+        },
+        overallScore: 75,
+        strengths: [
+          'Actively engaged throughout the role-play scenario.',
+          'Formulated complete responses in English.',
+        ],
+        improvements: [
+          'Review the scenario useful expressions to expand phrase variety.',
+        ],
+        reviewItems: selectedScenario.usefulExpressions.slice(0, 3).map((e) => ({
+          expression: e.expression,
+          meaning: e.meaning,
+          reason: 'Key target phrase for this scenario',
+        })),
+      };
+
+      setConversationEvaluation(fallbackEval);
+      saveConversationSummary({
+        scenarioId: selectedScenario.id,
+        scenarioTitle: selectedScenario.title,
+        category: selectedScenario.category,
+        level: conversationLevel,
+        overallScore: fallbackEval.overallScore,
+        turnsCount: learnerTurns.length,
+        summary: fallbackEval.summary,
+      });
+
+      setCurrentView('conversation-result');
+    } finally {
+      setIsEvaluatingConversation(false);
+    }
+  };
+
+  const handlePracticeConversationAgain = () => {
+    if (selectedScenario) {
+      setCurrentView('conversation-setup');
+    } else {
+      setCurrentView('conversation');
+    }
   };
 
   // Exam Center Handlers
@@ -181,7 +311,6 @@ export default function App() {
   // Start AI Practice on missed words from exam
   const handleStartAIPracticeFromExam = (words: VocabWord[]) => {
     if (words.length > 0) {
-      // Find or create temporary lesson context
       const tempLesson: Lesson = {
         id: 'exam-review-practice',
         title: `Exam Practice — ${examLevel}`,
@@ -211,10 +340,11 @@ export default function App() {
       )}
 
       {/* Sticky Header */}
-      {currentView !== 'exam-session' && (
+      {currentView !== 'exam-session' && currentView !== 'conversation-session' && (
         <Header
           onNavigateHome={handleNavigateHome}
           onNavigateReview={handleNavigateReview}
+          onNavigateConversation={handleNavigateConversation}
           onNavigateFlipLens={handleOpenFlipLens}
           onNavigateExamCenter={handleNavigateExamCenter}
           currentView={currentView}
@@ -238,6 +368,43 @@ export default function App() {
           <ReviewDashboard
             onSelectLesson={handleSelectLesson}
             onBackToHome={handleNavigateHome}
+          />
+        )}
+
+        {/* AI Conversation Lab Views */}
+        {currentView === 'conversation' && (
+          <ConversationHome
+            onSelectScenario={handleSelectScenario}
+            onBackToHome={handleNavigateHome}
+          />
+        )}
+
+        {currentView === 'conversation-setup' && selectedScenario && (
+          <ConversationSetup
+            scenario={selectedScenario}
+            onStartSession={handleStartConversation}
+            onBack={handleNavigateConversation}
+          />
+        )}
+
+        {currentView === 'conversation-session' && selectedScenario && (
+          <ConversationSession
+            scenario={selectedScenario}
+            level={conversationLevel}
+            onFinishConversation={handleFinishConversation}
+            onExitSession={handleNavigateConversation}
+          />
+        )}
+
+        {currentView === 'conversation-result' && selectedScenario && conversationEvaluation && (
+          <ConversationResult
+            scenario={selectedScenario}
+            level={conversationLevel}
+            evaluation={conversationEvaluation}
+            turns={conversationTurns}
+            onPracticeAgain={handlePracticeConversationAgain}
+            onBackToLab={handleNavigateConversation}
+            onNavigateReview={handleNavigateReview}
           />
         )}
 
@@ -330,7 +497,7 @@ export default function App() {
       </main>
 
       {/* Clean minimal footer */}
-      {currentView !== 'exam-session' && (
+      {currentView !== 'exam-session' && currentView !== 'conversation-session' && (
         <footer className="w-full border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
           <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="font-semibold text-slate-700">
@@ -345,3 +512,4 @@ export default function App() {
     </div>
   );
 }
+
