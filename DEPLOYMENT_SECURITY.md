@@ -11,7 +11,7 @@ FlipEnglish minimizes operational friction by utilizing centralized safe default
 | Variable | Type | Default | Description & Security Rules |
 | :--- | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | `string` | *None* | **REQUIRED (SECRET)**. Server-side Google Gemini API key. Managed automatically in Google AI Studio or configured via Google Cloud Secret Manager. Never exposed to the client bundle. |
-| `PORT` | `number` | `3000` | Port on which Express listens. Supplied automatically by Google Cloud Run / hosting environment. |
+| `PORT` | `number` | `5173` (local) / `3000` (container default) | Port on which Express listens. Default local port is 5173. In production, supplied automatically by Google Cloud Run / hosting environment. |
 | `NODE_ENV` | `string` | `development` | Set to `production` in container environments. Enables strict CSP, HSTS, frameguard, and isolated static file serving from `dist/client`. |
 | `APP_URL` | `string` | *None* | Public application URL automatically injected by Google AI Studio / Cloud Run. |
 

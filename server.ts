@@ -9,6 +9,14 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { CONVERSATION_SCENARIOS, getScenarioById } from './src/data/conversations/scenarios';
+import {
+  ConversationTurnInputSchema,
+  ConversationTurnOutputSchema,
+  ConversationEvaluateInputSchema,
+  ConversationEvaluateOutputSchema,
+  conversationTurnJsonSchema,
+  conversationEvaluateJsonSchema,
+} from './src/data/conversations/conversationSchemas';
 
 dotenv.config();
 
@@ -30,7 +38,7 @@ const SECURITY_CONFIG = {
 };
 
 // Platform environment variables (supplied automatically by hosting environment / Cloud Run)
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 5173;
 const isProd = process.env.NODE_ENV === 'production';
 const nodeEnv = process.env.NODE_ENV || 'development';
 
@@ -509,62 +517,6 @@ const AnalyzeExamOutputSchema = z.object({
     .max(5),
   studyTip: z.string().trim().min(1).max(500),
 });
-
-// 5. Conversation Turn Schemas
-const ConversationTurnInputSchema = z.object({
-  scenarioId: z.string().trim().min(1).max(80),
-  level: z.enum(CEFR_LEVELS),
-  turnNumber: z.number().int().min(1).max(10),
-  message: z.string().trim().min(1).max(500),
-  previousInteractionId: z.string().trim().min(1).max(256).nullable().optional(),
-}).strict();
-
-const ConversationTurnOutputSchema = z.object({
-  reply: z.string().trim().min(1).max(1000),
-  feedback: z.object({
-    hasCorrection: z.boolean(),
-    original: z.string().trim().max(500).optional(),
-    suggestion: z.string().trim().max(500).optional(),
-    explanation: z.string().trim().max(500).optional(),
-  }).strict(),
-  usefulExpressions: z.array(
-    z.object({
-      expression: z.string().trim().min(1).max(200),
-      meaning: z.string().trim().min(1).max(300),
-      level: z.enum(CEFR_LEVELS).optional(),
-    }).strict()
-  ).max(5),
-  conversationStatus: z.enum(['continue', 'complete']),
-}).strict();
-
-// 6. Conversation Evaluate Schemas
-const ConversationEvaluateInputSchema = z.object({
-  scenarioId: z.string().trim().min(1).max(80),
-  level: z.enum(CEFR_LEVELS),
-  turnsCount: z.number().int().min(2).max(50),
-  previousInteractionId: z.string().trim().min(1).max(256).nullable().optional(),
-  transcriptSummary: z.string().trim().max(4000).optional(),
-}).strict();
-
-const ConversationEvaluateOutputSchema = z.object({
-  summary: z.string().trim().min(1).max(1000),
-  scores: z.object({
-    communication: z.number().min(0).max(100),
-    vocabulary: z.number().min(0).max(100),
-    grammar: z.number().min(0).max(100),
-    naturalExpression: z.number().min(0).max(100),
-  }).strict(),
-  overallScore: z.number().min(0).max(100),
-  strengths: z.array(z.string().trim().max(300)).max(3),
-  improvements: z.array(z.string().trim().max(300)).max(3),
-  reviewItems: z.array(
-    z.object({
-      expression: z.string().trim().min(1).max(200),
-      meaning: z.string().trim().min(1).max(300),
-      reason: z.string().trim().min(1).max(500),
-    }).strict()
-  ).max(5),
-}).strict();
 
 // Helper: Magic byte image signature validation
 function validateImageMagicBytes(buffer: Buffer, mime: string): boolean {
@@ -1217,126 +1169,59 @@ ${message}
 
 Respond in character as "${scenario.aiRole}". Provide structured feedback and relevant useful expressions.`;
 
-      let responseText = '{}';
+      let responseText = '';
       let newInteractionId: string | undefined = undefined;
 
       await withGeminiConcurrency(req.id || 'conv-turn', async () => {
         const ai = getGenAI();
 
-        // Check if Interactions API is usable
-        let usedInteractions = false;
-        if (ai.interactions && typeof ai.interactions.create === 'function') {
-          try {
-            const createParams: any = {
-              model: 'gemini-3.7-flash',
-              input: prompt,
-              system_instruction: systemInstruction,
-              generation_config: {
-                max_output_tokens: 800,
-                thinking_level: ThinkingLevel.LOW,
-                response_mime_type: 'application/json',
-                response_schema: {
-                  type: Type.OBJECT,
-                  properties: {
-                    reply: { type: Type.STRING },
-                    feedback: {
-                      type: Type.OBJECT,
-                      properties: {
-                        hasCorrection: { type: Type.BOOLEAN },
-                        original: { type: Type.STRING },
-                        suggestion: { type: Type.STRING },
-                        explanation: { type: Type.STRING },
-                      },
-                      required: ['hasCorrection'],
-                    },
-                    usefulExpressions: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          expression: { type: Type.STRING },
-                          meaning: { type: Type.STRING },
-                          level: { type: Type.STRING },
-                        },
-                        required: ['expression', 'meaning'],
-                      },
-                    },
-                    conversationStatus: {
-                      type: Type.STRING,
-                      enum: ['continue', 'complete'],
-                    },
-                  },
-                  required: ['reply', 'feedback', 'usefulExpressions', 'conversationStatus'],
-                },
-              },
-            };
-
-            if (previousInteractionId) {
-              createParams.previous_interaction_id = previousInteractionId;
-            }
-
-            const interactionResponse = await ai.interactions.create(createParams);
-
-            if (interactionResponse) {
-              newInteractionId = (interactionResponse as any).id;
-              responseText = (interactionResponse as any).output_text || (interactionResponse as any).text || '';
-              if (responseText) {
-                usedInteractions = true;
-              }
-            }
-          } catch (intErr: any) {
-            console.warn(`[Interactions API Fallback] ReqID: ${req.id} Interactions failed: ${sanitizeForLog(intErr?.message || intErr)}`);
-          }
+        if (!ai.interactions || typeof ai.interactions.create !== 'function') {
+          throw new HttpError(503, 'AI conversation is temporarily unavailable. Please try again.');
         }
 
-        // Fallback to generateContentWithFallback if interactions was not used or failed
-        if (!usedInteractions || !responseText) {
-          const genResponse = await generateContentWithFallback({
-            primaryModel: 'gemini-3.7-flash',
-            contents: prompt,
-            reqId: req.id,
-            maxOutputTokens: 800,
-            config: {
-              systemInstruction,
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  reply: { type: Type.STRING },
-                  feedback: {
-                    type: Type.OBJECT,
-                    properties: {
-                      hasCorrection: { type: Type.BOOLEAN },
-                      original: { type: Type.STRING },
-                      suggestion: { type: Type.STRING },
-                      explanation: { type: Type.STRING },
-                    },
-                    required: ['hasCorrection'],
-                  },
-                  usefulExpressions: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        expression: { type: Type.STRING },
-                        meaning: { type: Type.STRING },
-                        level: { type: Type.STRING },
-                      },
-                      required: ['expression', 'meaning'],
-                    },
-                  },
-                  conversationStatus: {
-                    type: Type.STRING,
-                    enum: ['continue', 'complete'],
-                  },
-                },
-                required: ['reply', 'feedback', 'usefulExpressions', 'conversationStatus'],
-              },
+        try {
+          const createParams: any = {
+            model: 'gemini-3.7-flash',
+            input: prompt,
+            system_instruction: systemInstruction,
+            store: true,
+            generation_config: {
+              max_output_tokens: 800,
+              thinking_level: 'low',
             },
-          });
+            response_format: {
+              type: 'text',
+              mime_type: 'application/json',
+              schema: conversationTurnJsonSchema,
+            },
+          };
 
-          responseText = genResponse.text || '{}';
-          newInteractionId = previousInteractionId || `turn-${Date.now()}`;
+          if (previousInteractionId) {
+            createParams.previous_interaction_id = previousInteractionId;
+          }
+
+          const interactionResponse = await ai.interactions.create(createParams);
+
+          if (!interactionResponse || !interactionResponse.id) {
+            throw new HttpError(503, 'AI conversation is temporarily unavailable. Please try again.');
+          }
+
+          if (interactionResponse.status && ['failed', 'cancelled', 'incomplete'].includes(interactionResponse.status)) {
+            throw new HttpError(503, 'AI conversation is temporarily unavailable. Please try again.');
+          }
+
+          newInteractionId = interactionResponse.id;
+          responseText = (interactionResponse as any).output_text || (interactionResponse as any).text || '';
+
+          if (!responseText || !responseText.trim()) {
+            throw new HttpError(502, 'AI generated an empty response.');
+          }
+
+          console.log(`[Conversation Lab] Interaction created (ReqID: ${req.id}) | Interaction ID: ${newInteractionId} | Previous Chained: ${previousInteractionId || 'none'}`);
+        } catch (err: any) {
+          if (err instanceof HttpError) throw err;
+          console.warn(`[Conversation Lab Turn Error] ReqID: ${req.id} Interactions failed: ${sanitizeForLog(err?.message || err)}`);
+          throw new HttpError(503, 'AI conversation is temporarily unavailable. Please try again.');
         }
       });
 
@@ -1423,128 +1308,57 @@ Provide structured diagnostic feedback:
 5. "improvements": Array of 2 to 3 actionable areas to focus on next.
 6. "reviewItems": Array of up to 5 useful vocabulary items or expressions from this conversation that the learner should review (each with expression, Vietnamese meaning, and reason).`;
 
-      let responseText = '{}';
+      let responseText = '';
 
       await withGeminiConcurrency(req.id || 'conv-eval', async () => {
         const ai = getGenAI();
 
-        let usedInteractions = false;
-        if (ai.interactions && typeof ai.interactions.create === 'function' && previousInteractionId) {
-          try {
-            const createParams: any = {
-              model: 'gemini-3.7-flash',
-              previous_interaction_id: previousInteractionId,
-              input: prompt,
-              system_instruction: systemInstruction,
-              generation_config: {
-                max_output_tokens: 1400,
-                thinking_level: ThinkingLevel.LOW,
-                response_mime_type: 'application/json',
-                response_schema: {
-                  type: Type.OBJECT,
-                  properties: {
-                    summary: { type: Type.STRING },
-                    scores: {
-                      type: Type.OBJECT,
-                      properties: {
-                        communication: { type: Type.NUMBER },
-                        vocabulary: { type: Type.NUMBER },
-                        grammar: { type: Type.NUMBER },
-                        naturalExpression: { type: Type.NUMBER },
-                      },
-                      required: ['communication', 'vocabulary', 'grammar', 'naturalExpression'],
-                    },
-                    overallScore: { type: Type.NUMBER },
-                    strengths: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                    improvements: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                    reviewItems: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          expression: { type: Type.STRING },
-                          meaning: { type: Type.STRING },
-                          reason: { type: Type.STRING },
-                        },
-                        required: ['expression', 'meaning', 'reason'],
-                      },
-                    },
-                  },
-                  required: ['summary', 'scores', 'overallScore', 'strengths', 'improvements', 'reviewItems'],
-                },
-              },
-            };
-
-            const interactionResponse = await ai.interactions.create(createParams);
-
-            if (interactionResponse) {
-              responseText = (interactionResponse as any).output_text || (interactionResponse as any).text || '';
-              if (responseText) {
-                usedInteractions = true;
-              }
-            }
-          } catch (intErr: any) {
-            console.warn(`[Interactions API Fallback] ReqID: ${req.id} Interactions eval failed: ${sanitizeForLog(intErr?.message || intErr)}`);
-          }
+        if (!ai.interactions || typeof ai.interactions.create !== 'function') {
+          throw new HttpError(503, 'AI evaluation is temporarily unavailable. Please try again.');
         }
 
-        if (!usedInteractions || !responseText) {
-          const genResponse = await generateContentWithFallback({
-            primaryModel: 'gemini-3.7-flash',
-            contents: prompt,
-            reqId: req.id,
-            maxOutputTokens: 1400,
-            config: {
-              systemInstruction,
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  summary: { type: Type.STRING },
-                  scores: {
-                    type: Type.OBJECT,
-                    properties: {
-                      communication: { type: Type.NUMBER },
-                      vocabulary: { type: Type.NUMBER },
-                      grammar: { type: Type.NUMBER },
-                      naturalExpression: { type: Type.NUMBER },
-                    },
-                    required: ['communication', 'vocabulary', 'grammar', 'naturalExpression'],
-                  },
-                  overallScore: { type: Type.NUMBER },
-                  strengths: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  improvements: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  reviewItems: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        expression: { type: Type.STRING },
-                        meaning: { type: Type.STRING },
-                        reason: { type: Type.STRING },
-                      },
-                      required: ['expression', 'meaning', 'reason'],
-                    },
-                  },
-                },
-                required: ['summary', 'scores', 'overallScore', 'strengths', 'improvements', 'reviewItems'],
-              },
+        try {
+          const createParams: any = {
+            model: 'gemini-3.7-flash',
+            input: prompt,
+            system_instruction: systemInstruction,
+            store: true,
+            generation_config: {
+              max_output_tokens: 1400,
+              thinking_level: 'low',
             },
-          });
+            response_format: {
+              type: 'text',
+              mime_type: 'application/json',
+              schema: conversationEvaluateJsonSchema,
+            },
+          };
 
-          responseText = genResponse.text || '{}';
+          if (previousInteractionId) {
+            createParams.previous_interaction_id = previousInteractionId;
+          }
+
+          const interactionResponse = await ai.interactions.create(createParams);
+
+          if (!interactionResponse || !interactionResponse.id) {
+            throw new HttpError(503, 'AI evaluation is temporarily unavailable. Please try again.');
+          }
+
+          if (interactionResponse.status && ['failed', 'cancelled', 'incomplete'].includes(interactionResponse.status)) {
+            throw new HttpError(503, 'AI evaluation is temporarily unavailable. Please try again.');
+          }
+
+          responseText = (interactionResponse as any).output_text || (interactionResponse as any).text || '';
+
+          if (!responseText || !responseText.trim()) {
+            throw new HttpError(502, 'AI generated an empty evaluation response.');
+          }
+
+          console.log(`[Conversation Lab] Evaluation interaction created (ReqID: ${req.id}) | Interaction ID: ${interactionResponse.id} | Previous Chained: ${previousInteractionId || 'none'}`);
+        } catch (err: any) {
+          if (err instanceof HttpError) throw err;
+          console.warn(`[Conversation Lab Eval Error] ReqID: ${req.id} Interactions eval failed: ${sanitizeForLog(err?.message || err)}`);
+          throw new HttpError(503, 'AI evaluation is temporarily unavailable. Please try again.');
         }
       });
 

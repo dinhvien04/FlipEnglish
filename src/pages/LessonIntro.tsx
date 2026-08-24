@@ -182,20 +182,20 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
                         type="button"
                         onClick={() => handleToggleReview(word.id)}
                         title={inReview ? 'Remove from Smart Review' : 'Add to Smart Review'}
-                        className={`px-2.5 py-1 rounded-lg text-2xs font-bold transition-colors cursor-pointer border ${
+                        className={`min-h-9 px-2.5 py-1 rounded-lg text-2xs font-bold transition-colors cursor-pointer border ${
                           inReview
                             ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                             : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
                         }`}
                       >
-                        {inReview ? 'In Review' : '+ Review'}
+                        {inReview ? 'In Review' : 'Add Review'}
                       </button>
 
                       <button
                         type="button"
                         onClick={() => speakWord(word.word)}
                         title={`Play pronunciation for ${word.word}`}
-                        className="px-2.5 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-2xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer"
+                        className="min-h-9 px-2.5 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-2xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer flex items-center justify-center"
                       >
                         Play
                       </button>

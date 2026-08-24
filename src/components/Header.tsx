@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { LESSONS } from '../data/lessons';
@@ -20,10 +20,11 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateExamCenter,
   currentView,
 }) => {
-  const [stats, setStats] = React.useState(() => getOverallStats(LESSONS.length));
-  const [reviewStats, setReviewStats] = React.useState(() => getReviewDashboardStats());
+  const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
+  const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleUpdate = () => {
       setStats(getOverallStats(LESSONS.length));
     };
@@ -52,13 +53,33 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
+  // Close mobile menu on view change or escape
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [currentView]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen]);
+
+  const handleNavClick = (callback?: () => void) => {
+    setIsMobileMenuOpen(false);
+    if (callback) callback();
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo - Pure typography */}
         <button
           id="header-brand-logo"
-          onClick={onNavigateHome}
+          onClick={() => handleNavClick(onNavigateHome)}
           className="flex items-center text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1 transition-opacity hover:opacity-85 cursor-pointer"
           title="Return to Curriculum"
         >
@@ -67,12 +88,12 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        {/* Navigation & Progress Indicator */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        {/* Desktop & Tablet Navigation (md and up) */}
+        <nav className="hidden md:flex items-center gap-2 lg:gap-3" aria-label="Main Navigation">
           <button
             id="header-nav-learning-path"
             onClick={onNavigateHome}
-            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`min-h-10 px-3.5 py-2 rounded-lg text-xs lg:text-sm font-bold transition-all cursor-pointer ${
               currentView === 'home' || currentView === 'lesson-intro'
                 ? 'bg-slate-100 text-slate-900'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -85,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-review"
               onClick={onNavigateReview}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-10 px-3.5 py-2 rounded-lg text-xs lg:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'review'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -94,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Review</span>
               {reviewStats.dueCount > 0 && (
                 <span
-                  className={`text-2xs font-extrabold px-1.5 py-0.2 rounded-full ${
+                  className={`text-2xs font-extrabold px-1.5 py-0.5 rounded-full ${
                     currentView === 'review'
                       ? 'bg-white text-indigo-700'
                       : 'bg-indigo-600 text-white'
@@ -110,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-conversation"
               onClick={onNavigateConversation}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-10 px-3.5 py-2 rounded-lg text-xs lg:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('conversation')
                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -124,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-exam-center"
               onClick={onNavigateExamCenter}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-10 px-3.5 py-2 rounded-lg text-xs lg:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('exam-')
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -138,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-fliplens"
               onClick={onNavigateFlipLens}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-10 px-3.5 py-2 rounded-lg text-xs lg:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'flip-lens'
                   ? 'bg-slate-900 text-white'
                   : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/50'
@@ -151,15 +172,144 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Progress Indicator - Pure text */}
           <div
             id="header-progress-indicator"
-            className="hidden sm:flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold"
+            className="flex items-center min-h-10 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs lg:text-sm font-bold ml-1"
             title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
           >
             <span>
-              {stats.completedCount}/{stats.totalLessonsCount} Completed
+              {stats.completedCount}/{stats.totalLessonsCount} Done
             </span>
           </div>
+        </nav>
+
+        {/* Mobile Header Controls (< md) */}
+        <div className="flex md:hidden items-center gap-2">
+          <div
+            className="flex items-center px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold"
+            title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
+          >
+            {stats.completedCount}/{stats.totalLessonsCount}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="min-h-11 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-900 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          >
+            {isMobileMenuOpen ? 'Close' : 'Menu'}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Text-Only Navigation Drawer / Panel */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div
+            className="bg-white border-b border-slate-200 p-4 sm:p-6 shadow-xl space-y-2.5 max-h-[calc(100dvh-64px)] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2 pb-1">
+              Navigation Menu
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleNavClick(onNavigateHome)}
+              className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between ${
+                currentView === 'home' || currentView === 'lesson-intro'
+                  ? 'bg-slate-100 text-slate-900 font-extrabold'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>Curriculum</span>
+              <span className="text-xs text-slate-400">All Lessons</span>
+            </button>
+
+            {onNavigateReview && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateReview)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  currentView === 'review'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>Smart Review</span>
+                {reviewStats.dueCount > 0 ? (
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      currentView === 'review'
+                        ? 'bg-white text-indigo-700'
+                        : 'bg-indigo-600 text-white'
+                    }`}
+                  >
+                    {reviewStats.dueCount} due
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">0 due</span>
+                )}
+              </button>
+            )}
+
+            {onNavigateConversation && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateConversation)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  currentView.startsWith('conversation')
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>AI Conversation Lab</span>
+                <span className="text-xs text-indigo-600 font-semibold">Interactive</span>
+              </button>
+            )}
+
+            {onNavigateExamCenter && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateExamCenter)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  currentView.startsWith('exam-')
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>Practice Exams</span>
+                <span className="text-xs text-slate-400">CEFR Diagnostics</span>
+              </button>
+            )}
+
+            {onNavigateFlipLens && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateFlipLens)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  currentView === 'flip-lens'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-indigo-600 hover:bg-indigo-50/50'
+                }`}
+              >
+                <span>FlipLens AI Scanner</span>
+                <span className="text-xs text-indigo-500 font-semibold">Camera/Photo</span>
+              </button>
+            )}
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between px-2 text-xs text-slate-500">
+              <span>Overall Curriculum Progress:</span>
+              <span className="font-bold text-slate-800">
+                {stats.completedCount} of {stats.totalLessonsCount} Completed ({Math.round((stats.completedCount / stats.totalLessonsCount) * 100)}%)
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

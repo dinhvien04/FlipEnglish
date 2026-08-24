@@ -1,8 +1,15 @@
 import { CONVERSATION_SCENARIOS, getScenarioById, getScenarioOpeningMessage } from '../src/data/conversations/scenarios';
-import { ConversationCategory, ConversationScenario } from '../src/types/conversation';
+import { ConversationCategory } from '../src/types/conversation';
 import { CEFRLevel } from '../src/types';
 import { resolveCurriculumItemByText } from '../src/utils/curriculumIndex';
-import { z } from 'zod';
+import {
+  ConversationTurnInputSchema,
+  ConversationTurnOutputSchema,
+  ConversationEvaluateInputSchema,
+  ConversationEvaluateOutputSchema,
+  conversationTurnJsonSchema,
+  conversationEvaluateJsonSchema,
+} from '../src/data/conversations/conversationSchemas';
 
 console.log('=== Running FlipEnglish AI Conversation Lab Integrity Audit ===\n');
 
@@ -69,29 +76,29 @@ assert(techDiscussion !== undefined, 'technology-discussion scenario exists');
 assert(techDiscussion!.supportedLevels.includes('B2') && techDiscussion!.supportedLevels.includes('C1') && techDiscussion!.supportedLevels.includes('C2'), 'technology-discussion supports B2, C1, C2');
 
 // ==========================================
-// 3. Request & Payload Schemas
+// 3. Shared Zod Request Schemas & Rejection Rules
 // ==========================================
 console.log('\nTest Suite 3: Zod Request Schemas & Rejection Rules');
 
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
-
-const ConversationTurnInputSchema = z.object({
-  scenarioId: z.string().trim().min(1).max(80),
-  level: z.enum(CEFR_LEVELS),
-  turnNumber: z.number().int().min(1).max(10),
-  message: z.string().trim().min(1).max(500),
-  previousInteractionId: z.string().trim().min(1).max(256).nullable().optional(),
-}).strict();
-
-// Valid turn input
-const validTurn = ConversationTurnInputSchema.safeParse({
+// Valid turn input without previousInteractionId
+const validTurn1 = ConversationTurnInputSchema.safeParse({
   scenarioId: 'coffee-shop',
   level: 'A1',
   turnNumber: 1,
   message: "I'd like a cappuccino, please.",
   previousInteractionId: null,
 });
-assert(validTurn.success, 'Valid turn input passes schema validation');
+assert(validTurn1.success, 'Valid turn input (turn 1, null previousInteractionId) passes schema validation');
+
+// Valid turn input with previousInteractionId chaining
+const validTurn2 = ConversationTurnInputSchema.safeParse({
+  scenarioId: 'coffee-shop',
+  level: 'A1',
+  turnNumber: 2,
+  message: "Can I also get an almond croissant?",
+  previousInteractionId: 'interaction_abc123_turn1',
+});
+assert(validTurn2.success, 'Valid turn input (turn 2 with previousInteractionId) passes schema validation');
 
 // Invalid scenario rejected
 const nonExistent = getScenarioById('non-existent-scenario');
@@ -130,30 +137,54 @@ const invalidTurnNumber = ConversationTurnInputSchema.safeParse({
 });
 assert(!invalidTurnNumber.success, 'turnNumber > 10 is rejected by schema');
 
-// ==========================================
-// 4. Evaluation Schemas & Score Bounds
-// ==========================================
-console.log('\nTest Suite 4: Evaluation Score Bounds');
+// Evaluate input validation
+const validEvalInput = ConversationEvaluateInputSchema.safeParse({
+  scenarioId: 'coffee-shop',
+  level: 'A1',
+  turnsCount: 4,
+  previousInteractionId: 'interaction_xyz987',
+  transcriptSummary: 'Learner: Hello\nBarista: Hi!',
+});
+assert(validEvalInput.success, 'Valid evaluation input passes schema validation');
 
-const ConversationEvaluateOutputSchema = z.object({
-  summary: z.string().trim().min(1).max(1000),
-  scores: z.object({
-    communication: z.number().min(0).max(100),
-    vocabulary: z.number().min(0).max(100),
-    grammar: z.number().min(0).max(100),
-    naturalExpression: z.number().min(0).max(100),
-  }).strict(),
-  overallScore: z.number().min(0).max(100),
-  strengths: z.array(z.string().trim().max(300)).max(3),
-  improvements: z.array(z.string().trim().max(300)).max(3),
-  reviewItems: z.array(
-    z.object({
-      expression: z.string().trim().min(1).max(200),
-      meaning: z.string().trim().min(1).max(300),
-      reason: z.string().trim().min(1).max(500),
-    }).strict()
-  ).max(5),
-}).strict();
+const shortEvalInput = ConversationEvaluateInputSchema.safeParse({
+  scenarioId: 'coffee-shop',
+  level: 'A1',
+  turnsCount: 1, // Minimum is 2
+});
+assert(!shortEvalInput.success, 'Evaluation with turnsCount < 2 is rejected by schema');
+
+// ==========================================
+// 4. Shared GenAI Interactions API Top-Level Schemas
+// ==========================================
+console.log('\nTest Suite 4: GenAI Interactions API Schema Structures');
+
+assert(conversationTurnJsonSchema.type !== undefined, 'conversationTurnJsonSchema defines top-level type');
+assert(Array.isArray(conversationTurnJsonSchema.required), 'conversationTurnJsonSchema defines required array');
+assert(
+  conversationTurnJsonSchema.required.includes('reply') &&
+  conversationTurnJsonSchema.required.includes('feedback') &&
+  conversationTurnJsonSchema.required.includes('usefulExpressions') &&
+  conversationTurnJsonSchema.required.includes('conversationStatus'),
+  'conversationTurnJsonSchema requires reply, feedback, usefulExpressions, conversationStatus'
+);
+
+assert(conversationEvaluateJsonSchema.type !== undefined, 'conversationEvaluateJsonSchema defines top-level type');
+assert(Array.isArray(conversationEvaluateJsonSchema.required), 'conversationEvaluateJsonSchema defines required array');
+assert(
+  conversationEvaluateJsonSchema.required.includes('summary') &&
+  conversationEvaluateJsonSchema.required.includes('scores') &&
+  conversationEvaluateJsonSchema.required.includes('overallScore') &&
+  conversationEvaluateJsonSchema.required.includes('strengths') &&
+  conversationEvaluateJsonSchema.required.includes('improvements') &&
+  conversationEvaluateJsonSchema.required.includes('reviewItems'),
+  'conversationEvaluateJsonSchema requires all core diagnostic fields'
+);
+
+// ==========================================
+// 5. Evaluation Schemas & Score Bounds
+// ==========================================
+console.log('\nTest Suite 5: Evaluation Score Bounds');
 
 // Valid evaluation output
 const validEval = ConversationEvaluateOutputSchema.safeParse({
@@ -211,9 +242,9 @@ const sixReviewItems = ConversationEvaluateOutputSchema.safeParse({
 assert(!sixReviewItems.success, 'reviewItems > 5 is rejected');
 
 // ==========================================
-// 5. Smart Review Canonical Matching
+// 6. Smart Review Canonical Matching
 // ==========================================
-console.log('\nTest Suite 5: Canonical Smart Review Matching Invariant');
+console.log('\nTest Suite 6: Canonical Smart Review Matching Invariant');
 
 // Matching known expression
 const matchedItem = resolveCurriculumItemByText('Hello');
@@ -225,3 +256,4 @@ const unmatchedItem = resolveCurriculumItemByText('some completely arbitrary non
 assert(unmatchedItem === undefined, 'Unmatched expression returns undefined (does not fabricate fake IDs)');
 
 console.log(`\n✅ All ${passedTests}/${totalTests} Conversation Lab integrity checks passed successfully!`);
+

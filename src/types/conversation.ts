@@ -46,16 +46,17 @@ export interface EvaluationReviewItem {
 }
 
 export interface ConversationEvaluation {
+  evaluationStatus?: 'success' | 'unavailable';
   summary: string;
-  scores: {
+  scores?: {
     communication: number; // 0 - 100
     vocabulary: number; // 0 - 100
     grammar: number; // 0 - 100
     naturalExpression: number; // 0 - 100
   };
-  overallScore: number;
-  strengths: string[];
-  improvements: string[];
+  overallScore?: number;
+  strengths?: string[];
+  improvements?: string[];
   reviewItems: EvaluationReviewItem[];
 }
 
@@ -66,7 +67,8 @@ export interface SavedConversationSummary {
   category: ConversationCategory;
   level: CEFRLevel;
   date: number;
-  overallScore: number;
+  overallScore?: number;
+  evaluationStatus?: 'success' | 'unavailable';
   turnsCount: number;
   summary: string;
 }

@@ -165,6 +165,36 @@ export default function App() {
     setIsEvaluatingConversation(true);
 
     const learnerTurns = turns.filter((t) => t.role === 'user');
+    const turnsCount = learnerTurns.length;
+
+    // If fewer than 2 learner turns, do not call evaluation
+    if (turnsCount < 2) {
+      const shortSessionEval: ConversationEvaluation = {
+        evaluationStatus: 'unavailable',
+        summary: `Completed ${turnsCount} conversation turn in "${selectedScenario.title}". Complete at least 2 turns for performance evaluation.`,
+        reviewItems: selectedScenario.usefulExpressions.slice(0, 3).map((e) => ({
+          expression: e.expression,
+          meaning: e.meaning,
+          reason: 'Key target phrase for this scenario',
+        })),
+      };
+
+      setConversationEvaluation(shortSessionEval);
+      saveConversationSummary({
+        scenarioId: selectedScenario.id,
+        scenarioTitle: selectedScenario.title,
+        category: selectedScenario.category,
+        level: conversationLevel,
+        evaluationStatus: 'unavailable',
+        turnsCount,
+        summary: shortSessionEval.summary,
+      });
+
+      setIsEvaluatingConversation(false);
+      setCurrentView('conversation-result');
+      return;
+    }
+
     const transcriptSummary = turns
       .map((t) => `${t.role === 'user' ? 'Learner' : selectedScenario.aiRole}: ${t.text}`)
       .join('\n');
@@ -178,7 +208,7 @@ export default function App() {
         body: JSON.stringify({
           scenarioId: selectedScenario.id,
           level: conversationLevel,
-          turnsCount: Math.max(2, learnerTurns.length),
+          turnsCount: turnsCount,
           previousInteractionId: interactionId || null,
           transcriptSummary,
         }),
@@ -189,6 +219,7 @@ export default function App() {
       }
 
       const evalData: ConversationEvaluation = await response.json();
+      evalData.evaluationStatus = 'success';
       setConversationEvaluation(evalData);
 
       // Save summary in storage
@@ -198,29 +229,17 @@ export default function App() {
         category: selectedScenario.category,
         level: conversationLevel,
         overallScore: evalData.overallScore,
+        evaluationStatus: 'success',
         turnsCount: learnerTurns.length,
         summary: evalData.summary,
       });
 
       setCurrentView('conversation-result');
     } catch (err) {
-      // Fallback local evaluation summary if AI is offline/exhausted
-      const fallbackEval: ConversationEvaluation = {
-        summary: `Completed ${learnerTurns.length} conversation turns in "${selectedScenario.title}". AI evaluation is temporarily unavailable, but your speaking practice was recorded.`,
-        scores: {
-          communication: 80,
-          vocabulary: 75,
-          grammar: 75,
-          naturalExpression: 70,
-        },
-        overallScore: 75,
-        strengths: [
-          'Actively engaged throughout the role-play scenario.',
-          'Formulated complete responses in English.',
-        ],
-        improvements: [
-          'Review the scenario useful expressions to expand phrase variety.',
-        ],
+      // Explicit unavailable state - NEVER fabricate numeric AI scores
+      const unavailableEval: ConversationEvaluation = {
+        evaluationStatus: 'unavailable',
+        summary: `Conversation completed with ${turnsCount} learner turns in "${selectedScenario.title}". AI performance feedback is temporarily unavailable, but your speaking practice was recorded.`,
         reviewItems: selectedScenario.usefulExpressions.slice(0, 3).map((e) => ({
           expression: e.expression,
           meaning: e.meaning,
@@ -228,15 +247,15 @@ export default function App() {
         })),
       };
 
-      setConversationEvaluation(fallbackEval);
+      setConversationEvaluation(unavailableEval);
       saveConversationSummary({
         scenarioId: selectedScenario.id,
         scenarioTitle: selectedScenario.title,
         category: selectedScenario.category,
         level: conversationLevel,
-        overallScore: fallbackEval.overallScore,
+        evaluationStatus: 'unavailable',
         turnsCount: learnerTurns.length,
-        summary: fallbackEval.summary,
+        summary: unavailableEval.summary,
       });
 
       setCurrentView('conversation-result');
