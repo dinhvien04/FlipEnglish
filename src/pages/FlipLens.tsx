@@ -306,7 +306,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
         <button
           type="button"
           onClick={onBackToHome}
-          className="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+          className="min-h-11 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center"
         >
           Back to Learning Path
         </button>
@@ -402,7 +402,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   id="fliplens-upload-file-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60"
+                  className="min-h-12 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
                 >
                   Choose Image File
                 </button>
@@ -412,7 +412,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   id="fliplens-camera-btn"
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60"
+                  className="min-h-12 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
                 >
                   Take Photo (Camera)
                 </button>
@@ -519,7 +519,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer flex items-center justify-center"
               >
                 Choose Another Photo
               </button>
@@ -528,7 +528,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 type="button"
                 id="fliplens-analyze-btn"
                 onClick={handleAnalyzePhoto}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer flex items-center justify-center"
               >
                 Analyze Photo with Gemini
               </button>
@@ -547,7 +547,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 type="button"
                 id="fliplens-retry-btn"
                 onClick={handleAnalyzePhoto}
-                className="shrink-0 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                className="shrink-0 min-h-10 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
               >
                 Retry Analysis
               </button>
@@ -810,7 +810,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     id="fliplens-create-lesson-btn"
                     onClick={handleCreateLesson}
                     disabled={selectedWordIds.size === 0}
-                    className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                    className={`w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
                       selectedWordIds.size > 0
                         ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/30 cursor-pointer active:scale-98'
                         : 'bg-slate-700 text-slate-400 cursor-not-allowed'
@@ -851,14 +851,14 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+                className="w-full min-h-12 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
               >
                 Try Another Photo
               </button>
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="w-full py-2.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors cursor-pointer"
+                className="w-full min-h-11 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors cursor-pointer flex items-center justify-center"
               >
                 Back to Learning Path
               </button>
@@ -935,7 +935,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     setCurrentCardIndex(0);
                     setHasCompletedCards(false);
                   }}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto min-h-12 px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center"
                 >
                   Review Cards Again
                 </button>
@@ -944,7 +944,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   type="button"
                   id="fliplens-start-quiz-btn"
                   onClick={handleStartPhotoQuiz}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer"
+                  className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer flex items-center justify-center"
                 >
                   Start Photo Quiz
                 </button>
@@ -1052,7 +1052,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 <button
                   type="button"
                   onClick={handleStartReviewMistakes}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all active:scale-98 cursor-pointer"
+                  className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center"
                 >
                   Review {quizMistakes.length} Mistakes
                 </button>
@@ -1061,7 +1061,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-98 cursor-pointer flex items-center justify-center"
               >
                 Try Another Photo
               </button>
@@ -1069,7 +1069,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer flex items-center justify-center"
               >
                 Back to Learning Path
               </button>

@@ -70,7 +70,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
           type="button"
           id={`flag-question-btn-${question.id}`}
           onClick={onToggleFlag}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+          className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center justify-center ${
             isFlagged
               ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-2xs font-extrabold'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -120,7 +120,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                       type="button"
                       id={`exam-opt-${question.id}-${idx}`}
                       onClick={() => onSelectAnswer(opt.text)}
-                      className={`w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-3.5 cursor-pointer ${
+                      className={`w-full min-h-12 text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-start gap-3.5 cursor-pointer ${
                         isSelected
                           ? 'bg-indigo-50/80 border-indigo-600 shadow-xs ring-1 ring-indigo-600'
                           : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
@@ -135,7 +135,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                       >
                         {letter}
                       </span>
-                      <span className="text-xs sm:text-sm font-medium text-slate-800 pt-0.5 leading-relaxed">
+                      <span className="text-xs sm:text-sm font-medium text-slate-800 pt-0.5 leading-relaxed break-words min-w-0 flex-1">
                         {opt.text}
                       </span>
                     </button>
@@ -165,7 +165,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                     id="exam-play-audio-btn"
                     onClick={() => handlePlayAudio(0.9)}
                     disabled={isPlayingAudio}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                    className="min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center"
                   >
                     {isPlayingAudio ? 'Playing...' : 'Play Audio'}
                   </button>
@@ -175,7 +175,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                     id="exam-play-slow-audio-btn"
                     onClick={() => handlePlayAudio(0.65)}
                     disabled={isPlayingAudio}
-                    className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                    className="min-h-11 px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center"
                     title="Play slow rate"
                   >
                     Slow 0.7x
@@ -227,7 +227,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                     type="button"
                     id={`exam-opt-${question.id}-${idx}`}
                     onClick={() => onSelectAnswer(opt.text)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer ${
+                    className={`w-full min-h-12 text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-start gap-4 cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-50/80 border-indigo-600 shadow-xs ring-1 ring-indigo-600'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
@@ -243,8 +243,8 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
                       {letter}
                     </span>
 
-                    <div className="flex-1 pt-1">
-                      <span className="text-sm sm:text-base font-medium text-slate-800 leading-relaxed">
+                    <div className="flex-1 pt-1 min-w-0">
+                      <span className="text-sm sm:text-base font-medium text-slate-800 leading-relaxed break-words block">
                         {opt.text}
                       </span>
                     </div>
@@ -263,7 +263,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
           id="exam-prev-btn"
           onClick={onPrev}
           disabled={isFirst}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="min-h-11 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
         >
           Previous
         </button>
@@ -272,7 +272,7 @@ export const ExamQuestionView: React.FC<ExamQuestionViewProps> = ({
           type="button"
           id="exam-next-btn"
           onClick={onNext}
-          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98"
+          className="min-h-11 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
         >
           {isLast ? 'Review Exam' : 'Next Question'}
         </button>

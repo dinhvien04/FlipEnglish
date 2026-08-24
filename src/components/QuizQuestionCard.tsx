@@ -211,13 +211,13 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
 
         {/* Listening Challenge Audio Control Area */}
         {question.type === 'listening-challenge' && (
-          <div className="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 type="button"
                 id="listening-play-main-btn"
                 onClick={() => handlePlayListeningAudio(audioSpeed)}
-                className="flex-1 sm:flex-initial flex items-center justify-center px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-base shadow-2xs transition-all focus:outline-hidden cursor-pointer"
+                className="w-full sm:w-auto min-h-12 flex items-center justify-center px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm sm:text-base shadow-2xs transition-all focus:outline-hidden cursor-pointer"
               >
                 <span>{hasPlayedAudio ? 'Play Again' : 'Play Audio'}</span>
               </button>
@@ -229,7 +229,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => handlePlayListeningAudio(0.9)}
-                className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                className={`min-h-10 px-3.5 py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                   audioSpeed === 0.9
                     ? 'bg-white border-indigo-300 text-indigo-700 shadow-2xs font-bold'
                     : 'bg-transparent border-slate-200 text-slate-600 hover:bg-white/80'
@@ -241,7 +241,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => handlePlayListeningAudio(0.65)}
-                className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                className={`min-h-10 px-3.5 py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                   audioSpeed === 0.65
                     ? 'bg-white border-indigo-300 text-indigo-700 shadow-2xs font-bold'
                     : 'bg-transparent border-slate-200 text-slate-600 hover:bg-white/80'
@@ -408,16 +408,16 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                     }
                   }}
                   disabled={isAnswerChecked}
-                  className={`p-4 rounded-2xl border-2 text-left font-medium transition-all duration-150 flex items-center justify-between gap-2 focus:outline-hidden ${buttonStyle}`}
+                  className={`min-h-12 p-3.5 sm:p-4 rounded-2xl border-2 text-left font-medium transition-all duration-150 flex items-center justify-between gap-2 focus:outline-hidden ${buttonStyle}`}
                 >
-                  <span className="text-sm sm:text-base leading-snug">{option}</span>
+                  <span className="text-sm sm:text-base leading-snug break-words min-w-0">{option}</span>
                   {isAnswerChecked && isOptionCorrect && (
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
                       Correct
                     </span>
                   )}
                   {isAnswerChecked && isSelected && !isCorrect && (
-                    <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                    <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded shrink-0">
                       Selected
                     </span>
                   )}
@@ -447,7 +447,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
               {/* Detail message customized per question type */}
               {question.type === 'listening-challenge' ? (
                 <div className="text-sm font-medium opacity-90 space-y-1 pt-0.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span>
                       You heard: <strong>{question.word.word}</strong>{' '}
                       <span className="text-xs opacity-75 font-mono">
@@ -457,7 +457,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                     <button
                       type="button"
                       onClick={() => speakWord(question.word.word)}
-                      className="px-2 py-0.5 text-xs font-bold rounded bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
+                      className="min-h-7 px-2.5 py-1 text-xs font-bold rounded bg-black/10 hover:bg-black/20 transition-colors cursor-pointer inline-flex items-center"
                       title="Replay word"
                     >
                       Replay
@@ -498,7 +498,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                   <button
                     type="button"
                     onClick={() => speakWord(question.word.word)}
-                    className="px-2 py-0.5 text-xs font-bold rounded bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
+                    className="min-h-7 px-2.5 py-1 text-xs font-bold rounded bg-black/10 hover:bg-black/20 transition-colors cursor-pointer inline-flex items-center"
                     title="Hear word"
                   >
                     Listen
@@ -514,7 +514,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                     id="explain-mistake-btn"
                     onClick={handleExplainMistake}
                     disabled={isExplaining}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-900 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
+                    className="min-h-10 px-4 py-2 rounded-xl text-xs font-bold text-indigo-900 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer inline-flex items-center"
                   >
                     {isExplaining ? 'Understanding your mistake...' : 'Explain My Mistake'}
                   </button>
@@ -565,7 +565,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                 <button
                   type="button"
                   onClick={handleExplainMistake}
-                  className="px-3 py-1 bg-white border border-amber-300 rounded-lg text-amber-950 font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+                  className="min-h-9 px-3.5 py-1.5 bg-white border border-amber-300 rounded-lg text-amber-950 font-bold hover:bg-amber-100 transition-colors cursor-pointer"
                 >
                   Try Again
                 </button>
@@ -582,7 +582,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
             id="quiz-check-btn"
             onClick={handleCheckAnswer}
             disabled={!canCheck}
-            className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm transition-all focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+            className={`w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl font-bold text-sm transition-all focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               canCheck
                 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs active:scale-98 cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -595,7 +595,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
             id="quiz-continue-btn"
             onClick={handleContinue}
             autoFocus
-            className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-white shadow-2xs transition-all active:scale-98 focus:outline-hidden cursor-pointer ${
+            className={`w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl font-bold text-sm text-white shadow-2xs transition-all active:scale-98 focus:outline-hidden cursor-pointer ${
               isCorrect
                 ? 'bg-emerald-600 hover:bg-emerald-700'
                 : 'bg-slate-800 hover:bg-slate-900'

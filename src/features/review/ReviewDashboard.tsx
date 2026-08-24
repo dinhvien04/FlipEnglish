@@ -133,7 +133,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
             id="review-back-home-btn"
             type="button"
             onClick={onNavigateToHome}
-            className="px-4 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer"
+            className="min-h-11 px-4 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
           >
             Curriculum
           </button>

@@ -154,6 +154,38 @@ const shortEvalInput = ConversationEvaluateInputSchema.safeParse({
 });
 assert(!shortEvalInput.success, 'Evaluation with turnsCount < 2 is rejected by schema');
 
+const over10EvalInput = ConversationEvaluateInputSchema.safeParse({
+  scenarioId: 'coffee-shop',
+  level: 'A1',
+  turnsCount: 11, // Maximum is 10
+});
+assert(!over10EvalInput.success, 'Evaluation with turnsCount > 10 is rejected by schema');
+
+// Turn output max usefulExpressions (3)
+const validTurnOutput = ConversationTurnOutputSchema.safeParse({
+  reply: 'Here is your coffee.',
+  feedback: { hasCorrection: false },
+  usefulExpressions: [
+    { expression: 'Here you go', meaning: 'Của bạn đây' },
+    { expression: 'Enjoy', meaning: 'Chúc ngon miệng' },
+  ],
+  conversationStatus: 'continue',
+});
+assert(validTurnOutput.success, 'Valid turn output passes schema validation');
+
+const fourExpressionsTurn = ConversationTurnOutputSchema.safeParse({
+  reply: 'Here is your coffee.',
+  feedback: { hasCorrection: false },
+  usefulExpressions: [
+    { expression: 'e1', meaning: 'm1' },
+    { expression: 'e2', meaning: 'm2' },
+    { expression: 'e3', meaning: 'm3' },
+    { expression: 'e4', meaning: 'm4' },
+  ],
+  conversationStatus: 'continue',
+});
+assert(!fourExpressionsTurn.success, 'Turn output with > 3 usefulExpressions is rejected by schema');
+
 // ==========================================
 // 4. Shared GenAI Interactions API Top-Level Schemas
 // ==========================================

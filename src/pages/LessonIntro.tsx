@@ -75,7 +75,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
       <button
         id="intro-back-btn"
         onClick={onBackToHome}
-        className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden cursor-pointer"
+        className="min-h-11 px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden cursor-pointer inline-flex items-center"
       >
         Back to Learning Path
       </button>
@@ -156,9 +156,9 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
                 return (
                   <div
                     key={word.id}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-white transition-all text-sm group gap-3"
                   >
-                    <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="flex items-center gap-3 overflow-hidden min-w-0">
                       {word.imageUrl ? (
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
                           <SafeImage
@@ -168,21 +168,21 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
                           />
                         </div>
                       ) : null}
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-slate-900 capitalize">{word.word}</span>
                           <span className="text-2xs text-slate-400 font-mono">{word.pronunciation}</span>
                         </div>
-                        <p className="text-xs text-slate-600 font-medium">{word.meaning}</p>
+                        <p className="text-xs text-slate-600 font-medium truncate">{word.meaning}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                       <button
                         type="button"
                         onClick={() => handleToggleReview(word.id)}
                         title={inReview ? 'Remove from Smart Review' : 'Add to Smart Review'}
-                        className={`min-h-9 px-2.5 py-1 rounded-lg text-2xs font-bold transition-colors cursor-pointer border ${
+                        className={`min-h-10 px-3 py-1.5 rounded-lg text-2xs font-bold transition-colors cursor-pointer border flex items-center justify-center ${
                           inReview
                             ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                             : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
@@ -195,7 +195,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
                         type="button"
                         onClick={() => speakWord(word.word)}
                         title={`Play pronunciation for ${word.word}`}
-                        className="min-h-9 px-2.5 py-1 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-2xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer flex items-center justify-center"
+                        className="min-h-10 px-3 py-1.5 rounded-lg bg-white group-hover:bg-indigo-50 text-slate-600 group-hover:text-indigo-600 text-2xs font-bold transition-colors shrink-0 shadow-2xs border border-slate-200/60 cursor-pointer flex items-center justify-center"
                       >
                         Play
                       </button>
@@ -211,7 +211,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
             <button
               id="intro-back-secondary-btn"
               onClick={onBackToHome}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center"
             >
               Back to Learning Path
             </button>
@@ -219,7 +219,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
             <button
               id="intro-start-learning-btn"
               onClick={onStartLearning}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer flex items-center justify-center"
             >
               Start Flashcards
             </button>

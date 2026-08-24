@@ -120,7 +120,7 @@ export const ReviewResult: React.FC<ReviewResultProps> = ({
             id="review-remaining-btn"
             type="button"
             onClick={onReviewRemaining}
-            className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-xs shrink-0"
+            className="w-full sm:w-auto min-h-11 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-xs shrink-0 flex items-center justify-center"
           >
             Review remaining ({stats.dueCount} due)
           </button>
@@ -137,7 +137,7 @@ export const ReviewResult: React.FC<ReviewResultProps> = ({
           id="back-to-review-btn"
           type="button"
           onClick={onBackToReviewDashboard}
-          className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer text-sm"
+          className="w-full sm:w-auto min-h-12 px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer text-sm flex items-center justify-center"
         >
           Return to Review
         </button>
@@ -146,7 +146,7 @@ export const ReviewResult: React.FC<ReviewResultProps> = ({
           id="continue-curriculum-btn"
           type="button"
           onClick={onContinueCurriculum}
-          className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer text-sm"
+          className="w-full sm:w-auto min-h-12 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer text-sm flex items-center justify-center"
         >
           Continue Learning
         </button>

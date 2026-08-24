@@ -75,7 +75,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
 
           <button
             onClick={onClose}
-            className="px-3 py-1 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="min-h-10 px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center"
           >
             Close
           </button>
@@ -194,7 +194,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   type="button"
                   onClick={handleCheckAnswer}
                   disabled={!selectedOption}
-                  className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm transition-all focus:outline-hidden cursor-pointer ${
+                  className={`w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm transition-all focus:outline-hidden cursor-pointer flex items-center justify-center ${
                     selectedOption
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -207,7 +207,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                   type="button"
                   onClick={handleNext}
                   autoFocus
-                  className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
+                  className="w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer flex items-center justify-center"
                 >
                   {currentIndex + 1 < questions.length ? 'Next Question' : 'View AI Summary'}
                 </button>
@@ -234,7 +234,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
               <button
                 type="button"
                 onClick={handleRestart}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center"
               >
                 Retake AI Practice
               </button>
@@ -242,7 +242,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all cursor-pointer flex items-center justify-center"
               >
                 Done
               </button>

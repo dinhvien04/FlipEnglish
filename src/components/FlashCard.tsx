@@ -86,11 +86,11 @@ export const FlashCard: React.FC<FlashCardProps> = ({
           {/* ================= CARD FRONT ================= */}
           <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-3xl p-5 sm:p-6 flex flex-col justify-between border-2 border-slate-200 shadow-md hover:shadow-lg hover:border-indigo-300 transition-all text-center overflow-hidden">
             {/* Top row */}
-            <div className="w-full flex items-center justify-between text-xs font-semibold text-slate-400 mb-2 shrink-0">
-              <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold">
+            <div className="w-full flex items-center justify-between text-xs font-semibold text-slate-400 mb-2 shrink-0 gap-2">
+              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold shrink-0">
                 Card {currentIndex + 1} of {totalWords}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
                 {word.register && (
                   <span className="text-2xs font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
                     {word.register}
@@ -105,7 +105,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                   id="speak-front-button"
                   onClick={(e) => handleSpeak(e, word.word)}
                   title="Listen to pronunciation"
-                  className="px-3 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors"
+                  className="min-h-9 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
                 >
                   Play Audio
                 </button>
@@ -164,7 +164,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 id="speak-back-button"
                 onClick={(e) => handleSpeak(e, word.example || word.word)}
                 title="Listen to sentence"
-                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors"
+                className="min-h-9 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
               >
                 Play Audio
               </button>
@@ -188,7 +188,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                     <span className="text-2xs text-indigo-300 font-bold uppercase tracking-wider">Example Sentence</span>
                     <button
                       onClick={(e) => handleSpeak(e, word.example)}
-                      className="text-2xs text-indigo-200 hover:text-white font-bold"
+                      className="text-2xs text-indigo-200 hover:text-white font-bold min-h-7 px-2 flex items-center cursor-pointer"
                     >
                       Listen
                     </button>
@@ -235,7 +235,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
             </div>
 
             {/* Bottom Flip Back Prompt */}
-            <div className="flex items-center justify-center text-xs font-medium text-indigo-200 bg-white/10 px-4 py-1 rounded-lg hover:bg-white/20 transition-colors shrink-0 mx-auto mt-2">
+            <div className="flex items-center justify-center text-xs font-medium text-indigo-200 bg-white/10 px-4 py-1.5 rounded-lg hover:bg-white/20 transition-colors shrink-0 mx-auto mt-2 cursor-pointer">
               <span>Tap to flip back</span>
             </div>
           </div>
@@ -243,12 +243,12 @@ export const FlashCard: React.FC<FlashCardProps> = ({
       </div>
 
       {/* Navigation Controls Below Card */}
-      <div className="w-full mt-6 flex items-center justify-between gap-4">
+      <div className="w-full mt-6 flex items-center justify-between gap-3 sm:gap-4">
         <button
           id="flashcard-prev-btn"
           onClick={onPrev}
           disabled={isFirst}
-          className={`flex-1 sm:flex-initial px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+          className={`min-h-12 flex-1 sm:flex-initial px-4 sm:px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
             isFirst
               ? 'opacity-40 bg-slate-100 text-slate-400 cursor-not-allowed'
               : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-2xs active:scale-98 cursor-pointer'
@@ -261,7 +261,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
         <button
           id="flashcard-flip-btn"
           onClick={handleCardClick}
-          className="hidden sm:inline-block px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="min-h-12 hidden sm:inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
           title="Shortcut: Spacebar"
         >
           Flip Card (Space)
@@ -270,9 +270,9 @@ export const FlashCard: React.FC<FlashCardProps> = ({
         <button
           id="flashcard-next-btn"
           onClick={onNext}
-          className="flex-1 sm:flex-initial px-7 py-3 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-98 cursor-pointer"
+          className="min-h-12 flex-1 sm:flex-initial px-5 sm:px-7 py-3 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-98 cursor-pointer flex items-center justify-center"
         >
-          {isLast ? 'Complete Flashcards' : 'Next Word'}
+          {isLast ? 'Complete' : 'Next Word'}
         </button>
       </div>
     </div>

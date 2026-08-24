@@ -130,7 +130,7 @@ export const Home: React.FC<HomeProps> = ({
   }, [selectedLevelTab]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 overflow-x-hidden">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
       {/* Editorial Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.25),rgba(255,255,255,0))]" />
@@ -221,7 +221,7 @@ export const Home: React.FC<HomeProps> = ({
               type="button"
               id="home-open-review-btn"
               onClick={onNavigateReview}
-              className="self-start px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+              className="self-start min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
             >
               {reviewStats.dueCount > 0
                 ? `Review ${reviewStats.dueCount} Due Items`
@@ -248,7 +248,7 @@ export const Home: React.FC<HomeProps> = ({
             type="button"
             id="home-try-fliplens-btn"
             onClick={onOpenFlipLens}
-            className="self-start px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            className="self-start min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
           >
             Try FlipLens
           </button>
@@ -273,7 +273,7 @@ export const Home: React.FC<HomeProps> = ({
               type="button"
               id="home-open-exam-center-btn"
               onClick={onOpenExamCenter}
-              className="self-start px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+              className="self-start min-h-12 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
             >
               Go to Exam Center
             </button>

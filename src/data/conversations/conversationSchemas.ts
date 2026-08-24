@@ -38,7 +38,7 @@ export const ConversationTurnOutputSchema = z
           })
           .strict()
       )
-      .max(5),
+      .max(3),
     conversationStatus: z.enum(['continue', 'complete']),
   })
   .strict();
@@ -50,7 +50,7 @@ export const ConversationEvaluateInputSchema = z
   .object({
     scenarioId: z.string().trim().min(1).max(80),
     level: z.enum(CEFR_LEVELS),
-    turnsCount: z.number().int().min(2).max(50),
+    turnsCount: z.number().int().min(2).max(10),
     previousInteractionId: z.string().trim().min(1).max(256).nullable().optional(),
     transcriptSummary: z.string().trim().max(4000).optional(),
   })

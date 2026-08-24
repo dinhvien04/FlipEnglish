@@ -106,7 +106,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-quick-test-btn"
               onClick={() => setSelectedModalMode('quick')}
-              className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
+              className="w-full min-h-12 py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
               Start Quick Test
             </button>
@@ -142,7 +142,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-level-exam-btn"
               onClick={() => setSelectedModalMode('level')}
-              className="relative z-10 w-full py-3.5 px-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-98"
+              className="relative z-10 w-full min-h-12 py-3.5 px-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
               Choose Level & Start
             </button>
@@ -174,7 +174,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               type="button"
               id="start-full-mock-btn"
               onClick={() => setSelectedModalMode('mock')}
-              className="w-full py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
+              className="w-full min-h-12 py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
               Start Mock Exam
             </button>
@@ -295,7 +295,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                 <button
                   type="button"
                   onClick={() => onViewResultReport(report)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer text-center"
+                  className="w-full min-h-10 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer text-center flex items-center justify-center"
                 >
                   View Report
                 </button>
@@ -331,7 +331,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedModalMode(null)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-1 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer"
+                className="min-h-9 text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-1 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer flex items-center justify-center"
               >
                 Cancel
               </button>
@@ -346,7 +346,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                     type="button"
                     id={`select-level-btn-${lvl.toLowerCase()}`}
                     onClick={() => handleSelectLevelAndStart(lvl)}
-                    className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 transition-all text-left space-y-1 cursor-pointer group shadow-2xs hover:shadow-xs"
+                    className="min-h-24 p-4 rounded-2xl border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 transition-all text-left space-y-1 cursor-pointer group shadow-2xs hover:shadow-xs flex flex-col justify-between"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors">

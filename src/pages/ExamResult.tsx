@@ -175,7 +175,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           </div>
 
           {/* Overall Score Badge */}
-          <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 border border-slate-800 shadow-md text-center min-w-[200px] space-y-2 shrink-0">
+          <div className="w-full md:w-auto bg-slate-900 text-white rounded-3xl p-6 sm:p-7 border border-slate-800 shadow-md text-center min-w-0 md:min-w-[200px] space-y-2 shrink-0">
             <p className="text-2xs uppercase tracking-widest font-extrabold text-slate-400">
               Overall Score
             </p>
@@ -289,7 +289,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                 id="request-ai-exam-analysis-btn"
                 onClick={handleRequestAIAnalysis}
                 disabled={isAnalyzing}
-                className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center justify-center"
               >
                 {isAnalyzing ? 'Analyzing Exam...' : 'Analyze My Exam'}
               </button>
@@ -389,7 +389,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                   type="button"
                   id={`study-recommended-lesson-${lesson.id}`}
                   onClick={() => onSelectLesson(lesson)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+                  className="w-full min-h-11 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
                 >
                   Study This Lesson
                 </button>
@@ -514,7 +514,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                         )
                       }
                       disabled={isExplainingThis}
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50/50 border border-indigo-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                      className="min-h-10 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50/50 border border-indigo-200 px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
                     >
                       {isExplainingThis ? 'Generating explanation...' : 'Explain My Mistake with Gemini'}
                     </button>
@@ -538,7 +538,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           type="button"
           id="retake-exam-result-btn"
           onClick={onRetakeExam}
-          className="w-full sm:w-auto py-3 px-6 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
+          className="w-full sm:w-auto min-h-12 py-3 px-6 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer flex items-center justify-center"
         >
           Retake Practice Exam
         </button>
@@ -549,7 +549,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
               type="button"
               id="ai-practice-missed-words-btn"
               onClick={handleLaunchAIPractice}
-              className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold text-xs sm:text-sm transition-all cursor-pointer"
+              className="w-full sm:w-auto min-h-12 py-3 px-5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
             >
               AI Practice On Missed Words
             </button>
@@ -559,7 +559,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
             type="button"
             id="return-to-exam-center-btn"
             onClick={onReturnToExamCenter}
-            className="w-full sm:w-auto py-3 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
+            className="w-full sm:w-auto min-h-12 py-3 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
           >
             Return to Exam Center
           </button>

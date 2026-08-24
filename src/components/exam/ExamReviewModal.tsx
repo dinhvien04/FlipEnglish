@@ -79,7 +79,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="cancel-submit-modal-btn"
                 onClick={() => setShowConfirmSubmit(false)}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm transition-all cursor-pointer"
+                className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm transition-all cursor-pointer flex items-center justify-center"
               >
                 Keep Reviewing
               </button>
@@ -88,7 +88,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="confirm-submit-exam-btn"
                 onClick={onConfirmSubmit}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-2xs transition-all cursor-pointer active:scale-98"
+                className="w-full sm:w-auto min-h-12 px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
               >
                 {unansweredIndices.length > 0 ? 'Submit Anyway' : 'Submit Final Answers'}
               </button>
@@ -109,7 +109,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="close-review-modal-btn"
                 onClick={onClose}
-                className="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer"
+                className="min-h-10 text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer flex items-center justify-center"
               >
                 Close
               </button>
@@ -162,7 +162,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                           onSelectQuestion(idx);
                           onClose();
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-rose-300 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs"
+                        className="min-h-10 px-3.5 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
                       >
                         Question {idx + 1}
                       </button>
@@ -186,7 +186,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                           onSelectQuestion(idx);
                           onClose();
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+                        className="min-h-10 px-3.5 py-2 rounded-lg bg-white border border-amber-300 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
                       >
                         Question {idx + 1}
                       </button>
@@ -202,7 +202,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="return-to-questions-btn"
                 onClick={onClose}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                className="w-full sm:w-auto min-h-11 px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
               >
                 Return to Questions
               </button>
@@ -211,7 +211,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="proceed-to-submit-btn"
                 onClick={() => setShowConfirmSubmit(true)}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98"
+                className="w-full sm:w-auto min-h-11 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
               >
                 Submit Final Answers
               </button>

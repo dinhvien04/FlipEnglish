@@ -58,7 +58,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
             type="button"
             id="discard-active-exam-btn"
             onClick={onDiscard}
-            className="w-full sm:w-auto flex-1 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+            className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
           >
             Discard & Start Over
           </button>
@@ -67,7 +67,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
             type="button"
             id="resume-active-exam-btn"
             onClick={onResume}
-            className="w-full sm:w-auto flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98"
+            className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
           >
             Resume Exam
           </button>

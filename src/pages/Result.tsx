@@ -206,7 +206,7 @@ export const Result: React.FC<ResultProps> = ({
               id="result-ai-practice-btn"
               onClick={handleGenerateAiPractice}
               disabled={isGeneratingAi}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer flex items-center justify-center"
             >
               {isGeneratingAi ? 'Generating Practice...' : 'Generate AI Practice'}
             </button>
@@ -216,7 +216,7 @@ export const Result: React.FC<ResultProps> = ({
             <button
               id="result-review-mistakes-btn"
               onClick={onReviewMistakes}
-              className="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer flex items-center justify-center"
             >
               Flashcard Review
             </button>
@@ -225,7 +225,7 @@ export const Result: React.FC<ResultProps> = ({
           <button
             id="result-try-again-btn"
             onClick={onTryAgain}
-            className="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer"
+            className="w-full sm:w-auto min-h-12 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer flex items-center justify-center"
           >
             Retake Quiz
           </button>
@@ -233,7 +233,7 @@ export const Result: React.FC<ResultProps> = ({
           <button
             id="result-back-home-btn"
             onClick={onBackToHome}
-            className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-98 cursor-pointer ${
+            className={`w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-98 cursor-pointer flex items-center justify-center ${
               mistakeWords.length === 0
                 ? 'text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'

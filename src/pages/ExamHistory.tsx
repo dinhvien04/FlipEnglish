@@ -45,7 +45,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             type="button"
             id="back-to-exam-center-from-history-btn"
             onClick={onBackToExamCenter}
-            className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+            className="min-h-11 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
           >
             Back
           </button>
@@ -62,7 +62,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             type="button"
             id="clear-exam-history-btn"
             onClick={handleClearHistory}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto"
+            className="min-h-10 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto flex items-center justify-center"
           >
             Clear History
           </button>
@@ -146,7 +146,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
                 type="button"
                 id={`view-history-report-${report.id}`}
                 onClick={() => onViewReport(report)}
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer"
+                className="w-full min-h-11 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
               >
                 View Full Report
               </button>

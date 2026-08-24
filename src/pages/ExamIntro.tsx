@@ -55,7 +55,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
         type="button"
         id="back-to-exam-center-intro-btn"
         onClick={onBackToExamCenter}
-        className="text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer"
+        className="min-h-11 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer inline-flex items-center justify-center"
       >
         Back to Exam Center
       </button>
@@ -164,7 +164,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
           <button
             type="button"
             onClick={onBackToExamCenter}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer"
+            className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
           >
             Cancel & Return
           </button>
@@ -173,7 +173,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
             type="button"
             id="start-exam-confirmed-btn"
             onClick={onStartExam}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-sm sm:text-base shadow-2xs transition-all cursor-pointer"
+            className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-sm sm:text-base shadow-2xs transition-all cursor-pointer flex items-center justify-center"
           >
             Start Exam
           </button>

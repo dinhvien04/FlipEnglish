@@ -264,7 +264,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
               type="button"
               disabled={disabled}
               onClick={() => onRate('again')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 active:bg-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+              className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 active:bg-rose-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
                 <span className="text-xs font-extrabold">Again</span>
@@ -281,7 +281,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
               type="button"
               disabled={disabled}
               onClick={() => onRate('hard')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+              className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
                 <span className="text-xs font-extrabold">Hard</span>
@@ -298,7 +298,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
               type="button"
               disabled={disabled}
               onClick={() => onRate('good')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100 active:bg-sky-200 transition-colors cursor-pointer disabled:opacity-50"
+              className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100 active:bg-sky-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
                 <span className="text-xs font-extrabold">Good</span>
@@ -315,7 +315,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
               type="button"
               disabled={disabled}
               onClick={() => onRate('easy')}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 active:bg-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+              className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 active:bg-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
                 <span className="text-xs font-extrabold">Easy</span>
