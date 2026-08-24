@@ -128,23 +128,23 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               type="button"
               id={`view-all-${shelfId}-btn`}
               onClick={onViewAll}
-              className="text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+              className="min-h-11 px-3 py-1.5 inline-flex items-center text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer rounded-lg"
             >
               View All
             </button>
           )}
 
-          {/* Desktop/Tablet Text Scroll Buttons */}
-          <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-200">
+          {/* Desktop/Tablet Text Scroll Buttons (hidden on narrow phone where native horizontal swipe is primary) */}
+          <div className="hidden md:flex items-center gap-2 pl-3 border-l border-slate-200">
             <button
               type="button"
               id={`shelf-prev-${shelfId}`}
               onClick={() => handleScrollBy('left')}
               disabled={!canScrollLeft}
               aria-label={`Previous ${title} lessons`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all inline-flex items-center justify-center cursor-pointer ${
                 canScrollLeft
-                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs'
+                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs active:scale-95'
                   : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed opacity-50'
               }`}
             >
@@ -157,9 +157,9 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               onClick={() => handleScrollBy('right')}
               disabled={!canScrollRight}
               aria-label={`Next ${title} lessons`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all inline-flex items-center justify-center cursor-pointer ${
                 canScrollRight
-                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs'
+                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs active:scale-95'
                   : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed opacity-50'
               }`}
             >
@@ -181,7 +181,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
           {lessons.map((lesson) => (
             <div
               key={lesson.id}
-              className="w-[82vw] max-w-[310px] sm:w-[280px] md:w-[290px] lg:w-[300px] shrink-0 course-rail-item"
+              className="w-[78vw] sm:w-[280px] md:w-[290px] lg:w-[300px] max-w-[310px] shrink-0 course-rail-item"
             >
               <LessonCard
                 lesson={lesson}

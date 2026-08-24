@@ -46,17 +46,17 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({ endsAt, onExpire }) => {
       id="exam-timer-widget"
       aria-live="polite"
       aria-label={`Time remaining: ${minutes} minutes and ${seconds} seconds`}
-      className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-mono font-black text-sm sm:text-base border transition-all ${
+      className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 rounded-xl font-mono font-black text-xs sm:text-base border transition-all ${
         isLowTime
           ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-2xs'
           : 'bg-slate-800 border-slate-700 text-indigo-300 shadow-2xs'
       }`}
     >
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-2xs uppercase tracking-wider font-sans font-bold text-slate-400">
+      <div className="flex items-baseline gap-1 sm:gap-1.5">
+        <span className="hidden sm:inline text-2xs uppercase tracking-wider font-sans font-bold text-slate-400">
           {isLowTime ? 'Expiring:' : 'Time Left:'}
         </span>
-        <span className="tracking-widest text-white text-base sm:text-lg font-mono">{formattedTime}</span>
+        <span className="tracking-widest text-white text-sm sm:text-lg font-mono">{formattedTime}</span>
       </div>
     </div>
   );

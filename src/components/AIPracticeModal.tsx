@@ -167,14 +167,14 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
                 }`}
               >
                 <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold uppercase tracking-wider">
                       {isCorrect ? 'Well Done!' : 'Explanation'}
                     </span>
                     <button
                       type="button"
                       onClick={() => speakWord(currentQuestion.targetWord)}
-                      className="text-xs font-semibold px-2 py-0.5 rounded bg-white/70 hover:bg-white transition-colors cursor-pointer"
+                      className="min-h-11 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white active:bg-white/60 text-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
                       title="Hear word"
                     >
                       Listen: {currentQuestion.targetWord}

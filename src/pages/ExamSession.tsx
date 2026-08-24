@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ExamResultReport, ExamSession } from '../types/exam';
 import { ExamTimer } from '../components/exam/ExamTimer';
 import { QuestionNavigator } from '../components/exam/QuestionNavigator';
@@ -22,10 +22,37 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
+  const drawerCloseBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerTriggerBtnRef = useRef<HTMLButtonElement>(null);
+
   // Sync to localStorage on every state change
   useEffect(() => {
     saveActiveExam(session);
   }, [session]);
+
+  // Focus management & Escape listener for mobile Questions drawer
+  useEffect(() => {
+    if (!isMobileDrawerOpen) return;
+
+    // Focus close button on open
+    drawerCloseBtnRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsMobileDrawerOpen(false);
+        drawerTriggerBtnRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileDrawerOpen]);
+
+  const handleCloseDrawer = () => {
+    setIsMobileDrawerOpen(false);
+    drawerTriggerBtnRef.current?.focus();
+  };
 
   const currentQuestion = session.questions[session.currentQuestionIndex] || session.questions[0];
   const totalQuestions = session.questions.length;
@@ -116,13 +143,13 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
     <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col justify-between">
       {/* Exam Sticky Navigation Header */}
       <header className="sticky top-0 z-40 bg-slate-900 text-white border-b border-slate-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          {/* Left: Title & Level */}
-          <div className="flex items-center gap-3 overflow-hidden">
-            <span className="text-xs font-black px-2.5 py-1 rounded-md bg-indigo-600 text-white shrink-0">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          {/* Left: Title & Level (Priority: Level > Title on narrow phones) */}
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden min-w-0">
+            <span className="text-xs font-black px-2 sm:px-2.5 py-1 rounded-md bg-indigo-600 text-white shrink-0">
               {session.level}
             </span>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-200 truncate">
+            <h2 className="text-xs sm:text-sm font-bold text-slate-200 truncate hidden xs:block sm:block">
               {session.title}
             </h2>
           </div>
@@ -134,9 +161,12 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
 
             {/* Mobile Question Navigator Toggle */}
             <button
+              ref={drawerTriggerBtnRef}
               type="button"
               id="mobile-questions-drawer-btn"
               onClick={() => setIsMobileDrawerOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={isMobileDrawerOpen}
               aria-label="Open question navigator drawer"
               className="lg:hidden min-h-11 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xs font-bold text-slate-200 border border-slate-700 cursor-pointer flex items-center justify-center"
             >
@@ -192,15 +222,21 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Question Navigator"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseDrawer();
+            }
+          }}
           className="lg:hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end animate-fadeIn"
         >
           <div className="bg-white w-full max-w-sm h-full p-6 flex flex-col justify-between space-y-4 shadow-2xl animate-slideLeft">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-extrabold text-slate-900">Questions</h3>
               <button
+                ref={drawerCloseBtnRef}
                 type="button"
-                onClick={() => setIsMobileDrawerOpen(false)}
-                className="min-h-10 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold cursor-pointer flex items-center justify-center"
+                onClick={handleCloseDrawer}
+                className="min-h-11 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold cursor-pointer inline-flex items-center justify-center"
               >
                 Close
               </button>

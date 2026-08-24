@@ -16,7 +16,6 @@ import { generateQuiz } from '../utils/quizGenerator';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
-import confetti from 'canvas-confetti';
 
 interface FlipLensProps {
   onBackToHome: () => void;
@@ -262,19 +261,6 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       setCurrentQuizIndex((prev) => prev + 1);
     } else {
       // Finished Quiz
-      const finalScore = isCorrect ? quizScore + 1 : quizScore;
-      const totalQ = quizQuestions.length;
-      if (finalScore / totalQ >= 0.7) {
-        try {
-          confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
-        } catch {
-          // ignore
-        }
-      }
       setStep('result');
     }
   };
@@ -302,11 +288,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
         <button
           type="button"
           onClick={onBackToHome}
-          className="min-h-11 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center"
+          className="min-h-11 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer inline-flex items-center justify-center"
         >
           Back to Learning Path
         </button>
@@ -396,13 +382,13 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <button
                   type="button"
                   id="fliplens-upload-file-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="min-h-12 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
                 >
                   Choose Image File
                 </button>
@@ -412,7 +398,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   id="fliplens-camera-btn"
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={isCompressing}
-                  className="min-h-12 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-slate-200 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
                 >
                   Take Photo (Camera)
                 </button>
@@ -759,7 +745,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                               e.stopPropagation();
                               speakWord(obj.word);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
+                            className="min-h-11 px-3 py-1.5 rounded-xl text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center"
                             title="Hear pronunciation"
                           >
                             Listen
@@ -1036,7 +1022,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                     <button
                       type="button"
                       onClick={() => speakWord(word.word)}
-                      className="px-2 py-0.5 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
+                      className="min-h-11 px-3 py-1.5 rounded-xl text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
                       title="Hear audio"
                     >
                       Listen

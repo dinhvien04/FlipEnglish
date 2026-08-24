@@ -141,8 +141,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
 
         {/* Word / Expression Display */}
         <div className="space-y-2">
-          <div className="flex items-center justify-center gap-3">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">
               {word.word}
             </h2>
             <button
@@ -150,7 +150,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
               type="button"
               onClick={(e) => handleSpeak(e, word.word)}
               aria-label={`Listen to pronunciation for ${word.word}`}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 cursor-pointer transition-colors"
+              className="min-h-11 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 border border-indigo-200 cursor-pointer transition-colors inline-flex items-center justify-center"
             >
               Play Audio
             </button>
@@ -198,14 +198,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
             {/* Example Sentence */}
             {word.example && (
               <div className="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-2xs uppercase tracking-wider font-bold text-indigo-600">
                     Example Sentence
                   </span>
                   <button
                     type="button"
                     onClick={(e) => handleSpeak(e, word.example)}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                    className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white/80 hover:bg-white active:bg-white/60 min-h-11 px-3 rounded-lg border border-indigo-100 cursor-pointer inline-flex items-center justify-center transition-colors"
                   >
                     Listen
                   </button>

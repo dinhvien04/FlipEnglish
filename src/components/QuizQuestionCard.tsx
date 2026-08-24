@@ -193,15 +193,15 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
 
       {/* Main Prompt */}
       <div className="space-y-3 mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug break-words">
             {question.prompt}
           </h3>
           {question.type === 'picture-quiz' && (
             <button
               type="button"
               onClick={() => speakWord(question.word.word)}
-              className="px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors shrink-0 cursor-pointer"
+              className="min-h-11 px-3.5 py-2 text-xs sm:text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 rounded-xl transition-colors shrink-0 cursor-pointer inline-flex items-center justify-center self-start sm:self-auto"
               title="Hear word pronunciation"
             >
               Play Audio
@@ -224,12 +224,12 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
             </div>
 
             {/* Speed selection buttons: Normal and Slow */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end text-xs font-semibold">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end text-xs font-semibold">
               <span className="text-slate-500 mr-1">Speed:</span>
               <button
                 type="button"
                 onClick={() => handlePlayListeningAudio(0.9)}
-                className={`min-h-10 px-3.5 py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
+                className={`min-h-11 px-4 py-2.5 rounded-xl border transition-all cursor-pointer inline-flex items-center justify-center ${
                   audioSpeed === 0.9
                     ? 'bg-white border-indigo-300 text-indigo-700 shadow-2xs font-bold'
                     : 'bg-transparent border-slate-200 text-slate-600 hover:bg-white/80'
@@ -241,7 +241,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => handlePlayListeningAudio(0.65)}
-                className={`min-h-10 px-3.5 py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
+                className={`min-h-11 px-4 py-2.5 rounded-xl border transition-all cursor-pointer inline-flex items-center justify-center ${
                   audioSpeed === 0.65
                     ? 'bg-white border-indigo-300 text-indigo-700 shadow-2xs font-bold'
                     : 'bg-transparent border-slate-200 text-slate-600 hover:bg-white/80'
@@ -498,7 +498,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                   <button
                     type="button"
                     onClick={() => speakWord(question.word.word)}
-                    className="min-h-7 px-2.5 py-1 text-xs font-bold rounded bg-black/10 hover:bg-black/20 transition-colors cursor-pointer inline-flex items-center"
+                    className="min-h-11 px-3 py-1.5 text-xs font-bold rounded-xl bg-black/10 hover:bg-black/20 active:bg-black/30 transition-colors cursor-pointer inline-flex items-center justify-center"
                     title="Hear word"
                   >
                     Listen
@@ -514,7 +514,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                     id="explain-mistake-btn"
                     onClick={handleExplainMistake}
                     disabled={isExplaining}
-                    className="min-h-10 px-4 py-2 rounded-xl text-xs font-bold text-indigo-900 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer inline-flex items-center"
+                    className="min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-indigo-900 bg-white border border-indigo-200 hover:bg-indigo-50 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer inline-flex items-center justify-center"
                   >
                     {isExplaining ? 'Understanding your mistake...' : 'Explain My Mistake'}
                   </button>

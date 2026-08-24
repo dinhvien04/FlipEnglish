@@ -58,7 +58,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               id={`nav-question-${idx + 1}`}
               onClick={() => onSelectQuestion(idx)}
               aria-label={`Question ${idx + 1}, ${isAnswered ? 'Answered' : 'Unanswered'}, ${isFlagged ? 'Flagged for review' : ''}`}
-              className={`relative h-10 rounded-xl flex items-center justify-center text-xs border transition-all cursor-pointer ${btnClass}`}
+              className={`relative min-h-11 h-11 rounded-xl flex items-center justify-center text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${btnClass}`}
             >
               <span>{String(idx + 1).padStart(2, '0')}</span>
 
@@ -66,12 +66,12 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               {isFlagged && (
                 <span
                   title="Flagged for review"
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border border-white"
+                  className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full border border-white"
                 />
               )}
 
               {isAnswered && !isCurrent && (
-                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-indigo-600" />
+                <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-indigo-600" />
               )}
             </button>
           );

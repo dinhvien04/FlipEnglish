@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import confetti from 'canvas-confetti';
 import { Lesson, VocabWord, AIPracticeQuestion } from '../types';
 import { saveLessonProgress } from '../utils/storage';
 import { speakWord } from '../utils/speech';
@@ -36,20 +35,6 @@ export const Result: React.FC<ResultProps> = ({
   useEffect(() => {
     // Automatically save lesson progress
     saveLessonProgress(lesson.id, score);
-
-    // Trigger celebration confetti on high score
-    if (score >= 70) {
-      try {
-        confetti({
-          particleCount: 75,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#4f46e5', '#8b5cf6', '#10b981', '#f59e0b'],
-        });
-      } catch (err) {
-        console.warn('Confetti error:', err);
-      }
-    }
   }, [lesson.id, score]);
 
   const handleGenerateAiPractice = async () => {
@@ -180,7 +165,7 @@ export const Result: React.FC<ResultProps> = ({
                   <button
                     onClick={() => speakWord(word.word)}
                     title={`Play pronunciation for ${word.word}`}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-rose-200/60 cursor-pointer"
+                    className="min-h-11 px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100 active:bg-rose-200 text-rose-700 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-rose-200/60 cursor-pointer inline-flex items-center justify-center"
                   >
                     Play
                   </button>

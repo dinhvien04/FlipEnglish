@@ -84,7 +84,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
           }`}
         >
           {/* ================= CARD FRONT ================= */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-3xl p-5 sm:p-6 flex flex-col justify-between border-2 border-slate-200 shadow-md hover:shadow-lg hover:border-indigo-300 transition-all text-center overflow-hidden">
+          <div className="absolute inset-0 w-full h-full backface-hidden bg-white rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-slate-200 shadow-md hover:shadow-lg hover:border-indigo-300 transition-all text-center overflow-hidden">
             {/* Top row */}
             <div className="w-full flex items-center justify-between text-xs font-semibold text-slate-400 mb-2 shrink-0 gap-2">
               <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold shrink-0">
@@ -105,7 +105,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                   id="speak-front-button"
                   onClick={(e) => handleSpeak(e, word.word)}
                   title="Listen to pronunciation"
-                  className="min-h-9 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
+                  className="min-h-11 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
                 >
                   Play Audio
                 </button>
@@ -114,7 +114,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
 
             {/* Photographic Image or Typography-First Section */}
             {word.imageUrl ? (
-              <div className="relative w-full flex-1 max-h-[56%] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-2xs">
+              <div className="relative w-full flex-1 max-h-[52%] sm:max-h-[56%] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-2xs">
                 <SafeImage
                   src={word.imageUrl}
                   alt={word.imageAlt || word.word}
@@ -122,11 +122,11 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 />
               </div>
             ) : (
-              <div className="relative w-full flex-1 max-h-[56%] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-slate-200/70 flex flex-col items-center justify-center p-6 text-center">
+              <div className="relative w-full flex-1 max-h-[52%] sm:max-h-[56%] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-slate-200/70 flex flex-col items-center justify-center p-4 sm:p-6 text-center">
                 <span className="text-2xs font-bold uppercase tracking-widest text-indigo-600 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-2xs mb-2">
                   {word.type && word.type !== 'word' ? word.type.replace('_', ' ') : (word.partOfSpeech || 'Lexical item')}
                 </span>
-                <span className="text-base sm:text-lg font-extrabold text-slate-800 max-w-xs line-clamp-2">
+                <span className="text-base sm:text-lg font-extrabold text-slate-800 max-w-xs line-clamp-2 break-words">
                   {word.word}
                 </span>
                 <span className="text-xs text-slate-500 font-medium mt-1">
@@ -136,12 +136,12 @@ export const FlashCard: React.FC<FlashCardProps> = ({
             )}
 
             {/* Word & IPA Typography */}
-            <div className="flex flex-col items-center justify-center my-2 space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+            <div className="flex flex-col items-center justify-center my-1.5 sm:my-2 space-y-1 min-w-0 px-2">
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 break-words max-w-full">
                 {word.word}
               </h2>
               {word.pronunciation && (
-                <p className="text-sm sm:text-base font-mono font-medium text-slate-500">
+                <p className="text-sm sm:text-base font-mono font-medium text-slate-500 break-words max-w-full">
                   {word.pronunciation}
                 </p>
               )}
@@ -154,7 +154,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
           </div>
 
           {/* ================= CARD BACK ================= */}
-          <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900 text-white rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl border-2 border-indigo-500/40 text-center overflow-y-auto">
+          <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-slate-900 text-white rounded-3xl p-5 sm:p-7 flex flex-col justify-between shadow-xl border-2 border-indigo-500/40 text-center overflow-y-auto">
             {/* Top row */}
             <div className="w-full flex items-center justify-between text-xs font-semibold text-indigo-300 shrink-0">
               <span className="px-3 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/15 uppercase tracking-wider font-bold">
@@ -164,19 +164,19 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 id="speak-back-button"
                 onClick={(e) => handleSpeak(e, word.example || word.word)}
                 title="Listen to sentence"
-                className="min-h-9 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
+                className="min-h-11 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
               >
                 Play Audio
               </button>
             </div>
 
             {/* Back Content */}
-            <div className="flex flex-col items-center justify-center my-auto space-y-3 px-1">
-              <div className="space-y-1">
-                <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-300">
+            <div className="flex flex-col items-center justify-center my-auto space-y-3 px-1 min-w-0">
+              <div className="space-y-1 max-w-full">
+                <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-300 break-words">
                   {word.word}
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-amber-300">
+                <h3 className="text-xl sm:text-2xl font-black text-amber-300 break-words">
                   {word.meaning}
                 </h3>
               </div>
@@ -184,16 +184,16 @@ export const FlashCard: React.FC<FlashCardProps> = ({
               {/* Example sentence */}
               {word.example && (
                 <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 w-full text-left backdrop-blur-xs">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="text-2xs text-indigo-300 font-bold uppercase tracking-wider">Example Sentence</span>
                     <button
                       onClick={(e) => handleSpeak(e, word.example)}
-                      className="text-2xs text-indigo-200 hover:text-white font-bold min-h-7 px-2 flex items-center cursor-pointer"
+                      className="text-xs text-indigo-200 hover:text-white font-bold min-h-11 px-3 rounded-lg bg-white/10 hover:bg-white/20 inline-flex items-center cursor-pointer transition-colors"
                     >
                       Listen
                     </button>
                   </div>
-                  <p className="text-xs sm:text-sm font-normal italic text-white leading-relaxed">
+                  <p className="text-xs sm:text-sm font-normal italic text-white leading-relaxed break-words">
                     "{word.example}"
                   </p>
                 </div>
@@ -203,7 +203,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
               {(word.nuance || (word.collocations && word.collocations.length > 0) || (word.synonyms && word.synonyms.length > 0)) && (
                 <div className="w-full space-y-1.5 text-left text-2xs">
                   {word.nuance && (
-                    <div className="p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-400/20 text-slate-200">
+                    <div className="p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-400/20 text-slate-200 break-words">
                       <span className="font-bold text-amber-300">Nuance: </span>
                       <span>{word.nuance}</span>
                     </div>
@@ -213,7 +213,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                     <div className="flex flex-wrap gap-1 items-center">
                       <span className="text-indigo-300 font-semibold mr-1">Collocations:</span>
                       {word.collocations.map((c, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-white font-mono text-2xs">
+                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-white font-mono text-2xs break-words">
                           {c}
                         </span>
                       ))}
@@ -224,7 +224,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                     <div className="flex flex-wrap gap-1 items-center">
                       <span className="text-indigo-300 font-semibold mr-1">Synonyms:</span>
                       {word.synonyms.map((s, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-indigo-200 font-mono text-2xs">
+                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-indigo-200 font-mono text-2xs break-words">
                           {s}
                         </span>
                       ))}

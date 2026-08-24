@@ -306,13 +306,14 @@ export const Home: React.FC<HomeProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search lessons, words or topics..."
-                className="w-full px-4 py-2.5 bg-white rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
+                className="w-full pl-4 pr-14 py-2.5 bg-white rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                  aria-label="Clear search input"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-11 px-3 inline-flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
                 >
                   Clear
                 </button>
@@ -321,12 +322,12 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Level Switcher Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none py-1">
             <button
               type="button"
               id="cefr-tab-all"
               onClick={() => handleSelectLevelTab('ALL')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer ${
+              className={`min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer inline-flex items-center justify-center ${
                 selectedLevelTab === 'ALL' && viewAllLevel === null
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -346,7 +347,7 @@ export const Home: React.FC<HomeProps> = ({
                   type="button"
                   id={`cefr-tab-${lvl.toLowerCase()}`}
                   onClick={() => handleSelectLevelTab(lvl)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     isSelected
                       ? `${info.badgeBg} shadow-md`
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
