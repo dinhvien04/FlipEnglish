@@ -164,6 +164,7 @@ export interface SpecialGoalCollection {
 }
 
 export type AppView =
+  | 'today'
   | 'home'
   | 'lesson-intro'
   | 'learn'

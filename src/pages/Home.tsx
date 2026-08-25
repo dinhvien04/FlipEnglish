@@ -5,6 +5,8 @@ import { getStoredProgress, getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { getLatestPlacementResult, PLACEMENT_UPDATED_EVENT } from '../features/placement/placementStorage';
 import { CompactPlacementHistoryItem } from '../features/placement/placementTypes';
+import { getOrGenerateTodayPlan, STUDY_PLAN_UPDATED_EVENT } from '../features/studyPlan/studyPlanStorage';
+import { TodayStudyPlan } from '../features/studyPlan/studyPlanTypes';
 import { CEFR_LEVELS_INFO } from '../data/curriculum/curriculumMeta';
 import { CourseShelf } from '../components/CourseShelf';
 import { LevelLibraryView } from '../components/LevelLibraryView';
@@ -15,6 +17,7 @@ interface HomeProps {
   onOpenFlipLens: () => void;
   onOpenExamCenter?: () => void;
   onNavigateReview?: () => void;
+  onNavigateToday?: () => void;
   onStartPlacement?: () => void;
   onViewPlacementResult?: () => void;
   initialLevelTab?: CEFRLevel | 'ALL';
@@ -37,6 +40,7 @@ export const Home: React.FC<HomeProps> = ({
   onOpenFlipLens,
   onOpenExamCenter,
   onNavigateReview,
+  onNavigateToday,
   onStartPlacement,
   onViewPlacementResult,
   initialLevelTab = 'ALL',
@@ -44,6 +48,7 @@ export const Home: React.FC<HomeProps> = ({
   const [progress, setProgress] = useState<AllProgress>(() => getStoredProgress());
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
+  const [todayPlan, setTodayPlan] = useState<TodayStudyPlan>(() => getOrGenerateTodayPlan());
   const [latestPlacement, setLatestPlacement] = useState<CompactPlacementHistoryItem | null>(() =>
     getLatestPlacementResult()
   );
@@ -74,15 +79,23 @@ export const Home: React.FC<HomeProps> = ({
       setLatestPlacement(getLatestPlacementResult());
     };
 
+    const refreshPlan = () => {
+      setTodayPlan(getOrGenerateTodayPlan());
+    };
+
     window.addEventListener('flipenglish_progress_updated', refresh);
     window.addEventListener('storage', refresh);
     window.addEventListener(REVIEW_UPDATED_EVENT, refreshReview);
     window.addEventListener(PLACEMENT_UPDATED_EVENT, refreshPlacement);
+    window.addEventListener(STUDY_PLAN_UPDATED_EVENT, refreshPlan);
+    window.addEventListener('focus', refreshPlan);
     return () => {
       window.removeEventListener('flipenglish_progress_updated', refresh);
       window.removeEventListener('storage', refresh);
       window.removeEventListener(REVIEW_UPDATED_EVENT, refreshReview);
       window.removeEventListener(PLACEMENT_UPDATED_EVENT, refreshPlacement);
+      window.removeEventListener(STUDY_PLAN_UPDATED_EVENT, refreshPlan);
+      window.removeEventListener('focus', refreshPlan);
     };
   }, []);
 
@@ -155,7 +168,45 @@ export const Home: React.FC<HomeProps> = ({
   }, [selectedLevelTab]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
+      {/* Today's Daily Plan Entrance Widget */}
+      {onNavigateToday && (
+        <section className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-700/60 shadow-lg shadow-indigo-950/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-indigo-200 border border-white/20">
+                Today's Daily Plan
+              </span>
+              <span className="text-2xs text-indigo-300 font-bold">
+                {todayPlan.dailyMinutes} min goal
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              {todayPlan.tasks.filter((t) => t.status === 'completed').length === todayPlan.tasks.length && todayPlan.tasks.length > 0
+                ? "Today's Study Plan Completed"
+                : `${todayPlan.tasks.filter((t) => t.status === 'completed').length} of ${todayPlan.tasks.length} daily activities completed`}
+            </h2>
+            <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed max-w-xl">
+              {todayPlan.tasks.filter((t) => t.status === 'completed').length === todayPlan.tasks.length && todayPlan.tasks.length > 0
+                ? 'Great job reaching your learning goal for today! Feel free to practice freely or review vocabulary.'
+                : 'Follow your personalized, zero-distraction study roadmap for today.'}
+            </p>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-3">
+            <button
+              type="button"
+              id="home-open-today-plan-btn"
+              onClick={onNavigateToday}
+              className="min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+            >
+              <span>Open Today's Plan</span>
+              <span className="text-indigo-600 font-black">→</span>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Editorial Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.25),rgba(255,255,255,0))]" />

@@ -4,6 +4,7 @@ import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewSt
 import { LESSONS } from '../data/lessons';
 
 interface HeaderProps {
+  onNavigateToday?: () => void;
   onNavigateHome: () => void;
   onNavigateReview?: () => void;
   onNavigateConversation?: () => void;
@@ -13,6 +14,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  onNavigateToday,
   onNavigateHome,
   onNavigateReview,
   onNavigateConversation,
@@ -102,6 +104,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Desktop Navigation (lg and up: >= 1024px) */}
         <nav className="hidden lg:flex items-center gap-2 lg:gap-2.5" aria-label="Main Navigation">
+          {onNavigateToday && (
+            <button
+              id="header-nav-today"
+              onClick={onNavigateToday}
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+                currentView === 'today'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              Today
+            </button>
+          )}
+
           <button
             id="header-nav-learning-path"
             onClick={onNavigateHome}
@@ -236,8 +252,26 @@ export const Header: React.FC<HeaderProps> = ({
               Navigation Menu
             </div>
 
+            {onNavigateToday && (
+              <button
+                ref={firstMenuItemRef}
+                type="button"
+                onClick={() => handleNavClick(onNavigateToday)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                  currentView === 'today'
+                    ? 'bg-indigo-600 text-white font-extrabold shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span className="min-w-0 truncate">Today's Plan</span>
+                <span className={`text-xs shrink-0 ${currentView === 'today' ? 'text-indigo-100' : 'text-slate-400'}`}>
+                  Daily Guide
+                </span>
+              </button>
+            )}
+
             <button
-              ref={firstMenuItemRef}
+              ref={!onNavigateToday ? firstMenuItemRef : undefined}
               type="button"
               onClick={() => handleNavClick(onNavigateHome)}
               className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${

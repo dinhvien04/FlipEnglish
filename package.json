@@ -16,6 +16,7 @@
     "lint": "tsc --noEmit",
     "validate:exams": "tsx scripts/validateExams.ts",
     "validate:placement": "tsx scripts/validatePlacement.ts",
+    "validate:study-plan": "tsx scripts/validateStudyPlan.ts",
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "validate:review": "tsx scripts/validateReview.ts",
     "validate:conversation": "tsx scripts/validateConversation.ts",

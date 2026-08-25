@@ -40,9 +40,10 @@ import { ConversationResult } from './features/conversation/ConversationResult';
 import { PlacementIntro } from './features/placement/PlacementIntro';
 import { PlacementSessionPage } from './features/placement/PlacementSession';
 import { PlacementResultPage } from './features/placement/PlacementResult';
+import { TodayPage } from './features/studyPlan/TodayPage';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>('home');
+  const [currentView, setCurrentView] = useState<AppView>('today');
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isReviewMistakesMode, setIsReviewMistakesMode] = useState<boolean>(false);
   const [mistakeWords, setMistakeWords] = useState<VocabWord[]>([]);
@@ -100,7 +101,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentView]);
 
-  // Curriculum Handlers
+  // Curriculum & Main Navigation Handlers
+  const handleNavigateToday = () => {
+    setSelectedLessonId(null);
+    setIsReviewMistakesMode(false);
+    setQuizResults(null);
+    setCurrentView('today');
+  };
+
   const handleNavigateHome = () => {
     setHomeLevelFilter('ALL');
     setCurrentView('home');
@@ -408,6 +416,14 @@ export default function App() {
     setCurrentView('exam-intro');
   };
 
+  const handleStartQuickTestFromPlan = (level: CEFRLevel) => {
+    setExamMode('level');
+    setExamLevel(level);
+    const session = generateExamSession('level', level);
+    setActiveExamSession(session);
+    setCurrentView('exam-session');
+  };
+
   const handleStartExamSession = () => {
     const session = generateExamSession(examMode, examLevel);
     setActiveExamSession(session);
@@ -523,6 +539,7 @@ export default function App() {
       {/* Sticky Header */}
       {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && (
         <Header
+          onNavigateToday={handleNavigateToday}
           onNavigateHome={handleNavigateHome}
           onNavigateReview={handleNavigateReview}
           onNavigateConversation={handleNavigateConversation}
@@ -534,6 +551,19 @@ export default function App() {
 
       {/* Main View Router */}
       <main className="flex-1 pb-16">
+        {/* Today's Study Plan View */}
+        {currentView === 'today' && (
+          <TodayPage
+            onSelectLesson={handleSelectLesson}
+            onNavigateReview={handleNavigateReview}
+            onNavigatePlacement={handleStartPlacementIntro}
+            onNavigateQuickTest={handleStartQuickTestFromPlan}
+            onNavigateCurriculum={handleNavigateHome}
+            onNavigateConversation={handleNavigateConversation}
+            onNavigateFlipLens={handleOpenFlipLens}
+          />
+        )}
+
         {/* Curriculum Views */}
         {currentView === 'home' && (
           <Home
@@ -541,6 +571,7 @@ export default function App() {
             onOpenFlipLens={handleOpenFlipLens}
             onOpenExamCenter={handleNavigateExamCenter}
             onNavigateReview={handleNavigateReview}
+            onNavigateToday={handleNavigateToday}
             onStartPlacement={handleStartPlacementIntro}
             onViewPlacementResult={handleViewPlacementResult}
             initialLevelTab={homeLevelFilter || 'ALL'}
@@ -560,6 +591,7 @@ export default function App() {
 
         {currentView === 'placement-session' && activePlacementSession && (
           <PlacementSessionPage
+            key={activePlacementSession.id}
             initialSession={activePlacementSession}
             onFinishPlacement={handleFinishPlacementSession}
             onExitPlacement={handleNavigateHome}
