@@ -5,6 +5,7 @@ import { LESSONS } from '../data/lessons';
 
 interface HeaderProps {
   onNavigateToday?: () => void;
+  onNavigateDictionary?: () => void;
   onNavigateHome: () => void;
   onNavigateReview?: () => void;
   onNavigateConversation?: () => void;
@@ -15,6 +16,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onNavigateToday,
+  onNavigateDictionary,
   onNavigateHome,
   onNavigateReview,
   onNavigateConversation,
@@ -115,6 +117,20 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               Today
+            </button>
+          )}
+
+          {onNavigateDictionary && (
+            <button
+              id="header-nav-dictionary"
+              onClick={onNavigateDictionary}
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+                currentView === 'dictionary'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              Dictionary
             </button>
           )}
 
@@ -270,8 +286,25 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
+            {onNavigateDictionary && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateDictionary)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                  currentView === 'dictionary'
+                    ? 'bg-indigo-600 text-white font-extrabold shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span className="min-w-0 truncate">Dictionary</span>
+                <span className={`text-xs shrink-0 ${currentView === 'dictionary' ? 'text-indigo-100' : 'text-slate-400'}`}>
+                  Lexicon
+                </span>
+              </button>
+            )}
+
             <button
-              ref={!onNavigateToday ? firstMenuItemRef : undefined}
+              ref={!onNavigateToday && !onNavigateDictionary ? firstMenuItemRef : undefined}
               type="button"
               onClick={() => handleNavClick(onNavigateHome)}
               className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${

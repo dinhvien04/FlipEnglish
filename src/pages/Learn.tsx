@@ -10,6 +10,7 @@ interface LearnProps {
   isReviewMistakesMode?: boolean;
   onFinishFlashcards: () => void;
   onBackToIntro: () => void;
+  onLookupWord?: (word: string) => void;
 }
 
 export const Learn: React.FC<LearnProps> = ({
@@ -18,6 +19,7 @@ export const Learn: React.FC<LearnProps> = ({
   isReviewMistakesMode = false,
   onFinishFlashcards,
   onBackToIntro,
+  onLookupWord,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
@@ -116,6 +118,7 @@ export const Learn: React.FC<LearnProps> = ({
             totalWords={totalWords}
             onNext={handleNext}
             onPrev={handlePrev}
+            onLookupWord={onLookupWord}
             isFirst={currentIndex === 0}
             isLast={currentIndex === totalWords - 1}
           />

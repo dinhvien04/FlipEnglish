@@ -8,12 +8,14 @@ interface ReviewSessionProps {
   queue: ResolvedReviewItem[];
   onFinishSession: (summary: ReviewSessionSummary) => void;
   onExit: () => void;
+  onLookupWord?: (word: string) => void;
 }
 
 export const ReviewSession: React.FC<ReviewSessionProps> = ({
   queue,
   onFinishSession,
   onExit,
+  onLookupWord,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<ReviewRating, number>>({
@@ -94,6 +96,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         key={currentItem.word.id}
         item={currentItem}
         onRate={handleRate}
+        onLookupWord={onLookupWord}
         disabled={isProcessing}
       />
     </div>

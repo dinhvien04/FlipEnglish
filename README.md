@@ -31,6 +31,16 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - Missed canonical vocabulary can be exported directly into the Smart Review queue.
 - *Disclaimer: This short placement check recommends a starting level inside FlipEnglish. It is not an official CEFR certification.*
 
+### FlipEnglish Dictionary & Offline Wordbook
+- **Cambridge/Oxford-style Learner Dictionary**: Comprehensive definitions grouped by part of speech, IPA phonetic transcriptions, authentic audio pronunciation playback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
+- **3-Layer Architecture**:
+  - *Layer 1 (Local Curriculum Index)*: Instant offline lookup across all 72 lessons (720 vocabulary items) with CEFR level tags and "Open Lesson" navigation.
+  - *Layer 2 (External Dictionary Provider)*: Proxy integration with the Free Dictionary API for full English definitions, bounded payloads, and sanitized HTTPS audio pronunciations.
+  - *Layer 3 (Word Discovery & Relations)*: Synonyms, antonyms, similar concepts, sounds-like relations, and reverse dictionary (means-like search) powered by Datamuse.
+- **IndexedDB Offline Cache**: Native browser database (`flipenglish_dictionary_v1`) caching looked-up entries with LRU eviction (bounded to 250 entries / 30-day TTL) and compact snapshots.
+- **My Vocabulary (Personal Wordbook)**: Save and organize words with tags, filter by source (All/Curriculum/Dictionary), sort (Recent/A-Z), and review offline without needing an active connection.
+- **Cross-Feature Integration**: Deep link to dictionary lookup directly from Flashcards and Smart Review cards.
+
 ### Smart Review (Spaced Repetition System)
 - Interval-based recall scheduling with four self-assessment ratings: `Again` (10 minutes), `Hard` (1 day), `Good` (3 days), `Easy` (7 days).
 - Prioritizes due items and automatically schedules mistakes recorded during quiz exercises, exams, and the placement check.
@@ -119,6 +129,9 @@ The project includes an automated suite of integrity, curriculum, exam, placemen
 ```bash
 # TypeScript type checking
 npm run lint
+
+# Validate Dictionary providers, local curriculum index, and offline wordbook cache
+npm run validate:dictionary
 
 # Validate 24-question adaptive Placement Check engine, question pool, and routing
 npm run validate:placement

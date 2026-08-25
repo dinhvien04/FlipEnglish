@@ -18,9 +18,10 @@ import { ReviewResult } from './ReviewResult';
 
 interface ReviewDashboardProps {
   onNavigateToHome: () => void;
+  onLookupWord?: (word: string) => void;
 }
 
-export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHome }) => {
+export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHome, onLookupWord }) => {
   const [stats, setStats] = useState<ReviewDashboardStats>(getReviewDashboardStats());
   const [activeQueue, setActiveQueue] = useState<ResolvedReviewItem[] | null>(null);
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
@@ -93,6 +94,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
         queue={activeQueue}
         onFinishSession={handleFinishSession}
         onExit={handleExitSession}
+        onLookupWord={onLookupWord}
       />
     );
   }

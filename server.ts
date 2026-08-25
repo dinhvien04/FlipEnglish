@@ -17,6 +17,8 @@ import {
   conversationTurnJsonSchema,
   conversationEvaluateJsonSchema,
 } from './src/data/conversations/conversationSchemas';
+import { DictionaryService } from './server/dictionary/dictionaryService';
+import { DictionaryRelationType } from './server/dictionary/dictionaryTypes';
 
 dotenv.config();
 
@@ -34,6 +36,10 @@ const SECURITY_CONFIG = {
     exam: 10, // 10 requests / 10 minutes
     conversationTurn: 30, // 30 requests / 10 minutes
     conversationEvaluate: 10, // 10 requests / 10 minutes
+    dictionaryLookup: 120, // 120 requests / 10 minutes (generous for lookups)
+    dictionarySuggest: 180, // 180 requests / 10 minutes (fast autocomplete)
+    dictionaryRelated: 100, // 100 requests / 10 minutes
+    dictionaryReverse: 60, // 60 requests / 10 minutes
   },
 };
 
@@ -214,6 +220,35 @@ const conversationEvaluateLimiter = createLimiter({
   max: SECURITY_CONFIG.rateLimits.conversationEvaluate,
   genericMessage: 'Conversation evaluation rate limit reached. Please wait a few moments before trying again.',
   name: 'CONVERSATION_EVALUATE',
+});
+
+// Dictionary Rate Limiters
+const dictionaryLookupLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: SECURITY_CONFIG.rateLimits.dictionaryLookup,
+  genericMessage: 'Dictionary lookup rate limit reached. Please wait a moment before trying again.',
+  name: 'DICTIONARY_LOOKUP',
+});
+
+const dictionarySuggestLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: SECURITY_CONFIG.rateLimits.dictionarySuggest,
+  genericMessage: 'Dictionary suggestion rate limit reached. Please wait a moment before trying again.',
+  name: 'DICTIONARY_SUGGEST',
+});
+
+const dictionaryRelatedLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: SECURITY_CONFIG.rateLimits.dictionaryRelated,
+  genericMessage: 'Dictionary relation rate limit reached. Please wait a moment before trying again.',
+  name: 'DICTIONARY_RELATED',
+});
+
+const dictionaryReverseLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: SECURITY_CONFIG.rateLimits.dictionaryReverse,
+  genericMessage: 'Reverse dictionary rate limit reached. Please wait a moment before trying again.',
+  name: 'DICTIONARY_REVERSE',
 });
 
 // Middleware: Strict JSON Content-Type validator for POST endpoints
@@ -1381,6 +1416,139 @@ Provide structured diagnostic feedback:
     }
   }
 );
+
+// ==========================================
+// 4.5. Dictionary Endpoints (Non-AI, Resilient)
+// ==========================================
+
+const SAFE_WORD_REGEX = /^[\p{L}\p{M}\s'-]{1,80}$/u;
+const SAFE_DESC_REGEX = /^[\p{L}\p{M}\p{N}\s',.?!-]{1,150}$/u;
+const ALLOWED_RELATION_TYPES: DictionaryRelationType[] = ['synonym', 'antonym', 'similar', 'sounds-like'];
+
+// GET /api/dictionary/lookup?word=...
+app.get('/api/dictionary/lookup', dictionaryLookupLimiter, async (req, res, next) => {
+  try {
+    const rawWord = typeof req.query.word === 'string' ? req.query.word.trim() : '';
+    if (!rawWord || !SAFE_WORD_REGEX.test(rawWord)) {
+      res.status(400).json({
+        error: 'Invalid word parameter. Must be 1-80 characters and contain valid word characters.',
+        requestId: req.id,
+      });
+      return;
+    }
+
+    const result = await DictionaryService.lookup(rawWord);
+    if (result.status === 200 && result.entry) {
+      res.json(result.entry);
+      return;
+    }
+
+    res.status(result.status).json({
+      error: result.error || 'Word not found in dictionary',
+      spellingSuggestions: result.spellingSuggestions,
+      requestId: req.id,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/dictionary/suggest?q=...
+app.get('/api/dictionary/suggest', dictionarySuggestLimiter, async (req, res, next) => {
+  try {
+    const rawQ = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!rawQ || !SAFE_WORD_REGEX.test(rawQ)) {
+      res.json({ suggestions: [] });
+      return;
+    }
+
+    const result = await DictionaryService.suggest(rawQ);
+    if (result.status === 200) {
+      res.json({ suggestions: result.suggestions });
+      return;
+    }
+
+    res.status(result.status).json({
+      error: result.error || 'Suggestion service error',
+      suggestions: [],
+      requestId: req.id,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/dictionary/related?word=...&type=...
+app.get('/api/dictionary/related', dictionaryRelatedLimiter, async (req, res, next) => {
+  try {
+    const rawWord = typeof req.query.word === 'string' ? req.query.word.trim() : '';
+    const rawType = typeof req.query.type === 'string' ? (req.query.type.trim() as DictionaryRelationType) : 'similar';
+
+    if (!rawWord || !SAFE_WORD_REGEX.test(rawWord)) {
+      res.status(400).json({
+        error: 'Invalid word parameter.',
+        requestId: req.id,
+      });
+      return;
+    }
+
+    if (!ALLOWED_RELATION_TYPES.includes(rawType)) {
+      res.status(400).json({
+        error: `Invalid relation type. Allowed: ${ALLOWED_RELATION_TYPES.join(', ')}`,
+        requestId: req.id,
+      });
+      return;
+    }
+
+    const result = await DictionaryService.related(rawWord, rawType);
+    if (result.status === 200) {
+      res.json({
+        word: rawWord,
+        relationType: rawType,
+        results: result.results,
+      });
+      return;
+    }
+
+    res.status(result.status).json({
+      error: result.error || 'Related words lookup error',
+      word: rawWord,
+      relationType: rawType,
+      results: [],
+      requestId: req.id,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/dictionary/reverse?q=...
+app.get('/api/dictionary/reverse', dictionaryReverseLimiter, async (req, res, next) => {
+  try {
+    const rawQ = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!rawQ || !SAFE_DESC_REGEX.test(rawQ)) {
+      res.status(400).json({
+        error: 'Invalid description query. Must be 1-150 characters.',
+        requestId: req.id,
+      });
+      return;
+    }
+
+    const result = await DictionaryService.reverse(rawQ);
+    if (result.status === 200) {
+      res.json({ results: result.results });
+      return;
+    }
+
+    res.status(result.status).json({
+      error: result.error || 'Reverse dictionary error',
+      results: [],
+      requestId: req.id,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ==========================================
 // 5. Centralized Production Error Handler

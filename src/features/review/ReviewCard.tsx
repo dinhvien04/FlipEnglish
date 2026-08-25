@@ -7,10 +7,11 @@ import { SafeImage } from '../../components/SafeImage';
 interface ReviewCardProps {
   item: ResolvedReviewItem;
   onRate: (rating: ReviewRating) => void;
+  onLookupWord?: (word: string) => void;
   disabled?: boolean;
 }
 
-export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled = false }) => {
+export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWord, disabled = false }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const { word, lesson, level, nextIntervals } = item;
 
@@ -189,9 +190,20 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, disabled =
           <div className="w-full pt-2 space-y-5 text-left border-t border-slate-100 animate-fadeIn">
             {/* Vietnamese Meaning */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <span className="text-2xs uppercase tracking-wider font-bold text-slate-400 block mb-1">
-                Meaning
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-2xs uppercase tracking-wider font-bold text-slate-400">
+                  Meaning
+                </span>
+                {onLookupWord && (
+                  <button
+                    type="button"
+                    onClick={() => onLookupWord(word.word)}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-50 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                  >
+                    Look up in Dictionary
+                  </button>
+                )}
+              </div>
               <p className="text-lg font-bold text-slate-900">{word.meaning}</p>
             </div>
 

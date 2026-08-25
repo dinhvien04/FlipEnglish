@@ -41,6 +41,7 @@ import { PlacementIntro } from './features/placement/PlacementIntro';
 import { PlacementSessionPage } from './features/placement/PlacementSession';
 import { PlacementResultPage } from './features/placement/PlacementResult';
 import { TodayPage } from './features/studyPlan/TodayPage';
+import { DictionaryPage } from './features/dictionary/DictionaryPage';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 
@@ -72,6 +73,10 @@ export default function App() {
 
   // Curriculum Filter State
   const [homeLevelFilter, setHomeLevelFilter] = useState<CEFRLevel | 'ALL'>('ALL');
+
+  // Dictionary Initial Word State & Navigation Context
+  const [dictionarySearchWord, setDictionarySearchWord] = useState<string>('');
+  const [dictionaryReturnView, setDictionaryReturnView] = useState<AppView | null>(null);
 
   // Conversation States
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
@@ -111,6 +116,12 @@ export default function App() {
     setCurrentView('today');
   };
 
+  const handleNavigateDictionary = (searchWord?: string) => {
+    setDictionarySearchWord(searchWord || '');
+    setDictionaryReturnView(currentView !== 'dictionary' ? currentView : null);
+    setCurrentView('dictionary');
+  };
+
   const handleNavigateHome = () => {
     setHomeLevelFilter('ALL');
     setCurrentView('home');
@@ -141,6 +152,12 @@ export default function App() {
 
   const handleSelectLesson = (lesson: Lesson) => {
     setSelectedLessonId(lesson.id);
+    setIsReviewMistakesMode(false);
+    setCurrentView('lesson-intro');
+  };
+
+  const handleSelectLessonById = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
     setIsReviewMistakesMode(false);
     setCurrentView('lesson-intro');
   };
@@ -544,6 +561,7 @@ export default function App() {
           <OfflineBanner />
           <Header
             onNavigateToday={handleNavigateToday}
+            onNavigateDictionary={() => handleNavigateDictionary()}
             onNavigateHome={handleNavigateHome}
             onNavigateReview={handleNavigateReview}
             onNavigateConversation={handleNavigateConversation}
@@ -566,6 +584,15 @@ export default function App() {
             onNavigateCurriculum={handleNavigateHome}
             onNavigateConversation={handleNavigateConversation}
             onNavigateFlipLens={handleOpenFlipLens}
+          />
+        )}
+
+        {/* Dictionary & Personal Wordbook View */}
+        {currentView === 'dictionary' && (
+          <DictionaryPage
+            initialWord={dictionarySearchWord}
+            onNavigateLesson={handleSelectLessonById}
+            onNavigateReview={handleNavigateReview}
           />
         )}
 
@@ -617,8 +644,8 @@ export default function App() {
         {/* Smart Review (Spaced Repetition) View */}
         {currentView === 'review' && (
           <ReviewDashboard
-            onSelectLesson={handleSelectLesson}
-            onBackToHome={handleNavigateHome}
+            onNavigateToHome={handleNavigateHome}
+            onLookupWord={(word) => handleNavigateDictionary(word)}
           />
         )}
 
@@ -679,6 +706,7 @@ export default function App() {
             isReviewMistakesMode={isReviewMistakesMode}
             onFinishFlashcards={handleFinishFlashcards}
             onBackToIntro={handleBackToIntro}
+            onLookupWord={(word) => handleNavigateDictionary(word)}
           />
         )}
 

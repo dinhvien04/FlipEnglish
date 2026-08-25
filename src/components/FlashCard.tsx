@@ -9,6 +9,7 @@ interface FlashCardProps {
   totalWords: number;
   onNext: () => void;
   onPrev: () => void;
+  onLookupWord?: (word: string) => void;
   isFirst: boolean;
   isLast: boolean;
 }
@@ -19,6 +20,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
   totalWords,
   onNext,
   onPrev,
+  onLookupWord,
   isFirst,
   isLast,
 }) => {
@@ -100,6 +102,19 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                   <span className="text-2xs font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 uppercase">
                     {word.type}
                   </span>
+                )}
+                {onLookupWord && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLookupWord(word.word);
+                    }}
+                    title="Look up in Dictionary"
+                    className="min-h-11 px-3 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center border border-slate-200"
+                  >
+                    Look up
+                  </button>
                 )}
                 <button
                   id="speak-front-button"
