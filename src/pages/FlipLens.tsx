@@ -111,7 +111,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
 
   // Call server-side Gemini Vision API
   const handleAnalyzePhoto = async () => {
-    if (!imageData || !imageData.dataUrl) return;
+    if (!imageData || !imageData.dataUrl || step === 'analyzing') return;
 
     setStep('analyzing');
     setErrorMessage(null);
@@ -441,10 +441,11 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                   disabled={isCompressing}
                   className="group text-left bg-white rounded-2xl p-3 border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col gap-2.5 cursor-pointer focus:outline-hidden disabled:opacity-60"
                 >
-                  <div className="relative aspect-16/10 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80">
+                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80">
                     <img
                       src={sample.url}
                       alt={sample.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-2xs font-bold">
@@ -490,7 +491,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
 
           <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-md space-y-5">
             {/* Image Preview Box */}
-            <div className="relative aspect-16/10 sm:aspect-16/9 rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center">
               <img
                 src={imageSrc}
                 alt="Uploaded photo preview"
@@ -519,7 +520,8 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 type="button"
                 id="fliplens-analyze-btn"
                 onClick={handleAnalyzePhoto}
-                className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer flex items-center justify-center"
+                disabled={step === 'analyzing'}
+                className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center"
               >
                 Analyze Photo with Gemini
               </button>
@@ -554,7 +556,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
         <div className="max-w-2xl mx-auto space-y-6 text-center animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md space-y-6">
             {/* Visual Radar Scan Effect */}
-            <div className="relative aspect-16/10 rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center">
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center">
               <img
                 src={imageSrc}
                 alt="Analyzing photo"
@@ -629,7 +631,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 <span className="text-indigo-600 font-semibold text-2xs">Tap tags to select</span>
               </div>
 
-              <div className="relative w-full aspect-4/3 rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 select-none">
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 select-none">
                 {imageSrc && (
                   <img
                     src={imageSrc}

@@ -135,6 +135,8 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 <SafeImage
                   src={word.imageUrl}
                   alt={word.imageAlt || word.word}
+                  loading={currentIndex === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
                   className="w-full h-full object-cover transition-transform duration-500 ease-out"
                 />
               </div>

@@ -55,6 +55,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
 
   // Request Gemini AI Exam Analysis
   const handleRequestAIAnalysis = async () => {
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
     setAnalysisError(null);
 
@@ -93,6 +94,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
 
   // Request "Explain My Mistake" for a single question
   const handleExplainMistake = async (questionId: string, prompt: string, userAns: string, correctAns: string, explanation: string) => {
+    if (explainingQuestionId) return;
     setExplainingQuestionId(questionId);
     try {
       const res = await fetch('/api/explain-mistake', {

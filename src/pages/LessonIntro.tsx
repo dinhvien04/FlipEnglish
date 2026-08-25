@@ -83,6 +83,8 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
           <SafeImage
             src={lesson.imageUrl}
             alt={lesson.imageAlt || lesson.title}
+            loading="eager"
+            fetchPriority="high"
             className="w-full h-full object-cover opacity-85"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />

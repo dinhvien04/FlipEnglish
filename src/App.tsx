@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AppView, Lesson, VocabWord, LessonProgress, CEFRLevel } from './types';
 import { ExamMode, ExamResultReport, ExamSession } from './types/exam';
 import { ConversationScenario, ConversationTurn, ConversationEvaluation } from './types/conversation';
@@ -25,24 +25,8 @@ import { LessonIntro } from './pages/LessonIntro';
 import { Learn } from './pages/Learn';
 import { Exercise } from './pages/Exercise';
 import { Result } from './pages/Result';
-import { FlipLens } from './pages/FlipLens';
-import { ExamCenter } from './pages/ExamCenter';
-import { ExamIntro } from './pages/ExamIntro';
-import { ExamSessionPage } from './pages/ExamSession';
-import { ExamResultPage } from './pages/ExamResult';
-import { ExamHistoryPage } from './pages/ExamHistory';
 import { ResumeExamModal } from './components/exam/ResumeExamModal';
-import { ReviewDashboard } from './features/review/ReviewDashboard';
-import { ConversationHome } from './features/conversation/ConversationHome';
-import { ConversationSetup } from './features/conversation/ConversationSetup';
-import { ConversationSession } from './features/conversation/ConversationSession';
-import { ConversationResult } from './features/conversation/ConversationResult';
-import { PlacementIntro } from './features/placement/PlacementIntro';
-import { PlacementSessionPage } from './features/placement/PlacementSession';
-import { PlacementResultPage } from './features/placement/PlacementResult';
 import { TodayPage } from './features/studyPlan/TodayPage';
-import { DictionaryPage } from './features/dictionary/DictionaryPage';
-import { HelpPage } from './pages/HelpPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import {
   shouldShowOnboarding,
@@ -57,6 +41,39 @@ import {
 } from './types/sessionResume';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
+import { useI18n } from './features/i18n';
+
+// Feature-level code splitting for heavy/secondary views
+const FlipLens = lazy(() => import('./pages/FlipLens').then((m) => ({ default: m.FlipLens })));
+const ExamCenter = lazy(() => import('./pages/ExamCenter').then((m) => ({ default: m.ExamCenter })));
+const ExamIntro = lazy(() => import('./pages/ExamIntro').then((m) => ({ default: m.ExamIntro })));
+const ExamSessionPage = lazy(() => import('./pages/ExamSession').then((m) => ({ default: m.ExamSessionPage })));
+const ExamResultPage = lazy(() => import('./pages/ExamResult').then((m) => ({ default: m.ExamResultPage })));
+const ExamHistoryPage = lazy(() => import('./pages/ExamHistory').then((m) => ({ default: m.ExamHistoryPage })));
+const ReviewDashboard = lazy(() => import('./features/review/ReviewDashboard').then((m) => ({ default: m.ReviewDashboard })));
+const ConversationHome = lazy(() => import('./features/conversation/ConversationHome').then((m) => ({ default: m.ConversationHome })));
+const ConversationSetup = lazy(() => import('./features/conversation/ConversationSetup').then((m) => ({ default: m.ConversationSetup })));
+const ConversationSession = lazy(() => import('./features/conversation/ConversationSession').then((m) => ({ default: m.ConversationSession })));
+const ConversationResult = lazy(() => import('./features/conversation/ConversationResult').then((m) => ({ default: m.ConversationResult })));
+const PlacementIntro = lazy(() => import('./features/placement/PlacementIntro').then((m) => ({ default: m.PlacementIntro })));
+const PlacementSessionPage = lazy(() => import('./features/placement/PlacementSession').then((m) => ({ default: m.PlacementSessionPage })));
+const PlacementResultPage = lazy(() => import('./features/placement/PlacementResult').then((m) => ({ default: m.PlacementResultPage })));
+const DictionaryPage = lazy(() => import('./features/dictionary/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
+const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
+
+function LazyViewFallback() {
+  const { t } = useI18n();
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center"
+    >
+      <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-sm font-semibold text-slate-600">{t('ui.common.loading')}</p>
+    </div>
+  );
+}
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>(() => {
@@ -700,249 +717,251 @@ export default function App() {
 
       {/* Main View Router */}
       <main className="flex-1 pb-16">
-        {/* Onboarding View */}
-        {currentView === 'onboarding' && (
-          <OnboardingPage
-            onComplete={handleCompleteOnboarding}
-            onSkip={handleSkipOnboarding}
-          />
-        )}
+        <Suspense fallback={<LazyViewFallback />}>
+          {/* Onboarding View */}
+          {currentView === 'onboarding' && (
+            <OnboardingPage
+              onComplete={handleCompleteOnboarding}
+              onSkip={handleSkipOnboarding}
+            />
+          )}
 
-        {/* Feature Guide / Help View */}
-        {currentView === 'help' && (
-          <HelpPage
-            onNavigateToday={handleNavigateToday}
-            onNavigateDictionary={() => handleNavigateDictionary()}
-            onNavigateCurriculum={handleNavigateHome}
-            onNavigateReview={handleNavigateReview}
-            onNavigatePlacement={handleStartPlacementIntro}
-            onNavigateConversation={handleNavigateConversation}
-            onNavigateExams={handleNavigateExamCenter}
-            onNavigateFlipLens={handleOpenFlipLens}
-            onReopenOnboarding={handleOpenOnboarding}
-          />
-        )}
+          {/* Feature Guide / Help View */}
+          {currentView === 'help' && (
+            <HelpPage
+              onNavigateToday={handleNavigateToday}
+              onNavigateDictionary={() => handleNavigateDictionary()}
+              onNavigateCurriculum={handleNavigateHome}
+              onNavigateReview={handleNavigateReview}
+              onNavigatePlacement={handleStartPlacementIntro}
+              onNavigateConversation={handleNavigateConversation}
+              onNavigateExams={handleNavigateExamCenter}
+              onNavigateFlipLens={handleOpenFlipLens}
+              onReopenOnboarding={handleOpenOnboarding}
+            />
+          )}
 
-        {/* Today's Study Plan View */}
-        {currentView === 'today' && (
-          <TodayPage
-            onSelectLesson={handleSelectLesson}
-            onNavigateReview={handleNavigateReview}
-            onNavigatePlacement={handleStartPlacementIntro}
-            onNavigateQuickTest={handleStartQuickTestFromPlan}
-            onNavigateCurriculum={handleNavigateHome}
-            onNavigateConversation={handleNavigateConversation}
-            onNavigateFlipLens={handleOpenFlipLens}
-          />
-        )}
+          {/* Today's Study Plan View */}
+          {currentView === 'today' && (
+            <TodayPage
+              onSelectLesson={handleSelectLesson}
+              onNavigateReview={handleNavigateReview}
+              onNavigatePlacement={handleStartPlacementIntro}
+              onNavigateQuickTest={handleStartQuickTestFromPlan}
+              onNavigateCurriculum={handleNavigateHome}
+              onNavigateConversation={handleNavigateConversation}
+              onNavigateFlipLens={handleOpenFlipLens}
+            />
+          )}
 
-        {/* Dictionary & Personal Wordbook View */}
-        {currentView === 'dictionary' && (
-          <DictionaryPage
-            initialWord={dictionarySearchWord}
-            returnContext={dictionaryReturnContext}
-            onReturn={handleReturnFromDictionary}
-            onNavigateLesson={handleSelectLessonById}
-            onNavigateReview={handleNavigateReview}
-          />
-        )}
+          {/* Dictionary & Personal Wordbook View */}
+          {currentView === 'dictionary' && (
+            <DictionaryPage
+              initialWord={dictionarySearchWord}
+              returnContext={dictionaryReturnContext}
+              onReturn={handleReturnFromDictionary}
+              onNavigateLesson={handleSelectLessonById}
+              onNavigateReview={handleNavigateReview}
+            />
+          )}
 
-        {/* Curriculum Views */}
-        {currentView === 'home' && (
-          <Home
-            onSelectLesson={handleSelectLesson}
-            onOpenFlipLens={handleOpenFlipLens}
-            onOpenExamCenter={handleNavigateExamCenter}
-            onNavigateReview={handleNavigateReview}
-            onNavigateToday={handleNavigateToday}
-            onStartPlacement={handleStartPlacementIntro}
-            onViewPlacementResult={handleViewPlacementResult}
-            initialLevelTab={homeLevelFilter || 'ALL'}
-          />
-        )}
+          {/* Curriculum Views */}
+          {currentView === 'home' && (
+            <Home
+              onSelectLesson={handleSelectLesson}
+              onOpenFlipLens={handleOpenFlipLens}
+              onOpenExamCenter={handleNavigateExamCenter}
+              onNavigateReview={handleNavigateReview}
+              onNavigateToday={handleNavigateToday}
+              onStartPlacement={handleStartPlacementIntro}
+              onViewPlacementResult={handleViewPlacementResult}
+              initialLevelTab={homeLevelFilter || 'ALL'}
+            />
+          )}
 
-        {/* Placement Test Views */}
-        {currentView === 'placement-intro' && (
-          <PlacementIntro
-            onStartPlacement={handleStartPlacementSession}
-            onBack={handleNavigateHome}
-            latestHistoryItem={getLatestPlacementResult()}
-            onViewPreviousResult={handleViewPlacementResult}
-            startError={placementStartError}
-          />
-        )}
+          {/* Placement Test Views */}
+          {currentView === 'placement-intro' && (
+            <PlacementIntro
+              onStartPlacement={handleStartPlacementSession}
+              onBack={handleNavigateHome}
+              latestHistoryItem={getLatestPlacementResult()}
+              onViewPreviousResult={handleViewPlacementResult}
+              startError={placementStartError}
+            />
+          )}
 
-        {currentView === 'placement-session' && activePlacementSession && (
-          <PlacementSessionPage
-            key={activePlacementSession.id}
-            initialSession={activePlacementSession}
-            onFinishPlacement={handleFinishPlacementSession}
-            onExitPlacement={handleNavigateHome}
-            onRestartPlacement={handleStartPlacementSession}
-          />
-        )}
+          {currentView === 'placement-session' && activePlacementSession && (
+            <PlacementSessionPage
+              key={activePlacementSession.id}
+              initialSession={activePlacementSession}
+              onFinishPlacement={handleFinishPlacementSession}
+              onExitPlacement={handleNavigateHome}
+              onRestartPlacement={handleStartPlacementSession}
+            />
+          )}
 
-        {currentView === 'placement-result' && placementResultReport && (
-          <PlacementResultPage
-            report={placementResultReport}
-            onRetake={handleStartPlacementIntro}
-            onStartCurriculum={handleStartCurriculumAtLevel}
-            onSelectLesson={handleSelectLesson}
-            onNavigateReview={handleNavigateReview}
-          />
-        )}
+          {currentView === 'placement-result' && placementResultReport && (
+            <PlacementResultPage
+              report={placementResultReport}
+              onRetake={handleStartPlacementIntro}
+              onStartCurriculum={handleStartCurriculumAtLevel}
+              onSelectLesson={handleSelectLesson}
+              onNavigateReview={handleNavigateReview}
+            />
+          )}
 
-        {/* Smart Review (Spaced Repetition) View */}
-        {currentView === 'review' && (
-          <ReviewDashboard
-            onNavigateToHome={handleNavigateHome}
-            resumeContext={resumedReviewContext}
-            onResumeConsumed={handleReviewResumeConsumed}
-            onSessionContextChange={setActiveReviewContext}
-            onLookupWord={(word, reviewContext) =>
-              handleNavigateDictionary(word, {
-                source: 'review',
-                view: 'review',
-                reviewContext,
-              })
-            }
-          />
-        )}
+          {/* Smart Review (Spaced Repetition) View */}
+          {currentView === 'review' && (
+            <ReviewDashboard
+              onNavigateToHome={handleNavigateHome}
+              resumeContext={resumedReviewContext}
+              onResumeConsumed={handleReviewResumeConsumed}
+              onSessionContextChange={setActiveReviewContext}
+              onLookupWord={(word, reviewContext) =>
+                handleNavigateDictionary(word, {
+                  source: 'review',
+                  view: 'review',
+                  reviewContext,
+                })
+              }
+            />
+          )}
 
-        {/* AI Conversation Lab Views */}
-        {currentView === 'conversation' && (
-          <ConversationHome
-            onSelectScenario={handleSelectScenario}
-            onBackToHome={handleNavigateHome}
-          />
-        )}
+          {/* AI Conversation Lab Views */}
+          {currentView === 'conversation' && (
+            <ConversationHome
+              onSelectScenario={handleSelectScenario}
+              onBackToHome={handleNavigateHome}
+            />
+          )}
 
-        {currentView === 'conversation-setup' && selectedScenario && (
-          <ConversationSetup
-            scenario={selectedScenario}
-            onStartSession={handleStartConversation}
-            onBack={handleNavigateConversation}
-          />
-        )}
+          {currentView === 'conversation-setup' && selectedScenario && (
+            <ConversationSetup
+              scenario={selectedScenario}
+              onStartSession={handleStartConversation}
+              onBack={handleNavigateConversation}
+            />
+          )}
 
-        {currentView === 'conversation-session' && selectedScenario && (
-          <ConversationSession
-            scenario={selectedScenario}
-            level={conversationLevel}
-            onFinishConversation={handleFinishConversation}
-            onExitSession={handleNavigateConversation}
-          />
-        )}
+          {currentView === 'conversation-session' && selectedScenario && (
+            <ConversationSession
+              scenario={selectedScenario}
+              level={conversationLevel}
+              onFinishConversation={handleFinishConversation}
+              onExitSession={handleNavigateConversation}
+            />
+          )}
 
-        {currentView === 'conversation-result' && selectedScenario && conversationEvaluation && (
-          <ConversationResult
-            scenario={selectedScenario}
-            level={conversationLevel}
-            evaluation={conversationEvaluation}
-            turns={conversationTurns}
-            onPracticeAgain={handlePracticeConversationAgain}
-            onBackToLab={handleNavigateConversation}
-            onNavigateReview={handleNavigateReview}
-          />
-        )}
+          {currentView === 'conversation-result' && selectedScenario && conversationEvaluation && (
+            <ConversationResult
+              scenario={selectedScenario}
+              level={conversationLevel}
+              evaluation={conversationEvaluation}
+              turns={conversationTurns}
+              onPracticeAgain={handlePracticeConversationAgain}
+              onBackToLab={handleNavigateConversation}
+              onNavigateReview={handleNavigateReview}
+            />
+          )}
 
-        {currentView === 'flip-lens' && (
-          <FlipLens onBackToHome={handleNavigateHome} />
-        )}
+          {currentView === 'flip-lens' && (
+            <FlipLens onBackToHome={handleNavigateHome} />
+          )}
 
-        {currentView === 'lesson-intro' && selectedLesson && (
-          <LessonIntro
-            lesson={selectedLesson}
-            progress={currentLessonProgress}
-            onStartLearning={handleStartLearning}
-            onBackToHome={handleNavigateHome}
-          />
-        )}
+          {currentView === 'lesson-intro' && selectedLesson && (
+            <LessonIntro
+              lesson={selectedLesson}
+              progress={currentLessonProgress}
+              onStartLearning={handleStartLearning}
+              onBackToHome={handleNavigateHome}
+            />
+          )}
 
-        {currentView === 'learn' && selectedLesson && (
-          <Learn
-            lesson={selectedLesson}
-            wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
-            isReviewMistakesMode={isReviewMistakesMode}
-            resumeState={resumedLearnContext}
-            onResumeConsumed={handleLearnResumeConsumed}
-            onFinishFlashcards={handleFinishFlashcards}
-            onBackToIntro={handleBackToIntro}
-            onSessionContextChange={setActiveLearnContext}
-            onLookupWord={(word, learnContext) =>
-              handleNavigateDictionary(word, {
-                source: 'learn',
-                view: 'learn',
-                learnContext,
-              })
-            }
-          />
-        )}
+          {currentView === 'learn' && selectedLesson && (
+            <Learn
+              lesson={selectedLesson}
+              wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
+              isReviewMistakesMode={isReviewMistakesMode}
+              resumeState={resumedLearnContext}
+              onResumeConsumed={handleLearnResumeConsumed}
+              onFinishFlashcards={handleFinishFlashcards}
+              onBackToIntro={handleBackToIntro}
+              onSessionContextChange={setActiveLearnContext}
+              onLookupWord={(word, learnContext) =>
+                handleNavigateDictionary(word, {
+                  source: 'learn',
+                  view: 'learn',
+                  learnContext,
+                })
+              }
+            />
+          )}
 
-        {currentView === 'exercise' && selectedLesson && (
-          <Exercise
-            lesson={selectedLesson}
-            onFinishQuiz={handleFinishQuiz}
-            onExitQuiz={handleBackToIntro}
-          />
-        )}
+          {currentView === 'exercise' && selectedLesson && (
+            <Exercise
+              lesson={selectedLesson}
+              onFinishQuiz={handleFinishQuiz}
+              onExitQuiz={handleBackToIntro}
+            />
+          )}
 
-        {currentView === 'result' && selectedLesson && quizResults && (
-          <Result
-            lesson={selectedLesson}
-            score={quizResults.score}
-            correctCount={quizResults.correctCount}
-            incorrectCount={quizResults.incorrectCount}
-            totalQuestions={quizResults.totalQuestions}
-            mistakeWords={quizResults.mistakeWords}
-            onReviewMistakes={handleReviewMistakes}
-            onTryAgain={handleTryAgain}
-            onBackToHome={handleNavigateHome}
-          />
-        )}
+          {currentView === 'result' && selectedLesson && quizResults && (
+            <Result
+              lesson={selectedLesson}
+              score={quizResults.score}
+              correctCount={quizResults.correctCount}
+              incorrectCount={quizResults.incorrectCount}
+              totalQuestions={quizResults.totalQuestions}
+              mistakeWords={quizResults.mistakeWords}
+              onReviewMistakes={handleReviewMistakes}
+              onTryAgain={handleTryAgain}
+              onBackToHome={handleNavigateHome}
+            />
+          )}
 
-        {/* Practice Exam Views */}
-        {currentView === 'exam-center' && (
-          <ExamCenter
-            onStartExamFlow={handleStartExamFlow}
-            onViewResultReport={handleViewResultReport}
-            onViewAllHistory={handleViewAllHistory}
-            onStartPlacement={handleStartPlacementIntro}
-          />
-        )}
+          {/* Practice Exam Views */}
+          {currentView === 'exam-center' && (
+            <ExamCenter
+              onStartExamFlow={handleStartExamFlow}
+              onViewResultReport={handleViewResultReport}
+              onViewAllHistory={handleViewAllHistory}
+              onStartPlacement={handleStartPlacementIntro}
+            />
+          )}
 
-        {currentView === 'exam-intro' && (
-          <ExamIntro
-            mode={examMode}
-            level={examLevel}
-            onStartExam={handleStartExamSession}
-            onBackToExamCenter={handleNavigateExamCenter}
-          />
-        )}
+          {currentView === 'exam-intro' && (
+            <ExamIntro
+              mode={examMode}
+              level={examLevel}
+              onStartExam={handleStartExamSession}
+              onBackToExamCenter={handleNavigateExamCenter}
+            />
+          )}
 
-        {currentView === 'exam-session' && activeExamSession && (
-          <ExamSessionPage
-            initialSession={activeExamSession}
-            onFinishExam={handleFinishExamSession}
-          />
-        )}
+          {currentView === 'exam-session' && activeExamSession && (
+            <ExamSessionPage
+              initialSession={activeExamSession}
+              onFinishExam={handleFinishExamSession}
+            />
+          )}
 
-        {currentView === 'exam-result' && examResultReport && (
-          <ExamResultPage
-            report={examResultReport}
-            onRetakeExam={handleRetakeExam}
-            onReturnToExamCenter={handleNavigateExamCenter}
-            onSelectLesson={handleSelectLesson}
-            onStartAIPractice={handleStartAIPracticeFromExam}
-          />
-        )}
+          {currentView === 'exam-result' && examResultReport && (
+            <ExamResultPage
+              report={examResultReport}
+              onRetakeExam={handleRetakeExam}
+              onReturnToExamCenter={handleNavigateExamCenter}
+              onSelectLesson={handleSelectLesson}
+              onStartAIPractice={handleStartAIPracticeFromExam}
+            />
+          )}
 
-        {currentView === 'exam-history' && (
-          <ExamHistoryPage
-            onViewReport={handleViewResultReport}
-            onBackToExamCenter={handleNavigateExamCenter}
-          />
-        )}
+          {currentView === 'exam-history' && (
+            <ExamHistoryPage
+              onViewReport={handleViewResultReport}
+              onBackToExamCenter={handleNavigateExamCenter}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Clean minimal footer */}

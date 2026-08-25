@@ -369,6 +369,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                   <SafeImage
                     src={imgOption.imageUrl}
                     alt={imgOption.imageAlt || imgOption.word}
+                    loading={questionNumber === 1 ? 'eager' : 'lazy'}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {overlay}

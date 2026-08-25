@@ -41,7 +41,7 @@ export const Result: React.FC<ResultProps> = ({
   }, [lesson.id, score]);
 
   const handleGenerateAiPractice = async () => {
-    if (mistakeWords.length === 0) return;
+    if (mistakeWords.length === 0 || isGeneratingAi) return;
     setIsGeneratingAi(true);
     setAiError(null);
 
@@ -152,6 +152,7 @@ export const Result: React.FC<ResultProps> = ({
                         <SafeImage
                           src={word.imageUrl}
                           alt={word.imageAlt || word.word}
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </div>
