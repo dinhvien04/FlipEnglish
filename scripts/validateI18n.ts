@@ -308,7 +308,7 @@ function runValidation() {
   console.log('\n--- 9. Static Source Integration Audit for Multilingual UX & Accessibility ---');
   const projectRoot = path.resolve(__dirname, '..');
 
-  // Check 1: Ensure LanguageChoiceGroup.tsx uses native radio inputs and zero decorative symbols
+  // Check 1: Ensure LanguageChoiceGroup.tsx uses native radio inputs, focus-within styling, and zero decorative symbols
   const languageChoiceGroupPath = path.join(
     projectRoot,
     'src',
@@ -335,7 +335,12 @@ function runValidation() {
     console.error('❌ LanguageChoiceGroup.tsx must not contain decorative checkmark (✓).');
     process.exit(1);
   }
-  console.log('✅ LanguageChoiceGroup.tsx uses native radio group semantics with zero decorative glyphs.');
+
+  if (!languageChoiceGroupContent.includes('focus-within:') || !languageChoiceGroupContent.includes('ring')) {
+    console.error('❌ LanguageChoiceGroup.tsx must provide clear focus-within ring styling on interactive choice labels.');
+    process.exit(1);
+  }
+  console.log('✅ LanguageChoiceGroup.tsx uses native radio group semantics with clear visible focus and zero decorative glyphs.');
 
   // Check 2: Ensure Header.tsx connects language panel with aria-expanded and aria-controls
   const headerPath = path.join(projectRoot, 'src', 'components', 'Header.tsx');
@@ -352,7 +357,28 @@ function runValidation() {
   }
   console.log('✅ Header.tsx properly links language panel with accessible disclosure semantics.');
 
-  // Check 3: Ensure PWA components use localized strings
+  // Check 3: Ensure I18nProvider.tsx scopes cross-tab storage sync defensively to localStorage
+  const i18nProviderPath = path.join(projectRoot, 'src', 'features', 'i18n', 'I18nProvider.tsx');
+  const i18nProviderContent = fs.readFileSync(i18nProviderPath, 'utf8');
+  if (!i18nProviderContent.includes('e.storageArea !== window.localStorage')) {
+    console.error('❌ I18nProvider.tsx cross-tab storage handler must check e.storageArea !== window.localStorage.');
+    process.exit(1);
+  }
+  console.log('✅ I18nProvider.tsx scopes storage event synchronization strictly to localStorage.');
+
+  // Check 4: Ensure LanguageStep.tsx no longer contains hardcoded mixed-language badge strings
+  const languageStepPath = path.join(projectRoot, 'src', 'features', 'onboarding', 'LanguageStep.tsx');
+  const languageStepContent = fs.readFileSync(languageStepPath, 'utf8');
+  if (
+    languageStepContent.includes('Khuyên dùng / Recommended') ||
+    languageStepContent.includes('Full Immersion')
+  ) {
+    console.error('❌ LanguageStep.tsx contains hardcoded badge strings ("Khuyên dùng / Recommended" or "Full Immersion"). Use translation catalog keys.');
+    process.exit(1);
+  }
+  console.log('✅ LanguageStep.tsx utilizes localized descriptive badge tokens.');
+
+  // Check 5: Ensure PWA components use localized strings
   const pwaInstallCardPath = path.join(projectRoot, 'src', 'features', 'pwa', 'PWAInstallCard.tsx');
   const pwaInstallCardContent = fs.readFileSync(pwaInstallCardPath, 'utf8');
   if (pwaInstallCardContent.includes('App Experience') || pwaInstallCardContent.includes('How to install on your device:')) {
@@ -361,7 +387,7 @@ function runValidation() {
   }
   console.log('✅ PWAInstallCard.tsx fully utilizes localized translation tokens.');
 
-  // Check 4: Ensure ReviewDashboard.tsx uses localized batch and days count
+  // Check 6: Ensure ReviewDashboard.tsx uses localized batch and days count
   const reviewDashboardPath = path.join(projectRoot, 'src', 'features', 'review', 'ReviewDashboard.tsx');
   const reviewDashboardContent = fs.readFileSync(reviewDashboardPath, 'utf8');
   if (reviewDashboardContent.includes('in batch') || reviewDashboardContent.includes('(7 days)')) {

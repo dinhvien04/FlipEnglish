@@ -65,10 +65,13 @@ export const viCatalog: Record<TranslationKey, string> = {
   'ui.language.subtitle': 'Chọn cách hiển thị menu, hướng dẫn và các nút bấm trong ứng dụng.',
   'ui.language.vi': 'Tiếng Việt',
   'ui.language.viDesc': 'Giao diện tiếng Việt hoàn toàn. Dễ hiểu nhất cho người mới bắt đầu.',
+  'ui.language.viBadge': 'Khuyên dùng',
   'ui.language.bilingual': 'Song ngữ / Bilingual',
   'ui.language.bilingualDesc': 'Tiếng Việt là chính, kèm thuật ngữ tiếng Anh quan trọng.',
+  'ui.language.bilingualBadge': 'Song ngữ',
   'ui.language.en': 'English',
   'ui.language.enDesc': 'Giao diện tiếng Anh đầy đủ để rèn luyện phản xạ.',
+  'ui.language.enBadge': 'Hoàn toàn bằng tiếng Anh',
   'ui.language.switched': 'Đã chuyển ngôn ngữ giao diện sang {lang}',
   'ui.language.badge': 'Ngôn ngữ',
 

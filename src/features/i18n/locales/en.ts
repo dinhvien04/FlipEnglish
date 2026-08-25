@@ -63,10 +63,13 @@ export const enCatalog = {
   'ui.language.subtitle': 'Choose how FlipEnglish displays menus, guides, and instructions.',
   'ui.language.vi': 'Tiếng Việt',
   'ui.language.viDesc': 'Complete Vietnamese interface. Best for beginners.',
+  'ui.language.viBadge': 'Recommended',
   'ui.language.bilingual': 'Song ngữ / Bilingual',
   'ui.language.bilingualDesc': 'Vietnamese-first interface with English terminology reinforcement.',
+  'ui.language.bilingualBadge': 'Bilingual',
   'ui.language.en': 'English',
   'ui.language.enDesc': 'Full English interface for immersive practice.',
+  'ui.language.enBadge': 'Full English',
   'ui.language.switched': 'Interface language switched to {lang}',
   'ui.language.badge': 'Language',
 

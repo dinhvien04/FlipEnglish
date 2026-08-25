@@ -60,16 +60,22 @@ export const LanguageChoiceGroup: React.FC<LanguageChoiceGroupProps> = ({
 
       {LANGUAGE_OPTIONS.map((option, index) => {
         const isChecked = mode === option.value;
+        const accessibilityFocusClass =
+          'focus-within:outline-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2';
         const defaultClass = `w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer border ${
           isChecked
             ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-2xs'
             : 'bg-white text-slate-700 border-transparent hover:bg-slate-50'
         }`;
 
+        const appliedClassName = itemClassName
+          ? `${accessibilityFocusClass} ${itemClassName(isChecked)}`
+          : `${accessibilityFocusClass} ${defaultClass}`;
+
         return (
           <label
             key={option.value}
-            className={itemClassName ? itemClassName(isChecked) : defaultClass}
+            className={appliedClassName}
           >
             <span className="select-none">{option.label}</span>
             <input

@@ -52,6 +52,9 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
   // Cross-tab sync via storage event
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
+      if (e.storageArea !== window.localStorage) {
+        return;
+      }
       if (e.key === LANGUAGE_STORAGE_KEY && e.newValue) {
         const preference = parseStoredLanguagePreference(e.newValue);
         if (!preference) return;

@@ -19,19 +19,19 @@ export const LanguageStep: React.FC<LanguageStepProps> = ({
       mode: 'vi',
       title: 'Tiếng Việt',
       desc: t('ui.language.viDesc'),
-      badge: 'Khuyên dùng / Recommended',
+      badge: t('ui.language.viBadge'),
     },
     {
       mode: 'bilingual',
       title: 'Song ngữ / Bilingual',
       desc: t('ui.language.bilingualDesc'),
-      badge: 'Song ngữ / Bilingual',
+      badge: t('ui.language.bilingualBadge'),
     },
     {
       mode: 'en',
       title: 'English',
       desc: t('ui.language.enDesc'),
-      badge: 'Full Immersion',
+      badge: t('ui.language.enBadge'),
     },
   ];
 
