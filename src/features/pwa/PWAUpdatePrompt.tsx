@@ -105,19 +105,19 @@ export const PWAUpdatePrompt: React.FC = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5">
             <span className="text-3xs font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-600 text-white inline-block">
-              Offline Ready
+              {t('pwa.offlineReady.title')}
             </span>
             <p className="text-xs sm:text-sm font-medium text-slate-200 pt-1">
-              FlipEnglish is ready for offline learning. Saved lessons, flashcards, and review items can be accessed without internet.
+              {t('pwa.offlineReady.description')}
             </p>
           </div>
           <button
             type="button"
             onClick={handleDismissOfflineReady}
-            className="min-h-9 px-3 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer shrink-0 inline-flex items-center"
-            aria-label="Dismiss offline ready notice"
+            className="min-h-11 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer shrink-0 inline-flex items-center justify-center"
+            aria-label={t('pwa.offlineReady.dismissAria')}
           >
-            Dismiss
+            {t('pwa.offlineReady.dismiss')}
           </button>
         </div>
       </div>

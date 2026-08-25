@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { enCatalog } from '../src/features/i18n/locales/en';
 import { viCatalog } from '../src/features/i18n/locales/vi';
 import { getTranslation, hasTranslationKey } from '../src/features/i18n/i18nCatalog';
@@ -8,6 +11,9 @@ import {
 } from '../src/features/i18n/formatting';
 import { resolveInitialUiLanguage } from '../src/features/i18n/resolveInitialLanguage';
 import { validateOnboardingState } from '../src/features/onboarding/onboardingStorage';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function extractPlaceholders(template: string): string[] {
   const matches = template.match(/\{[a-zA-Z0-9_-]+\}/g);
@@ -87,7 +93,7 @@ function runValidation() {
   }
 
   // Test fallback for nonexistent key
-  const fallbackVal = getTranslation('vi', 'nonexistent.key.test');
+  const fallbackVal = getTranslation('vi', 'nonexistent.key.test' as any);
   if (fallbackVal !== 'nonexistent.key.test') {
     console.error(`❌ Fallback failed for nonexistent key: "${fallbackVal}"`);
     process.exit(1);
@@ -227,6 +233,40 @@ function runValidation() {
   }
 
   console.log('✅ Onboarding schema validation correctly enforces boundaries.');
+
+  console.log('\n--- 8. Static Source Code Audits for Multilingual UX & Accessibility ---');
+  const projectRoot = path.resolve(__dirname, '..');
+
+  // Check 1: Ensure Header.tsx uses semantic menuitemradio and aria-checked for language options
+  const headerPath = path.join(projectRoot, 'src', 'components', 'Header.tsx');
+  const headerContent = fs.readFileSync(headerPath, 'utf8');
+  if (!headerContent.includes('role="menuitemradio"') || !headerContent.includes('aria-checked=')) {
+    console.error('❌ Header.tsx must use role="menuitemradio" and aria-checked for language menu items.');
+    process.exit(1);
+  }
+  if (headerContent.includes('✓')) {
+    console.error('❌ Header.tsx must not contain decorative checkmark (✓). Use aria-checked and semantic badges.');
+    process.exit(1);
+  }
+  console.log('✅ Header.tsx adheres to WAI-ARIA radio group semantics with zero decorative glyphs.');
+
+  // Check 2: Ensure PWA components use localized strings
+  const pwaInstallCardPath = path.join(projectRoot, 'src', 'features', 'pwa', 'PWAInstallCard.tsx');
+  const pwaInstallCardContent = fs.readFileSync(pwaInstallCardPath, 'utf8');
+  if (pwaInstallCardContent.includes('App Experience') || pwaInstallCardContent.includes('How to install on your device:')) {
+    console.error('❌ PWAInstallCard.tsx contains hardcoded English strings instead of t() translation keys.');
+    process.exit(1);
+  }
+  console.log('✅ PWAInstallCard.tsx fully utilizes localized translation tokens.');
+
+  // Check 3: Ensure ReviewDashboard.tsx uses localized batch and days count
+  const reviewDashboardPath = path.join(projectRoot, 'src', 'features', 'review', 'ReviewDashboard.tsx');
+  const reviewDashboardContent = fs.readFileSync(reviewDashboardPath, 'utf8');
+  if (reviewDashboardContent.includes('in batch') || reviewDashboardContent.includes('(7 days)')) {
+    console.error('❌ ReviewDashboard.tsx contains hardcoded "in batch" or "(7 days)" strings.');
+    process.exit(1);
+  }
+  console.log('✅ ReviewDashboard.tsx fully utilizes localized time/batch translation tokens.');
 
   console.log('\n🎉 ALL I18N AND MULTILINGUAL CHECKS PASSED WITH ZERO ERRORS.');
 }

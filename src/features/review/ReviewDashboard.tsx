@@ -88,6 +88,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   }, []);
 
   const handleStartDueReview = () => {
+    onSessionContextChange?.(null);
     const queue = getDueReviewItems(DEFAULT_SESSION_MAX_DUE);
     if (queue.length > 0) {
       setSessionSummary(null);
@@ -96,6 +97,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleStartAllReview = () => {
+    onSessionContextChange?.(null);
     const queue = getAllTrackedReviewItems(DEFAULT_SESSION_MAX_DUE);
     if (queue.length > 0) {
       setSessionSummary(null);
@@ -104,15 +106,32 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleFinishSession = (summary: ReviewSessionSummary) => {
+    onSessionContextChange?.(null);
     setActiveQueue(null);
     setSessionSummary(summary);
     refreshStats();
   };
 
   const handleExitSession = () => {
+    onSessionContextChange?.(null);
     setActiveQueue(null);
     refreshStats();
   };
+
+  const handleSessionStateChange = React.useCallback(
+    (sessionState: { currentIndex: number; ratingBreakdown: Record<ReviewRating, number> }) => {
+      if (!activeQueue || activeQueue.length === 0) {
+        onSessionContextChange?.(null);
+        return;
+      }
+      onSessionContextChange?.({
+        activeQueue,
+        currentIndex: sessionState.currentIndex,
+        ratingBreakdown: sessionState.ratingBreakdown,
+      });
+    },
+    [activeQueue, onSessionContextChange]
+  );
 
   const handleLookup = (
     word: string,
@@ -150,6 +169,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         onFinishSession={handleFinishSession}
         onExit={handleExitSession}
         onLookupWord={onLookupWord ? handleLookup : undefined}
+        onSessionStateChange={handleSessionStateChange}
       />
     );
   }
@@ -220,7 +240,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
           </div>
           <div className="text-2xs text-slate-500 mt-1">
             {hasDueItems
-              ? `${Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE)} in batch`
+              ? t('review.dashboard.inBatch', { count: Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE) })
               : t('review.dashboard.noDueTitle')}
           </div>
         </div>
@@ -233,7 +253,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
           <div className="text-3xl sm:text-4xl font-black text-amber-600 mt-2">
             {stats.learningCount}
           </div>
-          <div className="text-2xs text-slate-500 mt-1">10m - 1d</div>
+          <div className="text-2xs text-slate-500 mt-1">{t('review.dashboard.learningInterval')}</div>
         </div>
 
         {/* Card 3: In Review */}
@@ -371,7 +391,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               {stats.dueTomorrowCount}
             </div>
             <p className="text-2xs text-slate-500">
-              {stats.dueNext7DaysCount} (7 days)
+              {stats.dueNext7DaysCount} ({t('review.dashboard.daysCount', { count: 7 })})
             </p>
           </div>
 
@@ -382,7 +402,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
             <div className="text-2xl font-black text-slate-800">
               {stats.recentAccuracy !== null ? `${stats.recentAccuracy}%` : 'N/A'}
             </div>
-            <p className="text-2xs text-slate-500">Recent Accuracy</p>
+            <p className="text-2xs text-slate-500">{t('review.dashboard.recentAccuracy')}</p>
           </div>
         </div>
       )}

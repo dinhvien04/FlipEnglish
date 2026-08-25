@@ -14,13 +14,16 @@ export function loadStoredLanguagePreference(): StoredLanguagePreference | null 
   try {
     const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && isValidUiLanguageMode(parsed.mode)) {
-      return {
-        mode: parsed.mode,
-        explicit: Boolean(parsed.explicit),
-        savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : undefined,
-      };
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const obj = parsed as Record<string, unknown>;
+      if (isValidUiLanguageMode(obj.mode)) {
+        return {
+          mode: obj.mode,
+          explicit: typeof obj.explicit === 'boolean' ? obj.explicit : Boolean(obj.explicit),
+          savedAt: typeof obj.savedAt === 'number' && Number.isFinite(obj.savedAt) ? obj.savedAt : undefined,
+        };
+      }
     }
     return null;
   } catch (err) {

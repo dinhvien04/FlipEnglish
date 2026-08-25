@@ -122,7 +122,8 @@ export const Header: React.FC<HeaderProps> = ({
           id="header-brand-logo"
           onClick={() => handleNavClick(onNavigateHome)}
           className="flex items-center text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-1 transition-opacity hover:opacity-85 cursor-pointer"
-          title="Return to Curriculum"
+          title={t('accessibility.returnToCurriculum')}
+          aria-label={t('accessibility.returnToCurriculum')}
         >
           <span className="text-xl font-black tracking-tight text-slate-900">
             Flip<span className="text-indigo-600">English</span>
@@ -130,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Desktop Navigation (xl and up: >= 1280px) */}
-        <nav className="hidden xl:flex items-center gap-1.5 xl:gap-2" aria-label="Main Navigation">
+        <nav className="hidden xl:flex items-center gap-1.5 xl:gap-2" aria-label={t('accessibility.mainNavigation')}>
           {onNavigateToday && (
             <button
               id="header-nav-today"
@@ -273,7 +274,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div
                 className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-slate-200 py-2 z-50 animate-fade-in"
                 role="menu"
-                aria-label="Language selection options"
+                aria-label={t('accessibility.languageOptions')}
               >
                 <button
                   type="button"
@@ -281,10 +282,13 @@ export const Header: React.FC<HeaderProps> = ({
                   className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
                     mode === 'vi' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
                   }`}
-                  role="menuitem"
+                  role="menuitemradio"
+                  aria-checked={mode === 'vi'}
                 >
                   <span>Tiếng Việt</span>
-                  {mode === 'vi' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
+                    {mode === 'vi' ? t('ui.language.badge') : ''}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -292,10 +296,13 @@ export const Header: React.FC<HeaderProps> = ({
                   className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
                     mode === 'bilingual' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
                   }`}
-                  role="menuitem"
+                  role="menuitemradio"
+                  aria-checked={mode === 'bilingual'}
                 >
                   <span>Song ngữ / Bilingual</span>
-                  {mode === 'bilingual' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
+                    {mode === 'bilingual' ? t('ui.language.badge') : ''}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -303,10 +310,13 @@ export const Header: React.FC<HeaderProps> = ({
                   className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
                     mode === 'en' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
                   }`}
-                  role="menuitem"
+                  role="menuitemradio"
+                  aria-checked={mode === 'en'}
                 >
                   <span>English</span>
-                  {mode === 'en' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
+                    {mode === 'en' ? t('ui.language.badge') : ''}
+                  </span>
                 </button>
               </div>
             )}
@@ -316,7 +326,8 @@ export const Header: React.FC<HeaderProps> = ({
           <div
             id="header-progress-indicator"
             className="flex items-center min-h-11 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs xl:text-sm font-bold ml-1"
-            title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
+            title={t('accessibility.progressCompleted', { completed: stats.completedCount, total: stats.totalLessonsCount })}
+            aria-label={t('accessibility.progressCompleted', { completed: stats.completedCount, total: stats.totalLessonsCount })}
           >
             <span>
               {stats.completedCount}/{stats.totalLessonsCount}
@@ -328,7 +339,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex xl:hidden items-center gap-2">
           <div
             className="flex items-center px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shrink-0"
-            title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
+            title={t('accessibility.progressCompleted', { completed: stats.completedCount, total: stats.totalLessonsCount })}
+            aria-label={t('accessibility.progressCompleted', { completed: stats.completedCount, total: stats.totalLessonsCount })}
           >
             {stats.completedCount}/{stats.totalLessonsCount}
           </div>
@@ -361,7 +373,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="bg-white border-b border-slate-200 p-4 sm:p-6 shadow-xl space-y-3 max-h-[calc(100dvh-64px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-label="Site Navigation Menu"
+            aria-label={t('accessibility.siteNavigation')}
           >
             {/* Language Switcher in Mobile Menu */}
             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">

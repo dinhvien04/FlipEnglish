@@ -119,6 +119,8 @@ export const Home: React.FC<HomeProps> = ({
       .slice(0, 8);
   }, [progress]);
 
+  const [isGuideExpanded, setIsGuideExpanded] = useState<boolean>(false);
+
   // Curated Popular Starting Points
   const popularLessons = useMemo(() => {
     const found = POPULAR_STARTING_IDS.map((id) => LESSONS.find((l) => l.id === id)).filter(
@@ -213,114 +215,162 @@ export const Home: React.FC<HomeProps> = ({
         </section>
       )}
 
-      {/* Beginner Guidance: "Where Should I Start?" (Prominent for beginners, compact/accessible for returning) */}
-      <section className="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {t('home.guide.whereToStart')}
-                </h2>
-                {isBilingual && (
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:inline" lang="en">
-                    {t('bilingual.help')}
-                  </span>
-                )}
-              </div>
+      {/* Beginner / Returning Guidance Section */}
+      {hasMeaningfulHistory && !isGuideExpanded ? (
+        /* Compact Returning User Help Panel */
+        <section className="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-2xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {t('home.guide.compactTitle')}
+              </span>
             </div>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900">
+              {t('home.guide.returningHelp')}
+            </h3>
+            <p className="text-xs text-slate-600">
+              {t('home.guide.whereToStartSubtitle')}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsGuideExpanded(true)}
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 min-h-11 px-4 py-2 rounded-xl transition-colors cursor-pointer inline-flex items-center"
+            >
+              {t('home.guide.showGuide')}
+            </button>
             {onNavigateHelp && (
               <button
                 type="button"
                 onClick={onNavigateHelp}
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 min-h-11 px-4 py-2 rounded-xl transition-colors cursor-pointer inline-flex items-center"
               >
                 {t('ui.nav.help')}
               </button>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-slate-600">
-            {hasMeaningfulHistory
-              ? t('home.guide.whereToStartSubtitle')
-              : t('home.guide.whereToStartSubtitle')}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Option 1: Unknown Level */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-2xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
-                1. {t('placement.title')}
-              </span>
-              <h3 className="text-base font-bold text-slate-900">
-                {t('home.guide.unknownLevelTitle')}
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {t('home.guide.unknownLevelDesc')}
-              </p>
+        </section>
+      ) : (
+        /* Full Beginner Guidance Panel ("Where should I start?") */
+        <section className="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    {t('home.guide.whereToStart')}
+                  </h2>
+                  {isBilingual && (
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:inline" lang="en">
+                      {t('bilingual.whereToStart')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {hasMeaningfulHistory && isGuideExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setIsGuideExpanded(false)}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    {t('home.guide.hideGuide')}
+                  </button>
+                )}
+                {onNavigateHelp && (
+                  <button
+                    type="button"
+                    onClick={onNavigateHelp}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                  >
+                    {t('ui.nav.help')}
+                  </button>
+                )}
+              </div>
             </div>
-            {onStartPlacement && (
+            <p className="text-xs sm:text-sm text-slate-600">
+              {t('home.guide.whereToStartSubtitle')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Option 1: Unknown Level */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="text-2xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                  1. {t('placement.title')}
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  {t('home.guide.unknownLevelTitle')}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.guide.unknownLevelDesc')}
+                </p>
+              </div>
+              {onStartPlacement && (
+                <button
+                  type="button"
+                  onClick={onStartPlacement}
+                  className="w-full min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  {t('home.guide.unknownLevelAction')}
+                </button>
+              )}
+            </div>
+
+            {/* Option 2: Know Level */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="text-2xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                  2. {t('ui.nav.curriculum')}
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  {t('home.guide.knowLevelTitle')}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.guide.knowLevelDesc')}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={onStartPlacement}
-                className="w-full min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                onClick={() => {
+                  const el = document.getElementById('curriculum-navigation-heading');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
               >
-                {t('home.guide.unknownLevelAction')}
+                {t('home.guide.knowLevelAction')}
               </button>
-            )}
-          </div>
-
-          {/* Option 2: Know Level */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-2xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                2. {t('ui.nav.curriculum')}
-              </span>
-              <h3 className="text-base font-bold text-slate-900">
-                {t('home.guide.knowLevelTitle')}
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {t('home.guide.knowLevelDesc')}
-              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById('curriculum-navigation-heading');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
-            >
-              {t('home.guide.knowLevelAction')}
-            </button>
-          </div>
 
-          {/* Option 3: Spaced Repetition Review */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
-            <div className="space-y-2">
-              <span className="text-2xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                3. {t('review.title')}
-              </span>
-              <h3 className="text-base font-bold text-slate-900">
-                {t('home.guide.reviewTitle')}
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {t('home.guide.reviewDesc')}
-              </p>
+            {/* Option 3: Spaced Repetition Review */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="text-2xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                  3. {t('review.title')}
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  {t('home.guide.reviewTitle')}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('home.guide.reviewDesc')}
+                </p>
+              </div>
+              {onNavigateReview && (
+                <button
+                  type="button"
+                  onClick={onNavigateReview}
+                  className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  {t('home.guide.reviewAction')}
+                </button>
+              )}
             </div>
-            {onNavigateReview && (
-              <button
-                type="button"
-                onClick={onNavigateReview}
-                className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
-              >
-                {t('home.guide.reviewAction')}
-              </button>
-            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Editorial Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
@@ -488,7 +538,7 @@ export const Home: React.FC<HomeProps> = ({
             >
               {reviewStats.dueCount > 0
                 ? `${t('review.title')} (${reviewStats.dueCount})`
-                : t('ui.common.open' in t ? t('ui.nav.review') : t('review.title'))}
+                : t('ui.nav.review')}
             </button>
           )}
         </div>

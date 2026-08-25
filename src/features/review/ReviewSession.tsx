@@ -6,13 +6,19 @@ import { ReviewCard } from './ReviewCard';
 import { ProgressBar } from '../../components/ProgressBar';
 import { useI18n } from '../i18n';
 
+interface ReviewSessionState {
+  currentIndex: number;
+  ratingBreakdown: Record<ReviewRating, number>;
+}
+
 interface ReviewSessionProps {
   queue: ResolvedReviewItem[];
   initialIndex?: number;
   initialRatingBreakdown?: Record<ReviewRating, number>;
   onFinishSession: (summary: ReviewSessionSummary) => void;
   onExit: () => void;
-  onLookupWord?: (word: string, sessionState: { currentIndex: number; ratingBreakdown: Record<ReviewRating, number> }) => void;
+  onLookupWord?: (word: string, sessionState: ReviewSessionState) => void;
+  onSessionStateChange?: (state: ReviewSessionState) => void;
 }
 
 export const ReviewSession: React.FC<ReviewSessionProps> = ({
@@ -22,6 +28,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   onFinishSession,
   onExit,
   onLookupWord,
+  onSessionStateChange,
 }) => {
   const { t } = useI18n();
   const total = queue.length;
@@ -46,6 +53,14 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   const [currentIndex, setCurrentIndex] = useState<number>(getSafeInitialIndex);
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<ReviewRating, number>>(getSafeInitialBreakdown);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Publish live review session state continuously (pure observation only)
+  React.useEffect(() => {
+    onSessionStateChange?.({
+      currentIndex,
+      ratingBreakdown,
+    });
+  }, [currentIndex, ratingBreakdown, onSessionStateChange]);
 
   const currentItem = queue[currentIndex];
 

@@ -101,7 +101,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                 onClick={onStartPlacement}
                 className="min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
               >
-                {t('home.hero.startPlacement')}
+                {t('placement.intro.start')}
               </button>
             </div>
           )}

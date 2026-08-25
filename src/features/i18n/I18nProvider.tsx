@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { UiLanguageMode, I18nContextValue } from './i18nTypes';
+import { TranslationKey } from './locales/en';
 import { I18nContext } from './useI18n';
 import { getTranslation } from './i18nCatalog';
 import {
@@ -68,7 +69,7 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
   }, []);
 
   const t = useCallback(
-    (key: string, params?: Record<string, string | number>) => {
+    (key: TranslationKey, params?: Record<string, string | number>) => {
       return getTranslation(mode, key, params);
     },
     [mode]

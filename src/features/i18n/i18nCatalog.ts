@@ -9,12 +9,12 @@ export const i18nCatalogs: Record<'en' | 'vi', Record<TranslationKey, string>> =
 
 export function getTranslation(
   mode: UiLanguageMode,
-  key: string,
+  key: TranslationKey,
   params?: Record<string, string | number>
 ): string {
   const targetLang = mode === 'en' ? 'en' : 'vi';
   const catalog = i18nCatalogs[targetLang] || i18nCatalogs.en;
-  let rawText = catalog[key as TranslationKey] || enCatalog[key as TranslationKey] || key;
+  let rawText = catalog[key] || enCatalog[key] || (key as string);
 
   if (params && typeof params === 'object') {
     for (const [paramKey, paramVal] of Object.entries(params)) {

@@ -54,6 +54,8 @@ export const enCatalog = {
   'ui.common.requiredInternet': 'Requires Internet',
   'ui.common.offlineAvailable': 'Available Offline',
   'ui.common.disclaimerCefr': 'FlipEnglish provides CEFR-aligned learning and placement estimation for self-study. It is not an official CEFR certification provider.',
+  'ui.common.change': 'Change',
+  'ui.common.open': 'Open',
   'common.visualUnavailable': 'Visual unavailable offline',
 
   // Language Selection
@@ -69,6 +71,7 @@ export const enCatalog = {
   'ui.language.badge': 'Language',
 
   // Accessibility
+  'accessibility.returnToCurriculum': 'Return to Curriculum',
   'accessibility.mainNavigation': 'Main Navigation',
   'accessibility.siteNavigation': 'Site Navigation Menu',
   'accessibility.languageOptions': 'Language selection options',
@@ -76,6 +79,7 @@ export const enCatalog = {
   'accessibility.languageRadioGroup': 'Interface language options',
   'accessibility.wordRelations': 'Word relations',
   'accessibility.progressBar': 'Progress: {current} / {total}',
+  'accessibility.progressCompleted': '{completed} of {total} lessons completed',
 
   // Home Page
   'home.hero.title': 'Master English Vocabulary in Real Context',
@@ -289,12 +293,26 @@ export const enCatalog = {
   'result.title': 'Lesson Completed',
   'result.score': 'Your Score: {score}%',
   'result.correctCount': '{correct} / {total} Correct',
+  'result.correct': '{count} Correct',
+  'result.incorrect': '{count} Incorrect',
+  'result.questionsCorrect': '{correct} of {total} Questions Correct',
   'result.mistakesTitle': 'Mistakes to Review ({count})',
+  'result.wordsToReview': 'Words to Review ({count})',
+  'result.reinforceMemory': 'Strengthen retention with spaced repetition',
   'result.reviewMistakesBtn': 'Review Mistakes',
+  'result.retakeQuizBtn': 'Retake Quiz',
   'result.retryLesson': 'Retake Quiz',
   'result.nextLesson': 'Next Lesson',
   'result.backCurriculum': 'Back to Curriculum',
+  'result.backToPathBtn': 'Back to Learning Path',
   'result.mastery': 'Mastery Status: {status}',
+  'result.feedback.flawless': 'Flawless performance! You have mastered all words in this lesson.',
+  'result.feedback.great': 'Great job! You have a solid grasp of these concepts.',
+  'result.feedback.good': 'Good effort! Review the missed words below to cement your memory.',
+  'result.feedback.practice': 'Keep going! Reviewing your mistakes is the fastest way to progress.',
+  'result.aiPracticeBtn': 'Practice Missed Words with AI',
+  'result.aiGenerating': 'Generating targeted practice...',
+  'result.aiNote': 'AI Practice Generation Notice',
 
   // Smart Review (SRS)
   'review.title': 'Smart Review',
@@ -306,6 +324,10 @@ export const enCatalog = {
   'review.dashboard.totalTracked': 'Total Tracked Items',
   'review.dashboard.mastered': 'Mastered Items',
   'review.dashboard.learning': 'Learning in Progress',
+  'review.dashboard.inBatch': '{count} in batch',
+  'review.dashboard.daysCount': '{count} days',
+  'review.dashboard.recentAccuracy': 'Recent Accuracy',
+  'review.dashboard.learningInterval': '10m - 1d',
   'review.session.cardProgress': 'Reviewing {current} of {total}',
   'review.session.showAnswer': 'Show Answer',
   'review.session.ratePrompt': 'How well did you remember this word?',
@@ -400,6 +422,16 @@ export const enCatalog = {
   'pwa.install.title': 'Install FlipEnglish',
   'pwa.install.desc': 'Install FlipEnglish on your device for fast offline access and an app-like study experience.',
   'pwa.install.button': 'Install App',
+  'pwa.install.badge': 'App Experience',
+  'pwa.install.installing': 'Installing...',
+  'pwa.install.showGuide': 'Installation Guide',
+  'pwa.install.hideGuide': 'Hide Guide',
+  'pwa.install.notNow': 'Not Now',
+  'pwa.install.guideTitle': 'How to install on your device:',
+  'pwa.install.iosTitle': 'On iPhone or iPad:',
+  'pwa.install.iosInstructions': 'Open your browser\'s Share menu, then choose "Add to Home Screen" if that option is available.',
+  'pwa.install.otherTitle': 'On Android or Desktop:',
+  'pwa.install.otherInstructions': 'Open your browser\'s menu or install control and choose "Install FlipEnglish" or "Add to Home Screen" if available.',
   'pwa.update.title': 'Update Available',
   'pwa.update.desc': 'A new version of FlipEnglish is ready with improvements.',
   'pwa.update.now': 'Update Now',
@@ -410,6 +442,10 @@ export const enCatalog = {
   'pwa.backOnline': "You're back online. Live AI features are available.",
   'pwa.offlineMode': 'Offline Mode',
   'pwa.offlineDescription': 'Core learning and review remain available. AI features require an internet connection.',
+  'pwa.offlineReady.title': 'Offline Ready',
+  'pwa.offlineReady.description': 'FlipEnglish is ready for offline learning. Saved lessons, flashcards, and review items can be used without an active internet connection.',
+  'pwa.offlineReady.dismiss': 'Dismiss',
+  'pwa.offlineReady.dismissAria': 'Dismiss offline-ready notice',
   'pwa.offlineReady': 'Offline Ready',
   'pwa.offlineReadyDesc': 'FlipEnglish is ready for offline learning. Saved lessons, flashcards, and review items can be accessed without internet.',
 
@@ -473,6 +509,7 @@ export const enCatalog = {
   'bilingual.fliplens': 'FlipLens',
   'bilingual.today': 'Today',
   'bilingual.help': 'Guide',
+  'bilingual.whereToStart': 'Where should I start?',
 
   // Errors & Diagnostics
   'error.network': 'This feature requires an active internet connection.',
