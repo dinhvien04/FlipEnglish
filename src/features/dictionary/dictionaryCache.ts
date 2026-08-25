@@ -18,6 +18,12 @@ const STORE_META = 'metadata';
 const MAX_CACHED_ENTRIES = 250;
 export const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+export interface CachedDictionaryResult {
+  entry: DictionaryEntry;
+  stale: boolean;
+  fetchedAt: number;
+}
+
 export interface CachedEntryRecord {
   normalizedWord: string;
   entry: DictionaryEntry;
@@ -71,10 +77,13 @@ function getDb(): Promise<IDBDatabase | null> {
 }
 
 /**
- * Retrieves a cached dictionary entry from IndexedDB.
- * Validates schema integrity and updates lastAccessedAt timestamp.
+ * Retrieves a cached dictionary entry with metadata (fresh vs stale).
+ * Stale entries (older than 30 days) remain available for offline fallback.
  */
-export async function getCachedDictionaryEntry(normalizedWord: string): Promise<DictionaryEntry | null> {
+export async function getCachedDictionaryEntryWithMeta(
+  normalizedWord: string,
+  now = Date.now()
+): Promise<CachedDictionaryResult | null> {
   const db = await getDb();
   if (!db) return null;
 
@@ -87,14 +96,33 @@ export async function getCachedDictionaryEntry(normalizedWord: string): Promise<
       req.onsuccess = () => {
         const record = req.result as CachedEntryRecord | undefined;
         if (!record || !record.entry || !isValidDictionaryEntry(record.entry)) {
+          // If record exists but is corrupted, optionally clean it up safely
+          if (record && !isValidDictionaryEntry(record.entry)) {
+            try {
+              store.delete(normalizedWord);
+            } catch {}
+          }
           resolve(null);
           return;
         }
 
+        // Validate fetchedAt timestamp
+        const fetchedAt = typeof record.fetchedAt === 'number' && record.fetchedAt > 0
+          ? record.fetchedAt
+          : (record.entry.fetchedAt || now);
+
+        const age = now - fetchedAt;
+        const stale = age > CACHE_TTL_MS;
+
         // Update lastAccessedAt in background
-        record.lastAccessedAt = Date.now();
+        record.lastAccessedAt = now;
         store.put(record);
-        resolve(record.entry);
+
+        resolve({
+          entry: record.entry,
+          stale,
+          fetchedAt,
+        });
       };
 
       req.onerror = () => resolve(null);
@@ -102,6 +130,15 @@ export async function getCachedDictionaryEntry(normalizedWord: string): Promise<
       resolve(null);
     }
   });
+}
+
+/**
+ * Retrieves a cached dictionary entry from IndexedDB.
+ * Validates schema integrity and updates lastAccessedAt timestamp.
+ */
+export async function getCachedDictionaryEntry(normalizedWord: string): Promise<DictionaryEntry | null> {
+  const res = await getCachedDictionaryEntryWithMeta(normalizedWord);
+  return res ? res.entry : null;
 }
 
 /**
@@ -292,6 +329,7 @@ export async function removeSavedWordFromDb(normalizedWord: string): Promise<boo
 
 /**
  * Checks if a normalized word is saved.
+ * Validates saved record schema before returning true.
  */
 export async function isWordSavedInDb(normalizedWord: string): Promise<boolean> {
   const db = await getDb();
@@ -302,7 +340,14 @@ export async function isWordSavedInDb(normalizedWord: string): Promise<boolean> 
       const tx = db.transaction(STORE_SAVED, 'readonly');
       const store = tx.objectStore(STORE_SAVED);
       const req = store.get(normalizedWord);
-      req.onsuccess = () => resolve(Boolean(req.result));
+      req.onsuccess = () => {
+        const item = req.result as SavedDictionaryWord | undefined;
+        if (!item || !isValidSavedDictionaryWord(item)) {
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      };
       req.onerror = () => resolve(false);
     } catch {
       resolve(false);

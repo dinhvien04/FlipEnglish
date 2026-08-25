@@ -33,9 +33,10 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
   const [similarError, setSimilarError] = useState<string | null>(null);
   const [soundsLikeError, setSoundsLikeError] = useState<string | null>(null);
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const similarAbortRef = useRef<AbortController | null>(null);
+  const soundsLikeAbortRef = useRef<AbortController | null>(null);
 
-  // Reset tab and state when word changes
+  // Reset tab and state when word changes — performs ZERO network requests on mount/reset
   useEffect(() => {
     const norm = word.toLowerCase();
     const cachedSim = relationsCache.get(`${norm}:similar`);
@@ -50,14 +51,14 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
       synonyms.length > 0 ? 'synonyms' : antonyms.length > 0 ? 'antonyms' : 'similar';
     setActiveTab(initial);
 
-    // If initial tab is 'similar' and not cached, load immediately
-    if (initial === 'similar' && !cachedSim) {
-      loadSimilarWords(word);
-    }
-
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      if (similarAbortRef.current) {
+        similarAbortRef.current.abort();
+        similarAbortRef.current = null;
+      }
+      if (soundsLikeAbortRef.current) {
+        soundsLikeAbortRef.current.abort();
+        soundsLikeAbortRef.current = null;
       }
     };
   }, [word]);
@@ -73,11 +74,11 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
     setIsLoadingSimilar(true);
     setSimilarError(null);
 
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    if (similarAbortRef.current) {
+      similarAbortRef.current.abort();
     }
     const controller = new AbortController();
-    abortControllerRef.current = controller;
+    similarAbortRef.current = controller;
 
     try {
       const results = await getDictionaryRelated(targetWord, 'similar', controller.signal);
@@ -105,11 +106,11 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
     setIsLoadingSoundsLike(true);
     setSoundsLikeError(null);
 
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    if (soundsLikeAbortRef.current) {
+      soundsLikeAbortRef.current.abort();
     }
     const controller = new AbortController();
-    abortControllerRef.current = controller;
+    soundsLikeAbortRef.current = controller;
 
     try {
       const results = await getDictionaryRelated(targetWord, 'sounds-like', controller.signal);
@@ -247,6 +248,21 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
               </div>
             )}
 
+            {!isLoadingSimilar && !similarError && similarWords.length === 0 && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
+                <p className="text-xs text-slate-600 font-medium">
+                  Explore conceptually related words.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => loadSimilarWords(word)}
+                  className="min-h-11 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Load Similar Ideas
+                </button>
+              </div>
+            )}
+
             {!isLoadingSimilar && similarError && similarWords.length === 0 && (
               <p className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl border border-slate-200">
                 {similarError}
@@ -275,6 +291,21 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
             {isLoadingSoundsLike && (
               <div className="p-4 text-center text-xs font-semibold text-slate-500">
                 Finding words that sound similar to "{word}"...
+              </div>
+            )}
+
+            {!isLoadingSoundsLike && !soundsLikeError && soundsLikeWords.length === 0 && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
+                <p className="text-xs text-slate-600 font-medium">
+                  Explore words that sound phonetically similar.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => loadSoundsLikeWords(word)}
+                  className="min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Load Sounds Like
+                </button>
               </div>
             )}
 

@@ -32,7 +32,7 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - *Disclaimer: This short placement check recommends a starting level inside FlipEnglish. It is not an official CEFR certification.*
 
 ### FlipEnglish Dictionary & Offline Wordbook
-- **Comprehensive Learner Lexicon**: Structured definitions grouped by part of speech, IPA phonetic transcriptions, authentic audio pronunciation playback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
+- **Comprehensive Learner Lexicon**: Structured definitions grouped by part of speech, IPA phonetic transcriptions, provider pronunciation audio where available with browser speech synthesis fallback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
 - **3-Layer Architecture**:
   - *Layer 1 (Local Curriculum Index)*: Instant offline lookup across all 72 lessons (720 vocabulary items) with CEFR level tags and "Open Lesson" navigation.
   - *Layer 2 (External Dictionary Provider)*: Proxy integration with the Free Dictionary API for full English definitions, bounded payloads, and sanitized HTTPS audio pronunciations.

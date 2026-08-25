@@ -1,5 +1,6 @@
 /**
- * Native Text-to-Speech utility using Web Speech API
+ * Native Text-to-Speech utility using Web Speech API.
+ * Returns true if speech synthesis was successfully initiated, false otherwise.
  */
 export const stopSpeech = () => {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -11,9 +12,9 @@ export const stopSpeech = () => {
   }
 };
 
-export const speakWord = (text: string, rate: number = 0.9) => {
+export const speakWord = (text: string, rate: number = 0.9): boolean => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return;
+    return false;
   }
 
   try {
@@ -33,8 +34,10 @@ export const speakWord = (text: string, rate: number = 0.9) => {
     }
 
     window.speechSynthesis.speak(utterance);
+    return true;
   } catch (err) {
     console.warn('Speech synthesis error:', err);
+    return false;
   }
 };
 

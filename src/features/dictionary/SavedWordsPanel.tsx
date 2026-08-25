@@ -16,11 +16,17 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState<'all' | 'curriculum' | 'dictionary'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'alphabetical'>('recent');
+  const [removeErrorMessage, setRemoveErrorMessage] = useState<string | null>(null);
 
   const handleRemove = async (e: React.MouseEvent, normalizedWord: string) => {
     e.stopPropagation();
-    await removeSavedWordFromDb(normalizedWord);
-    onRefreshSaved();
+    setRemoveErrorMessage(null);
+    const ok = await removeSavedWordFromDb(normalizedWord);
+    if (ok) {
+      onRefreshSaved();
+    } else {
+      setRemoveErrorMessage('Could not remove this word from this device. Local storage may be restricted.');
+    }
   };
 
   const filteredWords = useMemo(() => {
@@ -89,6 +95,12 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
         </div>
       </div>
 
+      {removeErrorMessage && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+          {removeErrorMessage}
+        </div>
+      )}
+
       {/* Filter Input */}
       <div>
         <input
@@ -105,61 +117,72 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
         {filteredWords.map((item) => {
           const snap = item.snapshot;
           return (
-            <button
+            <article
               key={item.id}
-              type="button"
-              onClick={() => onSelectWord(item.displayWord)}
-              className="w-full p-4 sm:p-5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all cursor-pointer shadow-2xs space-y-2 group focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="p-4 sm:p-5 bg-white border border-slate-200 hover:border-indigo-300 rounded-2xl transition-all shadow-2xs space-y-3 flex flex-col justify-between"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      {item.displayWord}
-                    </h3>
-                    {snap?.cefrLevel && (
-                      <span className="px-2 py-0.5 rounded-md text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        {snap.cefrLevel}
-                      </span>
-                    )}
-                    {snap?.primaryPartOfSpeech && (
-                      <span className="text-xs font-medium text-slate-500 italic">
-                        {snap.primaryPartOfSpeech}
-                      </span>
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => onSelectWord(item.displayWord)}
+                        className="text-base font-black text-slate-900 hover:text-indigo-600 transition-colors text-left cursor-pointer focus:outline-hidden focus:underline"
+                        aria-label={`Open "${item.displayWord}"`}
+                      >
+                        {item.displayWord}
+                      </button>
+                      {snap?.cefrLevel && (
+                        <span className="px-2 py-0.5 rounded-md text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          {snap.cefrLevel}
+                        </span>
+                      )}
+                      {snap?.primaryPartOfSpeech && (
+                        <span className="text-xs font-medium text-slate-500 italic">
+                          {snap.primaryPartOfSpeech}
+                        </span>
+                      )}
+                    </div>
+
+                    {snap?.phonetic && (
+                      <p className="text-xs font-mono text-slate-500">{snap.phonetic}</p>
                     )}
                   </div>
 
-                  {snap?.phonetic && (
-                    <p className="text-xs font-mono text-slate-500">{snap.phonetic}</p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemove(e, item.normalizedWord)}
+                    className="min-h-11 px-3 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center justify-center border border-transparent hover:border-rose-200 shrink-0"
+                    title={`Remove "${item.displayWord}" from My Vocabulary`}
+                    aria-label={`Remove "${item.displayWord}" from My Vocabulary`}
+                  >
+                    Remove
+                  </button>
                 </div>
 
+                {/* Definition Snapshot */}
+                {snap?.primaryMeaningVi ? (
+                  <p className="text-xs sm:text-sm font-medium text-slate-800">
+                    <span className="text-slate-400 font-bold mr-1">VI:</span>
+                    {snap.primaryMeaningVi}
+                  </p>
+                ) : snap?.primaryDefinition ? (
+                  <p className="text-xs text-slate-600 line-clamp-2">{snap.primaryDefinition}</p>
+                ) : null}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400">
                 <button
                   type="button"
-                  onClick={(e) => handleRemove(e, item.normalizedWord)}
-                  className="min-h-11 px-3 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center justify-center border border-transparent hover:border-rose-200 shrink-0"
-                  title="Remove from saved words"
-                  aria-label={`Remove ${item.displayWord} from saved words`}
+                  onClick={() => onSelectWord(item.displayWord)}
+                  className="font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer min-h-11 py-2"
                 >
-                  Remove
+                  View Details
                 </button>
-              </div>
-
-              {/* Definition Snapshot */}
-              {snap?.primaryMeaningVi ? (
-                <p className="text-xs sm:text-sm font-medium text-slate-800">
-                  <span className="text-slate-400 font-bold mr-1">VI:</span>
-                  {snap.primaryMeaningVi}
-                </p>
-              ) : snap?.primaryDefinition ? (
-                <p className="text-xs text-slate-600 line-clamp-2">{snap.primaryDefinition}</p>
-              ) : null}
-
-              <div className="pt-1 flex items-center justify-between text-2xs text-slate-400">
-                <span>{item.source === 'curriculum' ? 'FlipEnglish Curriculum' : 'Dictionary Entry'}</span>
                 <span>{new Date(item.savedAt).toLocaleDateString()}</span>
               </div>
-            </button>
+            </article>
           );
         })}
       </div>

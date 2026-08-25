@@ -22,9 +22,11 @@ import {
   buildCurriculumDictionaryEntry,
   getLocalCurriculumSuggestions,
   buildDictionaryEntryFromSavedSnapshot,
+  getCurriculumMatchByIds,
 } from '../src/features/dictionary/dictionaryLocalIndex';
 import {
   createEntrySnapshot,
+  CACHE_TTL_MS,
 } from '../src/features/dictionary/dictionaryCache';
 import {
   getRecentSearches,
@@ -35,6 +37,11 @@ import {
   isValidDictionaryEntry,
   isValidSavedDictionaryWord,
   isValidDictionaryEntrySnapshot,
+  isAllowedDictionaryAudioUrl,
+  sanitizeSuggestionsArray,
+  sanitizeRelatedWordsArray,
+  sanitizeReverseResultsArray,
+  sanitizeSpellingSuggestions,
 } from '../src/features/dictionary/dictionaryValidation';
 import {
   DictionaryEntry,
@@ -95,26 +102,48 @@ async function runTests() {
   assert(!SAFE_DESC_REGEX.test(''), 'Empty description rejected');
   assert(!SAFE_DESC_REGEX.test('a'.repeat(161)), 'Description over 150 characters rejected');
 
-  console.log('\n--- 2. Audio URL Sanitization & Allowlist ---');
+  console.log('\n--- 2. Audio URL Sanitization & Allowlist (Server & Client) ---');
   assert(
     sanitizeAudioUrl('https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3') !== undefined,
-    'Valid https audio on api.dictionaryapi.dev is allowed'
+    'Valid https audio on api.dictionaryapi.dev is allowed on server'
   );
   assert(
     sanitizeAudioUrl('//ssl.gstatic.com/dictionary/static/sounds/20200429/hello--_gb_1.mp3') !== undefined,
-    'Protocol-relative url on ssl.gstatic.com upgraded to https and allowed'
+    'Protocol-relative url on ssl.gstatic.com upgraded to https and allowed on server'
   );
   assert(
     sanitizeAudioUrl('http://api.dictionaryapi.dev/audio.mp3') === undefined,
-    'Non-https audio rejected'
+    'Non-https audio rejected on server'
   );
   assert(
     sanitizeAudioUrl('https://untrusted-domain.com/evil.mp3') === undefined,
-    'Audio from non-allowlisted domain rejected'
+    'Audio from non-allowlisted domain rejected on server'
   );
   assert(
     sanitizeAudioUrl('javascript:alert(1)') === undefined,
-    'JavaScript scheme audio rejected'
+    'JavaScript scheme audio rejected on server'
+  );
+
+  // Runtime audio allowlist on client
+  assert(
+    isAllowedDictionaryAudioUrl('https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3'),
+    'Client allowlist accepts api.dictionaryapi.dev HTTPS audio'
+  );
+  assert(
+    isAllowedDictionaryAudioUrl('https://ssl.gstatic.com/dictionary/audio.mp3'),
+    'Client allowlist accepts ssl.gstatic.com HTTPS audio'
+  );
+  assert(
+    !isAllowedDictionaryAudioUrl('https://evil.example.com/audio.mp3'),
+    'Client allowlist strictly rejects arbitrary HTTPS audio hosts'
+  );
+  assert(
+    !isAllowedDictionaryAudioUrl('http://ssl.gstatic.com/audio.mp3'),
+    'Client allowlist rejects HTTP audio'
+  );
+  assert(
+    !isAllowedDictionaryAudioUrl('data:audio/mp3;base64,...'),
+    'Client allowlist rejects data URI audio'
   );
 
   console.log('\n--- 3. Multi-Entry Normalization & Bound Limits ---');
@@ -209,8 +238,9 @@ async function runTests() {
   assert(suggestions.length > 0, 'Local autocomplete returns matches for prefix "con"');
   assert(suggestions.every((s) => s.isCurriculum === true), 'Curriculum suggestions tagged correctly');
 
-  console.log('\n--- 5. Saved Word Snapshot Reconstitution & Offline Fallback ---');
-  const savedWordItem: SavedDictionaryWord = {
+  console.log('\n--- 5. Saved Word Snapshot Reconstitution & Honesty ---');
+  // A. Snapshot with English definition
+  const savedWithDef: SavedDictionaryWord = {
     schemaVersion: 1,
     id: 'saved_resilient',
     normalizedWord: 'resilient',
@@ -224,29 +254,121 @@ async function runTests() {
       primaryPartOfSpeech: 'adjective',
       primaryDefinition: 'Able to recover quickly from difficult conditions.',
       audioUrl: 'https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3',
-      cefrLevel: 'B2',
-      lessonTitle: 'Personal Growth',
     },
   };
 
-  const reconstituted = buildDictionaryEntryFromSavedSnapshot(savedWordItem);
-  assert(reconstituted !== null, 'Reconstituted entry built from snapshot');
-  assert(reconstituted.word === 'resilient', 'Reconstituted word preserved');
-  assert(reconstituted.meanings.length > 0, 'Meanings populated from snapshot');
-  assert(reconstituted.meanings[0].partOfSpeech === 'adjective', 'Part of speech mapped');
-  assert(isValidDictionaryEntry(reconstituted), 'Reconstituted entry satisfies strict runtime validator');
+  const reconstitutedDef = buildDictionaryEntryFromSavedSnapshot(savedWithDef);
+  assert(reconstitutedDef !== null, 'Reconstituted entry built from snapshot');
+  assert(reconstitutedDef.word === 'resilient', 'Reconstituted word preserved');
+  assert(reconstitutedDef.meanings.length === 1, 'Meanings populated with actual English definition');
+  assert(reconstitutedDef.meanings[0].definitions[0].definition === 'Able to recover quickly from difficult conditions.', 'Exact definition retained');
+  assert(isValidDictionaryEntry(reconstitutedDef), 'Reconstituted entry satisfies strict runtime validator');
 
-  console.log('\n--- 6. Runtime Schema Validators ---');
-  assert(isValidDictionaryEntry(reconstituted), 'Valid dictionary entry passes validator');
+  // B. Snapshot with ONLY Vietnamese meaning -> NO fake English definition created
+  const savedOnlyVi: SavedDictionaryWord = {
+    schemaVersion: 1,
+    id: 'saved_timi',
+    normalizedWord: 'meticulous',
+    displayWord: 'meticulous',
+    savedAt: 1700000000000,
+    source: 'dictionary',
+    snapshot: {
+      word: 'meticulous',
+      normalizedWord: 'meticulous',
+      phonetic: '/məˈtɪkjələs/',
+      primaryMeaningVi: 'tỉ mỉ, cẩn thận',
+    },
+  };
+
+  const reconstitutedVi = buildDictionaryEntryFromSavedSnapshot(savedOnlyVi);
+  assert(reconstitutedVi.meanings.length === 0, 'No fake English definition created from Vietnamese meaning');
+  assert(!JSON.stringify(reconstitutedVi).includes('Meaning: tỉ mỉ'), 'Vietnamese text is never coerced into English definition string');
+
+  // C. Snapshot with NO definition at all -> NO "Saved vocabulary item" placeholder
+  const savedEmpty: SavedDictionaryWord = {
+    schemaVersion: 1,
+    id: 'saved_empty',
+    normalizedWord: 'obscure',
+    displayWord: 'obscure',
+    savedAt: 1700000000000,
+    source: 'dictionary',
+    snapshot: {
+      word: 'obscure',
+      normalizedWord: 'obscure',
+      phonetic: '/əbˈskjʊər/',
+    },
+  };
+
+  const reconstitutedEmpty = buildDictionaryEntryFromSavedSnapshot(savedEmpty);
+  assert(reconstitutedEmpty.meanings.length === 0, 'Empty definition produces empty meanings array without placeholder');
+  assert(!JSON.stringify(reconstitutedEmpty).includes('Saved vocabulary item'), 'Placeholder string is never fabricated');
+
+  // D. Snapshot without CEFR level -> NO fake B1 fallback
+  const savedNoCefr: SavedDictionaryWord = {
+    schemaVersion: 1,
+    id: 'saved_no_cefr',
+    normalizedWord: 'astronomer',
+    displayWord: 'astronomer',
+    savedAt: 1700000000000,
+    source: 'dictionary',
+    snapshot: {
+      word: 'astronomer',
+      normalizedWord: 'astronomer',
+    },
+  };
+
+  const reconstitutedNoCefr = buildDictionaryEntryFromSavedSnapshot(savedNoCefr);
+  assert(reconstitutedNoCefr.curriculumMatches === undefined, 'No fake curriculum match or B1 level attached when unaligned');
+
+  // E. Valid canonical curriculum IDs resolution
+  const greetingCurriculumWord = getCurriculumMatchByIds('hello', 'greetings');
+  assert(greetingCurriculumWord !== null, 'Canonical curriculum match resolved by wordId and lessonId');
+  assert(greetingCurriculumWord?.level === 'A1', 'Canonical CEFR level preserved accurately');
+
+  console.log('\n--- 6. Cache TTL & Fresh/Stale Decision Tests ---');
+  const now = 1700000000000;
+  const fiveMinsAgo = now - 5 * 60 * 1000;
+  const twentyNineDaysAgo = now - 29 * 24 * 60 * 60 * 1000;
+  const thirtyOneDaysAgo = now - 31 * 24 * 60 * 60 * 1000;
+
+  assert(now - fiveMinsAgo <= CACHE_TTL_MS, '5 minutes ago is within 30-day fresh TTL');
+  assert(now - twentyNineDaysAgo <= CACHE_TTL_MS, '29 days ago is within 30-day fresh TTL');
+  assert(now - thirtyOneDaysAgo > CACHE_TTL_MS, '31 days ago is recognized as STALE (> 30 days)');
+
+  console.log('\n--- 7. Runtime Schema Validators & Response Sanitizers ---');
+  assert(isValidDictionaryEntry(reconstitutedDef), 'Valid dictionary entry passes validator');
   assert(!isValidDictionaryEntry({ word: 'bad' }), 'Malformed dictionary entry rejected');
 
-  assert(isValidSavedDictionaryWord(savedWordItem), 'Valid saved word passes validator');
+  assert(isValidSavedDictionaryWord(savedWithDef), 'Valid saved word passes validator');
   assert(!isValidSavedDictionaryWord({ schemaVersion: 2, id: 'bad' }), 'Invalid schema version rejected');
 
-  assert(isValidDictionaryEntrySnapshot(savedWordItem.snapshot), 'Valid snapshot passes validator');
+  assert(isValidDictionaryEntrySnapshot(savedWithDef.snapshot), 'Valid snapshot passes validator');
 
-  console.log('\n--- 7. Mocked Datamuse & Dictionary Provider Tests (Zero Live Network) ---');
-  // Store original fetch
+  // Client response sanitizers
+  const rawSuggestions = [
+    { word: 'apple', score: 1000 },
+    { word: '<script>alert(1)</script>', score: 500 },
+    { word: '', score: 100 },
+    null,
+    { word: 'valid', isCurriculum: true },
+  ];
+  const cleanedSuggs = sanitizeSuggestionsArray(rawSuggestions);
+  assert(cleanedSuggs.length === 3, 'Suggestions array correctly sanitizes and bounds entries');
+  assert(cleanedSuggs[0].word === 'apple' && cleanedSuggs[2].word === 'valid', 'Valid suggestion words kept');
+
+  const rawRelated = ['synonym1', 'synonym2', 123 as any, '', null as any];
+  const cleanedRelated = sanitizeRelatedWordsArray(rawRelated);
+  assert(cleanedRelated.length === 2 && cleanedRelated[0] === 'synonym1', 'Related words sanitized');
+
+  const rawReverse = [
+    { word: 'astronomer', score: 1000, definitionPreview: 'One who studies the celestial bodies.' },
+    { word: '', score: 500 },
+    null,
+  ];
+  const cleanedReverse = sanitizeReverseResultsArray(rawReverse);
+  assert(cleanedReverse.length === 1 && cleanedReverse[0].word === 'astronomer', 'Reverse results sanitized');
+
+  console.log('\n--- 8. Mocked Datamuse & Dictionary Provider Tests (Zero Live Network) ---');
   const originalFetch = global.fetch;
 
   try {
@@ -333,7 +455,7 @@ async function runTests() {
     (global as any).fetch = originalFetch;
   }
 
-  console.log('\n--- 8. Recent Search Storage in LocalStorage ---');
+  console.log('\n--- 9. Recent Search Storage in LocalStorage ---');
   clearRecentSearches();
   assert(getRecentSearches().length === 0, 'Recent searches starts empty');
 

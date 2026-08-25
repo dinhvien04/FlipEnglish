@@ -35,8 +35,15 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     }
   }, [initialQuery]);
 
-  // Debounced autocomplete suggestions with AbortController and monotonic token guard
+  // Debounced autocomplete suggestions with immediate token invalidation & AbortController
   useEffect(() => {
+    // Invalidate request token and abort inflight immediately upon any query or searchMode change
+    const currentToken = ++requestTokenRef.current;
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+      activeAbortControllerRef.current = null;
+    }
+
     if (searchMode !== 'dictionary') {
       setSuggestions([]);
       setIsOpen(false);
@@ -47,9 +54,6 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     if (trimmed.length < 2) {
       setSuggestions([]);
       setIsOpen(false);
-      if (activeAbortControllerRef.current) {
-        activeAbortControllerRef.current.abort();
-      }
       return;
     }
 
@@ -58,13 +62,11 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     }
 
     debounceTimerRef.current = setTimeout(async () => {
-      // Increment token for this specific request
-      const currentToken = ++requestTokenRef.current;
-
-      // Abort prior inflight request
-      if (activeAbortControllerRef.current) {
-        activeAbortControllerRef.current.abort();
+      // If a newer query/mode change happened while waiting for debounce, do not fetch
+      if (currentToken !== requestTokenRef.current) {
+        return;
       }
+
       const controller = new AbortController();
       activeAbortControllerRef.current = controller;
 
@@ -87,6 +89,10 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+        activeAbortControllerRef.current = null;
       }
     };
   }, [query, searchMode]);
@@ -229,6 +235,14 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  ++requestTokenRef.current;
+                  if (activeAbortControllerRef.current) {
+                    activeAbortControllerRef.current.abort();
+                    activeAbortControllerRef.current = null;
+                  }
+                  if (debounceTimerRef.current) {
+                    clearTimeout(debounceTimerRef.current);
+                  }
                   setQuery('');
                   setSuggestions([]);
                   setIsOpen(false);

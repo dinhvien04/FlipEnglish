@@ -12,10 +12,17 @@ import {
   buildDictionaryEntryFromSavedSnapshot,
 } from './dictionaryLocalIndex';
 import {
-  getCachedDictionaryEntry,
+  getCachedDictionaryEntryWithMeta,
   setCachedDictionaryEntry,
   getSavedWordFromDb,
 } from './dictionaryCache';
+import {
+  isValidDictionaryEntry,
+  sanitizeSuggestionsArray,
+  sanitizeRelatedWordsArray,
+  sanitizeReverseResultsArray,
+  sanitizeSpellingSuggestions,
+} from './dictionaryValidation';
 
 export interface DictionaryLookupResult {
   entry: DictionaryEntry | null;
@@ -28,12 +35,14 @@ export interface DictionaryLookupResult {
  * Executes multi-tier dictionary lookup:
  * 1. Normalize query
  * 2. Find local FlipEnglish curriculum matches
- * 3. Check IndexedDB cache
+ * 3. Check IndexedDB cache with TTL metadata (30-day fresh/stale)
  * 4. Check Saved word snapshot in IndexedDB
- * 5. If offline, serve cached entry -> saved snapshot -> curriculum entry -> calm offline notice
- * 6. If online, fetch from backend /api/dictionary/lookup
- * 7. Merge curriculum matches with provider result & persist to IndexedDB
- * 8. Fall back to cached entry, saved snapshot, or local curriculum entry on network failure
+ * 5. If offline: serve cached entry (fresh/stale) -> saved snapshot -> curriculum entry -> calm offline notice
+ * 6. If online + fresh cache: serve fresh cache immediately without extra provider request
+ * 7. If online + stale/missing: call backend /api/dictionary/lookup
+ *    - On 200: validate with isValidDictionaryEntry, merge curriculum, persist to cache, return
+ *    - On 404: check saved snapshot -> curriculum -> 404 suggestions
+ *    - On provider/network failure: fallback to stale cache -> saved snapshot -> curriculum -> calm error
  */
 export async function lookupDictionary(word: string): Promise<DictionaryLookupResult> {
   const normalized = normalizeDictionaryQuery(word);
@@ -44,8 +53,8 @@ export async function lookupDictionary(word: string): Promise<DictionaryLookupRe
   // 1. Local Curriculum Matches
   const curriculumMatches = getCurriculumMatchesForWord(normalized);
 
-  // 2. Check IndexedDB cache
-  const cachedEntry = await getCachedDictionaryEntry(normalized);
+  // 2. Check IndexedDB cache with metadata
+  const cachedMeta = await getCachedDictionaryEntryWithMeta(normalized);
 
   // 3. Check Saved Word Snapshot in IndexedDB
   const savedWord = await getSavedWordFromDb(normalized);
@@ -53,13 +62,14 @@ export async function lookupDictionary(word: string): Promise<DictionaryLookupRe
   // Check network state
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
+  // OFFLINE MODE
   if (!isOnline) {
-    if (cachedEntry) {
+    if (cachedMeta) {
       if (curriculumMatches.length > 0) {
-        cachedEntry.curriculumMatches = curriculumMatches;
-        cachedEntry.source = 'combined';
+        cachedMeta.entry.curriculumMatches = curriculumMatches;
+        cachedMeta.entry.source = 'combined';
       }
-      return { entry: cachedEntry, isOfflineCached: true };
+      return { entry: cachedMeta.entry, isOfflineCached: true };
     }
 
     if (savedWord) {
@@ -84,28 +94,66 @@ export async function lookupDictionary(word: string): Promise<DictionaryLookupRe
     };
   }
 
-  // 4. Online Backend Provider Lookup
+  // ONLINE MODE: If cache exists and is FRESH (< 30 days old), use immediately
+  if (cachedMeta && !cachedMeta.stale) {
+    if (curriculumMatches.length > 0) {
+      cachedMeta.entry.curriculumMatches = curriculumMatches;
+      cachedMeta.entry.source = 'combined';
+    }
+    return { entry: cachedMeta.entry, isOfflineCached: false };
+  }
+
+  // ONLINE MODE: Stale cache or missing -> attempt fresh fetch from backend provider
   try {
     const encoded = encodeURIComponent(normalized);
     const res = await fetch(`/api/dictionary/lookup?word=${encoded}`);
 
     if (res.status === 200) {
-      const data: DictionaryEntry = await res.json();
+      const rawData = await res.json().catch(() => null);
 
-      // Merge curriculum matches
-      if (curriculumMatches.length > 0) {
-        data.curriculumMatches = curriculumMatches;
-        data.source = 'combined';
+      // Validate runtime schema before trusting or caching
+      if (isValidDictionaryEntry(rawData)) {
+        if (curriculumMatches.length > 0) {
+          rawData.curriculumMatches = curriculumMatches;
+          rawData.source = 'combined';
+        }
+
+        // Persist fresh entry to IndexedDB cache
+        setCachedDictionaryEntry(rawData).catch(() => {});
+
+        return { entry: rawData };
       }
 
-      // Persist to IndexedDB cache
-      setCachedDictionaryEntry(data).catch(() => {});
+      // If backend returned 200 with invalid schema, fallback gracefully
+      if (cachedMeta) {
+        if (curriculumMatches.length > 0) {
+          cachedMeta.entry.curriculumMatches = curriculumMatches;
+        }
+        return { entry: cachedMeta.entry, isOfflineCached: true };
+      }
 
-      return { entry: data };
+      if (savedWord) {
+        const snapshotEntry = buildDictionaryEntryFromSavedSnapshot(savedWord);
+        if (curriculumMatches.length > 0) {
+          snapshotEntry.curriculumMatches = curriculumMatches;
+        }
+        return { entry: snapshotEntry, isOfflineCached: true };
+      }
+
+      if (curriculumMatches.length > 0) {
+        const currEntry = buildCurriculumDictionaryEntry(normalized);
+        if (currEntry) return { entry: currEntry };
+      }
+
+      return {
+        entry: null,
+        error: 'Dictionary service returned an unrecognized response format.',
+      };
     }
 
     if (res.status === 404) {
       const errData = await res.json().catch(() => ({}));
+      const spellingSuggestions = sanitizeSpellingSuggestions(errData.spellingSuggestions);
 
       // If word is not in external dictionary, check saved snapshot or curriculum:
       if (savedWord) {
@@ -127,17 +175,17 @@ export async function lookupDictionary(word: string): Promise<DictionaryLookupRe
 
       return {
         entry: null,
-        spellingSuggestions: errData.spellingSuggestions,
+        spellingSuggestions: spellingSuggestions.length > 0 ? spellingSuggestions : undefined,
         error: `Word "${word}" not found in dictionary.`,
       };
     }
 
-    // Provider error (503, 504, 429) -> fallback to cache, saved snapshot, or curriculum
-    if (cachedEntry) {
+    // Provider error (503, 504, 429) -> fallback to stale cache, saved snapshot, or curriculum
+    if (cachedMeta) {
       if (curriculumMatches.length > 0) {
-        cachedEntry.curriculumMatches = curriculumMatches;
+        cachedMeta.entry.curriculumMatches = curriculumMatches;
       }
-      return { entry: cachedEntry, isOfflineCached: true };
+      return { entry: cachedMeta.entry, isOfflineCached: true };
     }
 
     if (savedWord) {
@@ -158,13 +206,13 @@ export async function lookupDictionary(word: string): Promise<DictionaryLookupRe
       entry: null,
       error: errData.error || 'Dictionary service is temporarily unavailable.',
     };
-  } catch (netErr) {
-    // Network failure during request -> gracefully serve cached entry, saved snapshot, or curriculum
-    if (cachedEntry) {
+  } catch {
+    // Network failure during request -> gracefully serve stale cache, saved snapshot, or curriculum
+    if (cachedMeta) {
       if (curriculumMatches.length > 0) {
-        cachedEntry.curriculumMatches = curriculumMatches;
+        cachedMeta.entry.curriculumMatches = curriculumMatches;
       }
-      return { entry: cachedEntry, isOfflineCached: true };
+      return { entry: cachedMeta.entry, isOfflineCached: true };
     }
 
     if (savedWord) {
@@ -212,7 +260,7 @@ export async function getDictionarySuggestions(
     if (!res.ok) return localSuggs;
 
     const data = await res.json();
-    const remoteSuggs: DictionarySuggestion[] = Array.isArray(data.suggestions) ? data.suggestions : [];
+    const remoteSuggs = sanitizeSuggestionsArray(data.suggestions, 20);
 
     // Merge and deduplicate by lowercased word
     const seen = new Set<string>();
@@ -267,7 +315,7 @@ export async function getDictionaryRelated(
     if (!res.ok) return [];
 
     const data = await res.json();
-    return Array.isArray(data.results) ? data.results : [];
+    return sanitizeRelatedWordsArray(data.results, 30);
   } catch {
     return [];
   }
@@ -292,7 +340,7 @@ export async function lookupReverseDictionary(
     if (!res.ok) return [];
 
     const data = await res.json();
-    return Array.isArray(data.results) ? data.results : [];
+    return sanitizeReverseResultsArray(data.results, 30);
   } catch {
     return [];
   }

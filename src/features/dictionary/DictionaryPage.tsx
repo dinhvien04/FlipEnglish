@@ -66,7 +66,10 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
     }
   }, [initialWord]);
 
-  const handleSearch = async (word: string) => {
+  const handleSearch = async (
+    word: string,
+    requestedMode: 'dictionary' | 'reverse' = searchMode
+  ) => {
     const trimmed = word.trim();
     if (!trimmed) return;
 
@@ -78,7 +81,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
     setSpellingSuggestions([]);
     setReverseResults([]);
 
-    if (searchMode === 'reverse') {
+    if (requestedMode === 'reverse') {
       // Reverse Dictionary Search (Means-like)
       try {
         const results = await lookupReverseDictionary(trimmed);
@@ -124,7 +127,8 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
   const handleSelectReverseWord = (word: string) => {
     setSearchMode('dictionary');
-    handleSearch(word);
+    setReverseResults([]);
+    handleSearch(word, 'dictionary');
   };
 
   const returnLabel = returnView === 'learn' || returnView === 'exercise'
@@ -144,10 +148,9 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
             <button
               type="button"
               onClick={onReturn}
-              className="min-h-11 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="min-h-11 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer inline-flex items-center"
             >
-              <span>←</span>
-              <span>{returnLabel}</span>
+              {returnLabel}
             </button>
           </div>
         )}

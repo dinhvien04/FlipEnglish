@@ -63,11 +63,17 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
         audio.onerror = () => {
           setIsPlayingAudio(false);
           // Fallback to SpeechSynthesis
-          speakWord(entry.word, rate);
+          const speechOk = speakWord(entry.word, rate);
+          if (!speechOk) {
+            setAudioError('Audio playback is unavailable on this device right now.');
+          }
         };
         audio.play().catch(() => {
           setIsPlayingAudio(false);
-          speakWord(entry.word, rate);
+          const speechOk = speakWord(entry.word, rate);
+          if (!speechOk) {
+            setAudioError('Audio playback is unavailable on this device right now.');
+          }
         });
         return;
       } catch {
@@ -76,7 +82,10 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
     }
 
     // Web Speech API fallback
-    speakWord(entry.word, rate);
+    const speechOk = speakWord(entry.word, rate);
+    if (!speechOk) {
+      setAudioError('Audio playback is unavailable on this device right now.');
+    }
   };
 
   const handleToggleSave = async () => {
@@ -274,7 +283,18 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
       )}
 
       {/* Dictionary Meanings & Definitions */}
-      <DictionaryMeaningSection meanings={entry.meanings} onWordClick={onWordClick} />
+      {entry.meanings.length > 0 ? (
+        <DictionaryMeaningSection meanings={entry.meanings} onWordClick={onWordClick} />
+      ) : (
+        <section className="p-5 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+            Saved Vocabulary Entry
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500">
+            English dictionary definition is not available in this saved snapshot. Connect to the internet for full definitions.
+          </p>
+        </section>
+      )}
 
       {/* Synonyms, Antonyms, and Relations */}
       <DictionaryRelations

@@ -205,8 +205,37 @@ export function getLocalCurriculumSuggestions(query: string, maxResults = 6): Di
 }
 
 /**
+ * Finds exact curriculum match by canonical wordId and lessonId.
+ */
+export function getCurriculumMatchByIds(
+  wordId: string,
+  lessonId: string
+): CurriculumDictionaryMatch | null {
+  if (!wordId || !lessonId) return null;
+  const lesson = LESSONS.find((l) => l.id === lessonId);
+  if (!lesson) return null;
+  const vocab = lesson.words.find((w) => w.id === wordId);
+  if (!vocab) return null;
+
+  return {
+    wordId: vocab.id,
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    level: (vocab.level || lesson.level) as CEFRLevel,
+    meaning: vocab.meaning,
+    example: vocab.example,
+    imageUrl: vocab.imageUrl,
+    partOfSpeech: vocab.partOfSpeech,
+  };
+}
+
+/**
  * Builds a valid DictionaryEntry from a saved word snapshot or minimal saved word record.
  * Used for offline opening when full dictionary cache entry was evicted.
+ * - NEVER invents fake English definitions (does not convert Vietnamese meaning into English definition).
+ * - NEVER invents fake "Saved vocabulary item" placeholder definitions.
+ * - NEVER uses fake fallback CEFR levels like B1.
+ * - Resolves canonical curriculum data when curriculumWordId and lessonId match.
  */
 export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionaryWord): DictionaryEntry {
   const snapshot = savedWord.snapshot;
@@ -214,25 +243,14 @@ export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionary
   const normalizedWord = savedWord.normalizedWord;
 
   const meanings: DictionaryMeaning[] = [];
-  const primaryDefinition = snapshot?.primaryDefinition || (snapshot?.primaryMeaningVi ? `Meaning: ${snapshot.primaryMeaningVi}` : undefined);
 
-  if (primaryDefinition || snapshot?.primaryPartOfSpeech) {
+  // Only create a meaning definition if a real primaryDefinition exists on the snapshot
+  if (snapshot?.primaryDefinition && snapshot.primaryDefinition.trim()) {
     meanings.push({
-      partOfSpeech: snapshot?.primaryPartOfSpeech || 'word',
+      partOfSpeech: snapshot.primaryPartOfSpeech || 'word',
       definitions: [
         {
-          definition: primaryDefinition || 'Saved vocabulary item',
-          synonyms: [],
-          antonyms: [],
-        },
-      ],
-    });
-  } else {
-    meanings.push({
-      partOfSpeech: 'word',
-      definitions: [
-        {
-          definition: 'Saved vocabulary item',
+          definition: snapshot.primaryDefinition.trim(),
           synonyms: [],
           antonyms: [],
         },
@@ -247,16 +265,29 @@ export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionary
     pronunciations.push({ audioUrl: snapshot.audioUrl });
   }
 
+  // Resolve curriculum match: prefer canonical lookup by IDs first
   const curriculumMatches: CurriculumDictionaryMatch[] = [];
   if (savedWord.curriculumWordId && savedWord.lessonId) {
-    curriculumMatches.push({
-      wordId: savedWord.curriculumWordId,
-      lessonId: savedWord.lessonId,
-      lessonTitle: snapshot?.lessonTitle || 'FlipEnglish Curriculum',
-      level: snapshot?.cefrLevel || 'B1',
-      meaning: snapshot?.primaryMeaningVi,
-      partOfSpeech: snapshot?.primaryPartOfSpeech,
-    });
+    const canonicalMatch = getCurriculumMatchByIds(savedWord.curriculumWordId, savedWord.lessonId);
+    if (canonicalMatch) {
+      curriculumMatches.push(canonicalMatch);
+    } else if (snapshot?.cefrLevel && snapshot?.lessonTitle) {
+      // Valid snapshot metadata without fake level fallback
+      curriculumMatches.push({
+        wordId: savedWord.curriculumWordId,
+        lessonId: savedWord.lessonId,
+        lessonTitle: snapshot.lessonTitle,
+        level: snapshot.cefrLevel,
+        meaning: snapshot.primaryMeaningVi,
+        partOfSpeech: snapshot.primaryPartOfSpeech,
+      });
+    }
+  } else {
+    // If no wordId/lessonId, check if normalized word matches local curriculum index
+    const localMatches = getCurriculumMatchesForWord(normalizedWord);
+    if (localMatches.length > 0) {
+      curriculumMatches.push(...localMatches);
+    }
   }
 
   return {
