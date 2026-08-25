@@ -406,9 +406,15 @@ export default function App() {
   const handleStartPlacementSession = () => {
     setPlacementStartError(null);
     const now = Date.now();
-    const seed = now ^ (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
-      ? crypto.getRandomValues(new Uint32Array(1))[0] % 1000000
-      : Math.floor(Math.abs(Math.sin(now)) * 1000000));
+    let randSuffix = 0;
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      randSuffix = buf[0] & 0x7fffffff;
+    } else {
+      randSuffix = Math.floor(Math.abs(Math.sin(now)) * 1000000);
+    }
+    const seed = (now ^ randSuffix) >>> 0;
     const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
 
     // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)

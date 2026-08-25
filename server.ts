@@ -85,8 +85,13 @@ function sanitizeForLog(val: unknown): string {
       str = '[Complex Value]';
     }
   }
-  // Strip CR, LF, tabs, and non-printable control characters, bounded to 200 chars
-  return str.replace(/[\x00-\x1F\x7F]+/g, ' ').trim().slice(0, 200);
+  // Explicitly remove newlines, carriage returns, and control chars as recommended by CodeQL
+  return str
+    .replace(/\r/g, '')
+    .replace(/\n/g, '')
+    .replace(/[\x00-\x1F\x7F]+/g, ' ')
+    .trim()
+    .slice(0, 200);
 }
 
 // ===================================================
@@ -107,39 +112,25 @@ const cspDirectives = {
   frameAncestors: isProd ? ["'none'"] : ["'self'", 'https://aistudio.google.com'],
 };
 
-if (isProd) {
-  // Hardened Production Helmet Configuration (CodeQL Clean - all security features active)
-  app.use(
-    helmet({
-      frameguard: { action: 'deny' },
-      xContentTypeOptions: true,
-      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-      strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true, preload: false },
-      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-      contentSecurityPolicy: {
-        useDefaults: false,
-        directives: cspDirectives,
-        reportOnly: false,
-      },
-    })
-  );
-} else {
-  // Development Helmet Configuration (Permits AI Studio iframe preview without disabling global security)
-  app.use(
-    helmet({
-      frameguard: false,
-      xContentTypeOptions: true,
-      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-      strictTransportSecurity: false,
-      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-      contentSecurityPolicy: {
-        useDefaults: false,
-        directives: cspDirectives,
-        reportOnly: false,
-      },
-    })
-  );
-}
+// Centralized Helmet Security Configuration
+// Production denies framing completely (clickjacking defense).
+// Development allows embedding within AI Studio preview via CSP frame-ancestors.
+app.use(
+  helmet({
+    frameguard: { action: 'deny' },
+    xContentTypeOptions: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    strictTransportSecurity: isProd
+      ? { maxAge: 31536000, includeSubDomains: true, preload: false }
+      : false,
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: cspDirectives,
+      reportOnly: false,
+    },
+  })
+);
 
 // Middleware: Authoritative Request ID Generator with strict client ID sanitization
 const SAFE_CLIENT_ID_REGEX = /^[A-Za-z0-9_-]{1,64}$/;
