@@ -5,7 +5,7 @@ export const LANGUAGE_UPDATED_EVENT = 'flipenglish_ui_language_updated';
 
 const VALID_MODES = new Set<string>(['vi', 'bilingual', 'en']);
 
-export function isValidUiLanguageMode(val: any): val is UiLanguageMode {
+export function isValidUiLanguageMode(val: unknown): val is UiLanguageMode {
   return typeof val === 'string' && VALID_MODES.has(val);
 }
 

@@ -31,6 +31,12 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - Missed canonical vocabulary can be exported directly into the Smart Review queue.
 - *Disclaimer: This short placement check recommends a starting level inside FlipEnglish. It is not an official CEFR certification.*
 
+### Multilingual UX & Internationalization (i18n)
+- **Three-Tier Language Resolution**: Pure language determination engine resolving (1) explicit user preference (`Tiếng Việt`, `Song ngữ / Bilingual`, or `English`), (2) existing learner backward compatibility (preserving English for users with existing study progress), and (3) new learner browser detection.
+- **Guided Bilingual Mode**: Seamless Vietnamese-first interface with secondary English terminology reinforcement for major feature headers and contextual guidance.
+- **Language-of-Parts & Semantic HTML**: Preserves authentic English study material (vocabulary, examples, transcriptions, definitions, exam passages) with strict `lang="en"` tags while localizing UI chrome in Vietnamese (`lang="vi"`) or English.
+- **100% Offline Static Catalogs**: Zero runtime translation API latency or dependencies. Full token placeholder parity across all catalog keys.
+
 ### FlipEnglish Dictionary & Offline Wordbook
 - **Comprehensive Learner Lexicon**: Structured definitions grouped by part of speech, IPA phonetic transcriptions, provider pronunciation audio where available with browser speech synthesis fallback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
 - **3-Layer Architecture**:
@@ -129,6 +135,9 @@ The project includes an automated suite of integrity, curriculum, exam, placemen
 ```bash
 # TypeScript type checking
 npm run lint
+
+# Validate i18n catalogs parity, token placeholders, formatters, and three-tier resolution
+npm run validate:i18n
 
 # Validate Dictionary providers, local curriculum index, and offline wordbook cache
 npm run validate:dictionary

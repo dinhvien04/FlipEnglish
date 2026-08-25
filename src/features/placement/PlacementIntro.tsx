@@ -33,7 +33,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           onClick={onBack}
           className="min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-2"
         >
-          ← {t('ui.common.back')}
+          {t('ui.common.back')}
         </button>
       </div>
 

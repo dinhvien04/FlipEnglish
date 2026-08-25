@@ -184,8 +184,8 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
       {/* Top Question Header */}
       <div className="flex items-center justify-between gap-2 mb-6">
         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-          {question.type === 'en-to-vi' && 'English → Vietnamese'}
-          {question.type === 'vi-to-en' && 'Vietnamese → English'}
+          {question.type === 'en-to-vi' && 'English to Vietnamese'}
+          {question.type === 'vi-to-en' && 'Vietnamese to English'}
           {question.type === 'fill-in-the-blank' && 'Fill in the Blank'}
           {question.type === 'picture-quiz' && 'Picture Quiz'}
           {question.type === 'listening-challenge' && 'Listening Challenge'}

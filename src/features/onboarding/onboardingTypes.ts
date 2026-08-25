@@ -5,7 +5,7 @@ export type OnboardingRoute = 'unknown' | 'know' | 'explore';
 
 export interface OnboardingState {
   status: 'pending' | 'completed' | 'skipped';
-  selectedLanguage: UiLanguageMode;
+  selectedLanguage?: UiLanguageMode;
   selectedRoute?: OnboardingRoute;
   selectedLevel?: CEFRLevel;
   completedAt?: number;

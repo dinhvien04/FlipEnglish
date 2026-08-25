@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Lesson, AllProgress } from '../types';
 import { LessonCard } from './LessonCard';
+import { useI18n } from '../features/i18n';
 
 interface CourseShelfProps {
   shelfId: string;
@@ -31,6 +32,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
   onSelectLesson,
   onViewAll,
 }) => {
+  const { t } = useI18n();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -84,7 +86,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
     <section
       id={`course-shelf-${shelfId}`}
       className="space-y-4 pt-2"
-      aria-label={`${title} course shelf`}
+      aria-label={t('curriculum.shelfAria', { title })}
     >
       {/* Shelf Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 pb-3">
@@ -103,7 +105,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               <span className={`text-2xs font-bold px-2 py-0.5 rounded-md ${
                 isAllCompleted ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
               }`}>
-                {completedCount}/{totalCount} Completed
+                {t('curriculum.completed', { completed: completedCount, total: totalCount })}
               </span>
             )}
           </div>
@@ -130,7 +132,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               onClick={onViewAll}
               className="min-h-11 px-3 py-1.5 inline-flex items-center text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer rounded-lg"
             >
-              View All
+              {t('curriculum.viewAll')}
             </button>
           )}
 
@@ -141,14 +143,14 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               id={`shelf-prev-${shelfId}`}
               onClick={() => handleScrollBy('left')}
               disabled={!canScrollLeft}
-              aria-label={`Previous ${title} lessons`}
+              aria-label={t('curriculum.previousLessonsAria', { title })}
               className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all inline-flex items-center justify-center cursor-pointer ${
                 canScrollLeft
                   ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs active:scale-95'
                   : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed opacity-50'
               }`}
             >
-              Prev
+              {t('curriculum.prev')}
             </button>
 
             <button
@@ -156,14 +158,14 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
               id={`shelf-next-${shelfId}`}
               onClick={() => handleScrollBy('right')}
               disabled={!canScrollRight}
-              aria-label={`Next ${title} lessons`}
+              aria-label={t('curriculum.nextLessonsAria', { title })}
               className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all inline-flex items-center justify-center cursor-pointer ${
                 canScrollRight
                   ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-2xs active:scale-95'
                   : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed opacity-50'
               }`}
             >
-              Next
+              {t('curriculum.next')}
             </button>
           </div>
         </div>
@@ -176,7 +178,7 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
           className="course-rail-container gap-4 sm:gap-5 pb-3 pt-1 px-0.5"
           tabIndex={0}
           role="region"
-          aria-label={`${title} lessons list`}
+          aria-label={t('curriculum.lessonsListAria', { title })}
         >
           {lessons.map((lesson) => (
             <div
@@ -195,4 +197,3 @@ export const CourseShelf: React.FC<CourseShelfProps> = ({
     </section>
   );
 };
-

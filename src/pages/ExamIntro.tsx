@@ -59,7 +59,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
         onClick={onBackToExamCenter}
         className="min-h-11 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer inline-flex items-center justify-center"
       >
-        ← {t('ui.common.back')}
+        {t('ui.common.back')}
       </button>
 
       {/* Main Info Card */}

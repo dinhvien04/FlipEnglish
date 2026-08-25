@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AIPracticeQuestion, VocabWord } from '../types';
 import { speakWord } from '../utils/speech';
+import { useI18n } from '../features/i18n';
 
 interface AIPracticeModalProps {
   lessonTitle: string;
@@ -14,6 +15,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
   questions,
   onClose,
 }) => {
+  const { t } = useI18n();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -66,10 +68,10 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
         <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="space-y-0.5">
             <h3 className="text-base font-extrabold text-slate-900 leading-tight">
-              Gemini AI Targeted Practice
+              {t('aiPractice.title')}
             </h3>
             <p className="text-xs text-slate-500 font-medium">
-              Tailored for {lessonTitle} mistakes
+              {t('aiPractice.subtitle', { lessonTitle })}
             </p>
           </div>
 
@@ -77,7 +79,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
             onClick={onClose}
             className="min-h-10 px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center"
           >
-            Close
+            {t('ui.common.close')}
           </button>
         </div>
 
@@ -86,11 +88,11 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
             {/* Progress & Target Word */}
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <span>Reinforcing:</span>
-                <strong className="capitalize">{currentQuestion.targetWord}</strong>
+                <span>{t('aiPractice.reinforcing')}</span>
+                <strong lang="en" className="capitalize">{currentQuestion.targetWord}</strong>
               </span>
               <span className="font-semibold text-slate-400">
-                Question {currentIndex + 1} of {questions.length}
+                {t('aiPractice.questionProgress', { current: currentIndex + 1, total: questions.length })}
               </span>
             </div>
 
@@ -98,118 +100,96 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
-                style={{ width: `${((currentIndex + (isAnswerChecked ? 1 : 0)) / questions.length) * 100}%` }}
+                style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
               />
             </div>
 
-            {/* Prompt */}
-            <div className="space-y-2">
-              <h4 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+            {/* Question Prompt */}
+            <div className="p-4 sm:p-5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+              <p lang="en" className="text-sm sm:text-base font-bold text-slate-800 leading-relaxed">
                 {currentQuestion.prompt}
-              </h4>
+              </p>
             </div>
 
-            {/* Multiple Choice Options */}
-            <div className="grid grid-cols-1 gap-2.5">
+            {/* Options */}
+            <div className="space-y-2.5">
               {currentQuestion.options.map((option, idx) => {
                 const isSelected = selectedOption === option;
-                const isOptionCorrect = option.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+                const isCorrectAnswer = option === currentQuestion.correctAnswer;
 
-                let style = 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300 text-slate-800 cursor-pointer';
+                let optionStyle = 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-slate-50';
 
                 if (isAnswerChecked) {
-                  if (isOptionCorrect) {
-                    style = 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold';
+                  if (isCorrectAnswer) {
+                    optionStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold';
                   } else if (isSelected && !isCorrect) {
-                    style = 'border-rose-500 bg-rose-50 text-rose-900';
+                    optionStyle = 'bg-rose-50 border-rose-500 text-rose-900 line-through opacity-75';
                   } else {
-                    style = 'border-slate-200 opacity-40 text-slate-400 cursor-default';
+                    optionStyle = 'bg-slate-50 border-slate-200 text-slate-400 opacity-50';
                   }
                 } else if (isSelected) {
-                  style = 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20';
+                  optionStyle = 'bg-indigo-50 border-indigo-600 text-indigo-900 font-bold';
                 }
 
                 return (
                   <button
                     key={idx}
-                    type="button"
-                    onClick={() => {
-                      if (!isAnswerChecked) {
-                        setSelectedOption(option);
-                      }
-                    }}
                     disabled={isAnswerChecked}
-                    className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left font-medium transition-all duration-150 flex items-center justify-between gap-3 focus:outline-hidden ${style}`}
+                    onClick={() => setSelectedOption(option)}
+                    className={`w-full min-h-12 p-3 sm:p-4 text-left text-sm font-semibold rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${optionStyle}`}
                   >
-                    <span className="text-sm sm:text-base leading-snug">{option}</span>
-                    {isAnswerChecked && isOptionCorrect && (
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                        Correct
-                      </span>
-                    )}
-                    {isAnswerChecked && isSelected && !isCorrect && (
-                      <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
-                        Incorrect
-                      </span>
-                    )}
+                    <span lang="en">{option}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Explanation & Audio Banner */}
+            {/* Feedback & Explanation */}
             {isAnswerChecked && (
               <div
-                className={`p-4 rounded-2xl flex items-start gap-3 transition-all ${
+                className={`p-4 rounded-2xl border space-y-2 ${
                   isCorrect
-                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-                    : 'bg-rose-50 border border-rose-200 text-rose-900'
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                    : 'bg-rose-50/70 border-rose-200 text-rose-900'
                 }`}
               >
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider">
-                      {isCorrect ? 'Well Done!' : 'Explanation'}
-                    </span>
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-xs uppercase tracking-wider">
+                    {isCorrect ? t('aiPractice.correct') : t('aiPractice.incorrect')}
+                  </span>
+                  {currentQuestion.targetWord && (
                     <button
-                      type="button"
                       onClick={() => speakWord(currentQuestion.targetWord)}
-                      className="min-h-11 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white active:bg-white/60 text-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
-                      title="Hear word"
+                      className="min-h-9 px-2.5 py-1 text-xs font-bold rounded-md bg-white/80 border border-slate-200 text-slate-700 hover:bg-white transition-colors cursor-pointer"
                     >
-                      Listen: {currentQuestion.targetWord}
+                      {t('aiPractice.listen')}
                     </button>
-                  </div>
-                  <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-95">
-                    {currentQuestion.explanation}
-                  </p>
+                  )}
                 </div>
+                <p lang="en" className="text-xs sm:text-sm leading-relaxed font-medium">
+                  {currentQuestion.explanation}
+                </p>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2">
+            {/* Action Button */}
+            <div className="pt-2">
               {!isAnswerChecked ? (
                 <button
-                  type="button"
-                  onClick={handleCheckAnswer}
                   disabled={!selectedOption}
-                  className={`w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm transition-all focus:outline-hidden cursor-pointer flex items-center justify-center ${
-                    selectedOption
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
+                  onClick={handleCheckAnswer}
+                  className="w-full min-h-12 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
                 >
-                  Check Answer
+                  {t('aiPractice.checkAnswer')}
                 </button>
               ) : (
                 <button
-                  type="button"
                   onClick={handleNext}
-                  autoFocus
-                  className="w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer flex items-center justify-center"
+                  className="w-full min-h-12 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
                 >
-                  {currentIndex + 1 < questions.length ? 'Next Question' : 'View AI Summary'}
+                  {currentIndex + 1 < questions.length
+                    ? t('aiPractice.nextQuestion')
+                    : t('aiPractice.viewSummary')}
                 </button>
               )}
             </div>
@@ -218,33 +198,43 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
           /* Completion Summary */
           <div className="mt-8 text-center space-y-6">
             <div className="space-y-2">
-              <h4 className="text-2xl font-black text-slate-900 tracking-tight">
-                AI Practice Complete
+              <h4 className="text-xl sm:text-2xl font-black text-slate-900">
+                {t('aiPractice.complete')}
               </h4>
-              <p className="text-sm text-slate-600 max-w-sm mx-auto">
-                You successfully practiced your mistake words with Gemini AI.
+              <p className="text-sm text-slate-500">
+                {t('aiPractice.score', { correct: correctCount, total: questions.length })}
               </p>
             </div>
 
-            <div className="py-4 px-6 rounded-2xl bg-indigo-50/80 border border-indigo-100 max-w-xs mx-auto text-indigo-950 font-bold text-xl">
-              {correctCount} / {questions.length} Correct ({Math.round((correctCount / questions.length) * 100)}%)
+            <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-left space-y-2">
+              <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-700 block">
+                {t('aiPractice.reinforcing')}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {questions.map((q, i) => (
+                  <span
+                    key={i}
+                    lang="en"
+                    className="px-2.5 py-1 bg-white text-indigo-900 border border-indigo-200 rounded-lg text-xs font-bold capitalize"
+                  >
+                    {q.targetWord}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <button
-                type="button"
                 onClick={handleRestart}
-                className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center"
+                className="w-full min-h-12 py-3 px-5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
               >
-                Retake AI Practice
+                {t('aiPractice.retake')}
               </button>
-
               <button
-                type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto min-h-12 px-7 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                className="w-full min-h-12 py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-colors cursor-pointer"
               >
-                Done
+                {t('aiPractice.done')}
               </button>
             </div>
           </div>

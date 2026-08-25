@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNetworkStatus } from './useNetworkStatus';
+import { useI18n } from '../i18n';
 
 /**
  * Text-only offline mode notification banner.
@@ -7,6 +8,7 @@ import { useNetworkStatus } from './useNetworkStatus';
  * Respects safe-area, >=44px touch targets, zero decorative icons.
  */
 export const OfflineBanner: React.FC = () => {
+  const { t } = useI18n();
   const { isOnline, showBackOnlineNotice, dismissBackOnlineNotice } = useNetworkStatus();
 
   if (isOnline && !showBackOnlineNotice) {
@@ -23,16 +25,16 @@ export const OfflineBanner: React.FC = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <p className="min-w-0">
             <span className="font-extrabold uppercase text-2xs tracking-wider bg-emerald-800 px-2 py-0.5 rounded-md mr-2 inline-block">
-              Connected
+              {t('pwa.connected')}
             </span>
-            <span>You're back online. Live AI features are available.</span>
+            <span>{t('pwa.backOnline')}</span>
           </p>
           <button
             type="button"
             onClick={dismissBackOnlineNotice}
             className="min-h-11 px-3 py-1 text-xs font-bold text-emerald-100 hover:text-white bg-emerald-800 hover:bg-emerald-900 rounded-lg transition-colors cursor-pointer shrink-0 inline-flex items-center"
           >
-            Dismiss
+            {t('ui.common.dismiss')}
           </button>
         </div>
       </aside>
@@ -48,10 +50,10 @@ export const OfflineBanner: React.FC = () => {
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <p className="min-w-0 font-medium">
           <span className="font-extrabold uppercase text-2xs tracking-wider bg-slate-800 text-amber-300 border border-slate-700 px-2 py-0.5 rounded-md mr-2 inline-block">
-            Offline Mode
+            {t('pwa.offlineMode')}
           </span>
           <span>
-            Core learning and review remain available. AI features require an internet connection.
+            {t('pwa.offlineDescription')}
           </span>
         </p>
       </div>

@@ -234,7 +234,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 disabled={isFirst}
                 className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xs sm:text-sm text-white transition-colors cursor-pointer"
               >
-                ← {t('learn.flashcard.prev')}
+                {t('learn.flashcard.prev')}
               </button>
 
               <button
@@ -245,7 +245,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 }}
                 className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-xs sm:text-sm text-white shadow-md transition-colors cursor-pointer"
               >
-                {isLast ? t('learn.flashcard.finish') : `${t('learn.flashcard.next')} →`}
+                {isLast ? t('learn.flashcard.finish') : t('learn.flashcard.next')}
               </button>
             </div>
           </div>

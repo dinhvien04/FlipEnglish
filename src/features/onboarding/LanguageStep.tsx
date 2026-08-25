@@ -18,19 +18,19 @@ export const LanguageStep: React.FC<LanguageStepProps> = ({
     {
       mode: 'vi',
       title: 'Tiếng Việt',
-      desc: 'Dễ hiểu nhất cho người mới bắt đầu học tiếng Anh.',
-      badge: 'Khuyên dùng cho người mới',
+      desc: t('ui.language.viDesc'),
+      badge: 'Khuyên dùng / Recommended',
     },
     {
       mode: 'bilingual',
-      title: 'Song ngữ (Bilingual)',
-      desc: 'Tiếng Việt là chính, kèm thuật ngữ tiếng Anh quan trọng để làm quen.',
-      badge: 'Cân bằng & Trực quan',
+      title: 'Song ngữ / Bilingual',
+      desc: t('ui.language.bilingualDesc'),
+      badge: 'Song ngữ / Bilingual',
     },
     {
       mode: 'en',
       title: 'English',
-      desc: 'Complete English interface for immersive vocabulary practice.',
+      desc: t('ui.language.enDesc'),
       badge: 'Full Immersion',
     },
   ];
@@ -48,7 +48,7 @@ export const LanguageStep: React.FC<LanguageStepProps> = ({
 
       <div
         role="radiogroup"
-        aria-label="Chọn ngôn ngữ giao diện"
+        aria-label={t('accessibility.languageRadioGroup')}
         className="grid grid-cols-1 gap-4 max-w-xl mx-auto"
       >
         {options.map((opt) => {

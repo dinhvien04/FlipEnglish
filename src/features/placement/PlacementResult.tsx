@@ -204,7 +204,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                   Stage {stage.stageIndex + 1}: {stage.level} ({stage.correctCount}/{stage.totalQuestions})
                 </span>
                 {idx < report.stagePath.length - 1 && (
-                  <span className="text-slate-400">→</span>
+                  <span className="text-slate-400 font-bold">/</span>
                 )}
               </React.Fragment>
             ))}

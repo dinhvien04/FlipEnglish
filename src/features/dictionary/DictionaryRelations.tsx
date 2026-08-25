@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getDictionaryRelated } from './dictionaryClient';
+import { useI18n } from '../i18n';
 
 interface DictionaryRelationsProps {
   word: string;
@@ -17,6 +18,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
   antonyms,
   onWordClick,
 }) => {
+  const { t } = useI18n();
   const hasSynonyms = synonyms.length > 0;
   const hasAntonyms = antonyms.length > 0;
 
@@ -86,10 +88,10 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
       relationsCache.set(cacheKey, bounded);
       setSimilarWords(bounded);
       if (bounded.length === 0) {
-        setSimilarError('No similar conceptual ideas found.');
+        setSimilarError(t('dictionary.noSimilarFound'));
       }
     } catch {
-      setSimilarError('Similar ideas require an internet connection.');
+      setSimilarError(t('dictionary.similarOfflineError'));
     } finally {
       setIsLoadingSimilar(false);
     }
@@ -118,10 +120,10 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
       relationsCache.set(cacheKey, bounded);
       setSoundsLikeWords(bounded);
       if (bounded.length === 0) {
-        setSoundsLikeError('No phonetic sounds-like relations found.');
+        setSoundsLikeError(t('dictionary.noSoundsLikeFound'));
       }
     } catch {
-      setSoundsLikeError('Sounds-like relations require an internet connection.');
+      setSoundsLikeError(t('dictionary.soundsLikeOfflineError'));
     } finally {
       setIsLoadingSoundsLike(false);
     }
@@ -140,13 +142,13 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
     <section className="p-5 sm:p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-4">
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-          Word Relationships & Alternatives
+          {t('dictionary.relationsTitle')}
         </h3>
-        <span className="text-2xs text-slate-400">Contextual variations</span>
+        <span className="text-2xs text-slate-400">{t('dictionary.relationsSubtitle')}</span>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Word relations">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label={t('accessibility.wordRelations')}>
         {hasSynonyms && (
           <button
             type="button"
@@ -159,7 +161,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Synonyms ({synonyms.length})
+            {t('dictionary.synonyms')} ({synonyms.length})
           </button>
         )}
 
@@ -175,7 +177,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Antonyms ({antonyms.length})
+            {t('dictionary.antonyms')} ({antonyms.length})
           </button>
         )}
 
@@ -190,7 +192,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          Similar Ideas {similarWords.length > 0 ? `(${similarWords.length})` : ''}
+          {t('dictionary.similarIdeas')} {similarWords.length > 0 ? `(${similarWords.length})` : ''}
         </button>
 
         <button
@@ -204,7 +206,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          Sounds Like {soundsLikeWords.length > 0 ? `(${soundsLikeWords.length})` : ''}
+          {t('dictionary.soundsLike')} {soundsLikeWords.length > 0 ? `(${soundsLikeWords.length})` : ''}
         </button>
       </div>
 
@@ -216,6 +218,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
               <button
                 key={idx}
                 type="button"
+                lang="en"
                 onClick={() => onWordClick(s)}
                 className="min-h-11 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer border border-indigo-100"
               >
@@ -231,6 +234,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
               <button
                 key={idx}
                 type="button"
+                lang="en"
                 onClick={() => onWordClick(a)}
                 className="min-h-11 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer border border-rose-100"
               >
@@ -244,21 +248,21 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
           <div className="space-y-3">
             {isLoadingSimilar && (
               <div className="p-4 text-center text-xs font-semibold text-slate-500">
-                Finding conceptually related ideas for "{word}"...
+                {t('dictionary.loadingSimilar', { word })}
               </div>
             )}
 
             {!isLoadingSimilar && !similarError && similarWords.length === 0 && (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
                 <p className="text-xs text-slate-600 font-medium">
-                  Explore conceptually related words.
+                  {t('dictionary.exploreSimilar')}
                 </p>
                 <button
                   type="button"
                   onClick={() => loadSimilarWords(word)}
                   className="min-h-11 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  Load Similar Ideas
+                  {t('dictionary.loadSimilar')}
                 </button>
               </div>
             )}
@@ -275,6 +279,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
                   <button
                     key={idx}
                     type="button"
+                    lang="en"
                     onClick={() => onWordClick(sim)}
                     className="min-h-11 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer border border-slate-200"
                   >
@@ -290,21 +295,21 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
           <div className="space-y-3">
             {isLoadingSoundsLike && (
               <div className="p-4 text-center text-xs font-semibold text-slate-500">
-                Finding words that sound similar to "{word}"...
+                {t('dictionary.loadingSoundsLike', { word })}
               </div>
             )}
 
             {!isLoadingSoundsLike && !soundsLikeError && soundsLikeWords.length === 0 && (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
                 <p className="text-xs text-slate-600 font-medium">
-                  Explore words that sound phonetically similar.
+                  {t('dictionary.exploreSoundsLike')}
                 </p>
                 <button
                   type="button"
                   onClick={() => loadSoundsLikeWords(word)}
                   className="min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  Load Sounds Like
+                  {t('dictionary.loadSoundsLike')}
                 </button>
               </div>
             )}
@@ -321,6 +326,7 @@ export const DictionaryRelations: React.FC<DictionaryRelationsProps> = ({
                   <button
                     key={idx}
                     type="button"
+                    lang="en"
                     onClick={() => onWordClick(snd)}
                     className="min-h-11 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs sm:text-sm font-semibold transition-colors cursor-pointer border border-amber-200"
                   >

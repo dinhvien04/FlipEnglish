@@ -161,7 +161,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               onClick={onReturn}
               className="min-h-11 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer inline-flex items-center"
             >
-              ← {returnLabel}
+              {returnLabel}
             </button>
           </div>
         )}

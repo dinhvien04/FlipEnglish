@@ -4,6 +4,7 @@ export * from './I18nProvider';
 export * from './useI18n';
 export * from './localeStorage';
 export * from './localeDetection';
+export * from './resolveInitialLanguage';
 export * from './formatting';
 export * from './documentLanguage';
 export * from './locales/en';

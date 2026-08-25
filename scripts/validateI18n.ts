@@ -6,7 +6,14 @@ import {
   formatDateWithLocale,
   formatPercentWithLocale,
 } from '../src/features/i18n/formatting';
+import { resolveInitialUiLanguage } from '../src/features/i18n/resolveInitialLanguage';
 import { validateOnboardingState } from '../src/features/onboarding/onboardingStorage';
+
+function extractPlaceholders(template: string): string[] {
+  const matches = template.match(/\{[a-zA-Z0-9_-]+\}/g);
+  if (!matches) return [];
+  return Array.from(new Set(matches)).sort();
+}
 
 function runValidation() {
   console.log('--- 1. Validating Translation Catalogs Parity ---');
@@ -31,7 +38,24 @@ function runValidation() {
 
   console.log('✅ Catalogs have 100% key parity.');
 
-  console.log('\n--- 2. Validating Catalog Values Quality & Zero Empty Strings ---');
+  console.log('\n--- 2. Validating Placeholder Tokens Parity Across Locales ---');
+  for (const key of enKeys) {
+    const enVal = (enCatalog as Record<string, string>)[key];
+    const viVal = (viCatalog as Record<string, string>)[key];
+
+    const enPlaceholders = extractPlaceholders(enVal);
+    const viPlaceholders = extractPlaceholders(viVal);
+
+    if (enPlaceholders.join(',') !== viPlaceholders.join(',')) {
+      console.error(
+        `❌ Placeholder mismatch for key "${key}": EN=[${enPlaceholders.join(', ')}] vs VI=[${viPlaceholders.join(', ')}]`
+      );
+      process.exit(1);
+    }
+  }
+  console.log('✅ All placeholder tokens match exactly across EN and VI catalogs.');
+
+  console.log('\n--- 3. Validating Catalog Values Quality & Zero Empty Strings ---');
   for (const [key, val] of Object.entries(enCatalog)) {
     if (!val || typeof val !== 'string' || val.trim().length === 0) {
       console.error(`❌ Empty or invalid translation in EN catalog for key: "${key}"`);
@@ -48,7 +72,7 @@ function runValidation() {
 
   console.log('✅ All translation catalog strings are non-empty and valid.');
 
-  console.log('\n--- 3. Validating Translation Catalog Interpolation & Fallbacks ---');
+  console.log('\n--- 4. Validating Translation Catalog Interpolation & Fallbacks ---');
   // Test interpolation
   const interpolatedEn = getTranslation('en', 'home.search.noResults', { query: 'technology' });
   if (interpolatedEn !== 'No lessons found matching "technology".') {
@@ -69,9 +93,15 @@ function runValidation() {
     process.exit(1);
   }
 
-  console.log('✅ Translation interpolation and key fallbacks function properly.');
+  // Test hasTranslationKey
+  if (!hasTranslationKey('ui.nav.today') || hasTranslationKey('random.fake.key')) {
+    console.error('❌ hasTranslationKey check failed');
+    process.exit(1);
+  }
 
-  console.log('\n--- 4. Validating Number, Date, and Percent Formatters ---');
+  console.log('✅ Translation interpolation, hasKey, and key fallbacks function properly.');
+
+  console.log('\n--- 5. Validating Number, Date, and Percent Formatters ---');
   const formattedNumVi = formatNumberWithLocale(12500, 'vi');
   const formattedNumEn = formatNumberWithLocale(12500, 'en');
   if (!formattedNumVi || !formattedNumEn) {
@@ -99,7 +129,63 @@ function runValidation() {
   console.log(`- Formatted percent (VI): ${formattedPctVi} | (EN): ${formattedPctEn}`);
   console.log('✅ Formatting helpers function correctly.');
 
-  console.log('\n--- 5. Validating Onboarding State Schema Validation ---');
+  console.log('\n--- 6. Validating Three-Tier Initial Language Resolution Engine ---');
+  // Tier 1: Explicit preference always wins
+  const explicitVi = resolveInitialUiLanguage({
+    storedPreference: { mode: 'vi', explicit: true, savedAt: 1000 },
+    hasExistingLearnerData: true,
+    browserLanguages: ['en-US'],
+  });
+  if (explicitVi !== 'vi') {
+    console.error(`❌ Expected explicit 'vi' but got: "${explicitVi}"`);
+    process.exit(1);
+  }
+
+  const explicitBilingual = resolveInitialUiLanguage({
+    storedPreference: { mode: 'bilingual', explicit: true, savedAt: 1000 },
+    hasExistingLearnerData: false,
+    browserLanguages: ['en-US'],
+  });
+  if (explicitBilingual !== 'bilingual') {
+    console.error(`❌ Expected explicit 'bilingual' but got: "${explicitBilingual}"`);
+    process.exit(1);
+  }
+
+  // Tier 2: Existing learner backwards compatibility (has progress, no explicit choice -> EN)
+  const existingLearnerEn = resolveInitialUiLanguage({
+    storedPreference: null,
+    hasExistingLearnerData: true,
+    browserLanguages: ['vi-VN'],
+  });
+  if (existingLearnerEn !== 'en') {
+    console.error(`❌ Expected existing learner default 'en' but got: "${existingLearnerEn}"`);
+    process.exit(1);
+  }
+
+  // Tier 3: New learner recommendation based on browser languages
+  const newLearnerVi = resolveInitialUiLanguage({
+    storedPreference: null,
+    hasExistingLearnerData: false,
+    browserLanguages: ['vi-VN', 'en-US'],
+  });
+  if (newLearnerVi !== 'vi') {
+    console.error(`❌ Expected new learner VI recommendation but got: "${newLearnerVi}"`);
+    process.exit(1);
+  }
+
+  const newLearnerEn = resolveInitialUiLanguage({
+    storedPreference: null,
+    hasExistingLearnerData: false,
+    browserLanguages: ['en-GB', 'fr-FR'],
+  });
+  if (newLearnerEn !== 'en') {
+    console.error(`❌ Expected new learner EN recommendation but got: "${newLearnerEn}"`);
+    process.exit(1);
+  }
+
+  console.log('✅ Three-tier initial language resolution engine behaves according to specification.');
+
+  console.log('\n--- 7. Validating Onboarding State Schema Validation ---');
   const validState1 = {
     status: 'completed',
     selectedLanguage: 'vi',

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../features/i18n';
 
 interface ProgressBarProps {
   current: number;
@@ -13,13 +14,14 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   label,
   subLabel,
 }) => {
+  const { t } = useI18n();
   const percentage = Math.min(100, Math.max(0, Math.round((current / total) * 100)));
 
   return (
     <div className="w-full space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold text-slate-700">
-          {label || `Progress: ${current} / ${total}`}
+          {label || t('accessibility.progressBar', { current, total })}
         </span>
         {subLabel ? (
           <span className="text-xs font-medium text-slate-500">{subLabel}</span>

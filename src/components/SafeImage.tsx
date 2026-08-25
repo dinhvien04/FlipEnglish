@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../features/i18n';
 
 export interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
@@ -10,9 +11,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   alt = '',
   className = '',
   fallbackSrc,
-  fallbackText = 'Visual unavailable offline',
+  fallbackText,
   ...props
 }) => {
+  const { t } = useI18n();
+  const resolvedFallbackText = fallbackText || t('common.visualUnavailable');
   const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
   const [failed, setFailed] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -49,11 +52,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     return (
       <div
         className={`bg-slate-100 flex items-center justify-center text-center p-3 border border-slate-200/60 rounded-xl transition-colors ${className}`}
-        aria-label={alt || fallbackText}
+        aria-label={alt || resolvedFallbackText}
         role="img"
       >
         <span className="text-2xs sm:text-xs font-semibold text-slate-400 select-none">
-          {fallbackText}
+          {resolvedFallbackText}
         </span>
       </div>
     );

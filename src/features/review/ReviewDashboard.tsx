@@ -25,6 +25,7 @@ interface ReviewDashboardProps {
   resumeContext?: ReviewResumeContext | null;
   onResumeConsumed?: () => void;
   onLookupWord?: (word: string, resumeContext: ReviewResumeContext) => void;
+  onSessionContextChange?: (resumeContext: ReviewResumeContext | null) => void;
 }
 
 export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
@@ -32,6 +33,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   resumeContext = null,
   onResumeConsumed,
   onLookupWord,
+  onSessionContextChange,
 }) => {
   const { t } = useI18n();
   const [stats, setStats] = useState<ReviewDashboardStats>(getReviewDashboardStats());
@@ -47,6 +49,13 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   });
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Keep parent session context in sync
+  useEffect(() => {
+    if (!activeQueue || activeQueue.length === 0) {
+      onSessionContextChange?.(null);
+    }
+  }, [activeQueue, onSessionContextChange]);
 
   // Signal consumption of resume context (one-shot) after initial mount
   const didConsumeResumeRef = useRef<boolean>(false);

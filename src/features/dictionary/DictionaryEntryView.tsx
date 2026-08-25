@@ -10,6 +10,7 @@ import {
 } from './dictionaryCache';
 import { DictionaryMeaningSection } from './DictionaryMeaningSection';
 import { DictionaryRelations } from './DictionaryRelations';
+import { useI18n } from '../i18n';
 
 interface DictionaryEntryViewProps {
   entry: DictionaryEntry;
@@ -26,6 +27,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
   onNavigateLesson,
   onNavigateReview,
 }) => {
+  const { t } = useI18n();
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -65,14 +67,14 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
           // Fallback to SpeechSynthesis
           const speechOk = speakWord(entry.word, rate);
           if (!speechOk) {
-            setAudioError('Audio playback is unavailable on this device right now.');
+            setAudioError(t('dictionary.audioUnavailable'));
           }
         };
         audio.play().catch(() => {
           setIsPlayingAudio(false);
           const speechOk = speakWord(entry.word, rate);
           if (!speechOk) {
-            setAudioError('Audio playback is unavailable on this device right now.');
+            setAudioError(t('dictionary.audioUnavailable'));
           }
         });
         return;
@@ -84,7 +86,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
     // Web Speech API fallback
     const speechOk = speakWord(entry.word, rate);
     if (!speechOk) {
-      setAudioError('Audio playback is unavailable on this device right now.');
+      setAudioError(t('dictionary.audioUnavailable'));
     }
   };
 
@@ -95,7 +97,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
       if (ok) {
         setIsSaved(false);
       } else {
-        setSaveFeedback('Unable to remove word offline. Local storage may be restricted.');
+        setSaveFeedback(t('dictionary.unableRemoveOffline'));
       }
     } else {
       const primaryMatch = entry.curriculumMatches?.[0];
@@ -114,7 +116,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
       if (ok) {
         setIsSaved(true);
       } else {
-        setSaveFeedback('Unable to save word offline. Local storage quota exceeded or disabled.');
+        setSaveFeedback(t('dictionary.unableSaveOffline'));
       }
     }
   };
@@ -133,9 +135,9 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
       {/* Offline Cached Notice */}
       {isOfflineCached && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium flex items-center justify-between">
-          <span>Showing offline cached dictionary entry.</span>
+          <span>{t('dictionary.cachedNotice')}</span>
           <span className="text-2xs uppercase tracking-wider font-bold bg-amber-200/70 px-2 py-0.5 rounded">
-            Cached
+            {t('dictionary.cachedBadge')}
           </span>
         </div>
       )}
@@ -145,19 +147,19 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+              <h1 lang="en" className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
                 {entry.word}
               </h1>
 
               {hasCurriculumMatches && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  FlipEnglish Curriculum
+                  {t('dictionary.curriculumBadge')}
                 </span>
               )}
             </div>
 
             {phoneticsText && (
-              <p className="text-base sm:text-lg font-mono text-slate-600 font-medium">
+              <p lang="en" className="text-base sm:text-lg font-mono text-slate-600 font-medium">
                 {phoneticsText}
               </p>
             )}
@@ -174,7 +176,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                   : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300'
               }`}
             >
-              {isSaved ? 'Saved to Vocabulary' : 'Save Word'}
+              {isSaved ? t('dictionary.savedToVocabulary') : t('dictionary.saveWord')}
             </button>
 
             {saveFeedback && (
@@ -186,7 +188,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
         {/* Audio Pronunciation Controls */}
         <div className="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">
-            Pronunciation:
+            {t('dictionary.pronunciation')}
           </span>
 
           <button
@@ -195,7 +197,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
             disabled={isPlayingAudio}
             className="min-h-11 px-4 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-slate-200"
           >
-            Play Normal (0.9x)
+            {t('dictionary.playNormal')}
           </button>
 
           <button
@@ -204,7 +206,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
             disabled={isPlayingAudio}
             className="min-h-11 px-4 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-slate-200"
           >
-            Play Slow (0.65x)
+            {t('dictionary.playSlow')}
           </button>
 
           {audioError && <span className="text-xs text-rose-600 font-medium">{audioError}</span>}
@@ -216,10 +218,10 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-              FlipEnglish Learning Alignment
+              {t('dictionary.learningAlignment')}
             </h2>
             <span className="text-xs text-slate-400">
-              {entry.curriculumMatches!.length} {entry.curriculumMatches!.length === 1 ? 'lesson match' : 'lesson matches'}
+              {entry.curriculumMatches!.length} {entry.curriculumMatches!.length === 1 ? t('dictionary.lessonMatch') : t('dictionary.lessonMatches')}
             </span>
           </div>
 
@@ -234,7 +236,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                     <span className="px-2 py-0.5 rounded-md text-xs font-black bg-indigo-600 text-white">
                       {match.level}
                     </span>
-                    <span className="text-sm font-bold text-slate-900">{match.lessonTitle}</span>
+                    <span lang="en" className="text-sm font-bold text-slate-900">{match.lessonTitle}</span>
                   </div>
 
                   {/* Actions for this curriculum word */}
@@ -245,7 +247,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                         onClick={() => onNavigateLesson(match.lessonId)}
                         className="min-h-11 px-3.5 py-2 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors cursor-pointer"
                       >
-                        Open Lesson
+                        {t('dictionary.openLesson')}
                       </button>
                     )}
 
@@ -258,7 +260,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600'
                       }`}
                     >
-                      {addedReviewWordId === match.wordId ? 'Added to Review' : 'Add to Smart Review'}
+                      {addedReviewWordId === match.wordId ? t('dictionary.addedToReview') : t('dictionary.addToReview')}
                     </button>
                   </div>
                 </div>
@@ -266,13 +268,13 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                 {/* Vietnamese Meaning & Example from canonical curriculum */}
                 {match.meaning && (
                   <div className="text-sm">
-                    <span className="font-bold text-slate-500 mr-2">Meaning (Tiếng Việt):</span>
-                    <span className="font-semibold text-slate-900">{match.meaning}</span>
+                    <span className="font-bold text-slate-500 mr-2">{t('dictionary.curriculumMeaning')}</span>
+                    <span lang="vi" className="font-semibold text-slate-900">{match.meaning}</span>
                   </div>
                 )}
 
                 {match.example && (
-                  <div className="text-xs sm:text-sm text-slate-600 italic pl-3 border-l-2 border-indigo-300">
+                  <div lang="en" className="text-xs sm:text-sm text-slate-600 italic pl-3 border-l-2 border-indigo-300">
                     "{match.example}"
                   </div>
                 )}
@@ -288,10 +290,10 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
       ) : (
         <section className="p-5 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-            Saved Vocabulary Entry
+            {t('dictionary.savedEntry')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            English dictionary definition is not available in this saved snapshot. Connect to the internet for full definitions.
+            {t('dictionary.savedDefinitionUnavailable')}
           </p>
         </section>
       )}

@@ -73,7 +73,7 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
         onClick={onBackToHome}
         className="min-h-11 px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden cursor-pointer inline-flex items-center"
       >
-        ← {t('ui.common.back')}
+        {t('ui.common.back')}
       </button>
 
       {/* Main Introduction Card with photographic cover banner */}
@@ -119,7 +119,6 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
               className="w-full sm:w-auto min-h-12 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
             >
               <span>{t('learn.intro.startFlashcards', { count: lesson.words.length })}</span>
-              <span className="font-black">→</span>
             </button>
 
             <button

@@ -8,8 +8,9 @@ import {
   LANGUAGE_STORAGE_KEY,
   isValidUiLanguageMode,
 } from './localeStorage';
-import { detectRecommendedLanguage } from './localeDetection';
+import { resolveInitialUiLanguage } from './resolveInitialLanguage';
 import { updateDocumentLanguageMetadata } from './documentLanguage';
+import { hasMeaningfulExistingLearnerData } from '../onboarding/onboardingStorage';
 import {
   formatNumberWithLocale,
   formatDateWithLocale,
@@ -27,11 +28,11 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
       return initialMode;
     }
     const stored = loadStoredLanguagePreference();
-    if (stored && stored.explicit && isValidUiLanguageMode(stored.mode)) {
-      return stored.mode;
-    }
-    // Recommendation from browser
-    return detectRecommendedLanguage();
+    const hasData = hasMeaningfulExistingLearnerData();
+    return resolveInitialUiLanguage({
+      storedPreference: stored,
+      hasExistingLearnerData: hasData,
+    });
   });
 
   const setMode = useCallback((newMode: UiLanguageMode, explicit = true) => {
@@ -52,7 +53,7 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
       if (e.key === LANGUAGE_STORAGE_KEY && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (parsed && isValidUiLanguageMode(parsed.mode)) {
+          if (parsed && typeof parsed === 'object' && isValidUiLanguageMode(parsed.mode)) {
             setModeState(parsed.mode);
             updateDocumentLanguageMetadata(parsed.mode);
           }

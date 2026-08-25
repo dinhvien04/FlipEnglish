@@ -44,7 +44,11 @@ import { TodayPage } from './features/studyPlan/TodayPage';
 import { DictionaryPage } from './features/dictionary/DictionaryPage';
 import { HelpPage } from './pages/HelpPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
-import { shouldShowOnboarding, saveOnboardingState } from './features/onboarding/onboardingStorage';
+import {
+  shouldShowOnboarding,
+  saveOnboardingState,
+  migrateOnboardingStateForExistingUser,
+} from './features/onboarding/onboardingStorage';
 import { OnboardingRoute } from './features/onboarding/onboardingTypes';
 import {
   DictionaryReturnContext,
@@ -92,6 +96,8 @@ export default function App() {
   // Resumed Session States
   const [resumedLearnContext, setResumedLearnContext] = useState<LearnResumeContext | null>(null);
   const [resumedReviewContext, setResumedReviewContext] = useState<ReviewResumeContext | null>(null);
+  const [activeLearnContext, setActiveLearnContext] = useState<LearnResumeContext | null>(null);
+  const [activeReviewContext, setActiveReviewContext] = useState<ReviewResumeContext | null>(null);
 
   // Conversation States
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
@@ -102,8 +108,10 @@ export default function App() {
   const selectedLesson: Lesson | null = selectedLessonId ? getLessonById(selectedLessonId) || null : null;
   const currentLessonProgress: LessonProgress | null = selectedLessonId ? getLessonProgress(selectedLessonId) : null;
 
-  // Check for active unfinished exam or placement on initial load
+  // Check for active unfinished exam or placement on initial load + idempotent onboarding migration
   useEffect(() => {
+    migrateOnboardingStateForExistingUser();
+
     const active = getActiveExam();
     if (active && active.status === 'active' && active.endsAt > Date.now()) {
       setPendingResumeSession(active);
@@ -139,6 +147,18 @@ export default function App() {
     setDictionarySearchWord(searchWord || '');
     if (returnContextOverride) {
       setDictionaryReturnContext(returnContextOverride);
+    } else if (currentView === 'learn' && activeLearnContext) {
+      setDictionaryReturnContext({
+        source: 'learn',
+        view: 'learn',
+        learnContext: activeLearnContext,
+      });
+    } else if (currentView === 'review' && activeReviewContext) {
+      setDictionaryReturnContext({
+        source: 'review',
+        view: 'review',
+        reviewContext: activeReviewContext,
+      });
     } else if (currentView !== 'dictionary') {
       setDictionaryReturnContext({
         source: 'view',
@@ -285,6 +305,8 @@ export default function App() {
       handleStartCurriculumAtLevel(level);
     } else if (route === 'unknown') {
       handleStartPlacementIntro();
+    } else if (route === 'explore') {
+      handleNavigateHome();
     } else {
       handleNavigateToday();
     }
@@ -776,6 +798,7 @@ export default function App() {
             onNavigateToHome={handleNavigateHome}
             resumeContext={resumedReviewContext}
             onResumeConsumed={handleReviewResumeConsumed}
+            onSessionContextChange={setActiveReviewContext}
             onLookupWord={(word, reviewContext) =>
               handleNavigateDictionary(word, {
                 source: 'review',
@@ -845,6 +868,7 @@ export default function App() {
             onResumeConsumed={handleLearnResumeConsumed}
             onFinishFlashcards={handleFinishFlashcards}
             onBackToIntro={handleBackToIntro}
+            onSessionContextChange={setActiveLearnContext}
             onLookupWord={(word, learnContext) =>
               handleNavigateDictionary(word, {
                 source: 'learn',

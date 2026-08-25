@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DictionaryMeaning } from './dictionaryTypes';
+import { useI18n } from '../i18n';
 
 interface DictionaryMeaningSectionProps {
   meanings: DictionaryMeaning[];
@@ -10,6 +11,7 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
   meanings,
   onWordClick,
 }) => {
+  const { t } = useI18n();
   // Track expanded state for each part of speech (initially show up to 3 definitions)
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
@@ -40,11 +42,11 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
           >
             {/* Part of Speech Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-base font-black text-indigo-700 italic lowercase tracking-wide">
+              <h3 lang="en" className="text-base font-black text-indigo-700 italic lowercase tracking-wide">
                 {meaning.partOfSpeech}
               </h3>
               <span className="text-xs font-semibold text-slate-400">
-                {meaning.definitions.length} {meaning.definitions.length === 1 ? 'sense' : 'senses'}
+                {meaning.definitions.length} {meaning.definitions.length === 1 ? t('dictionary.sense') : t('dictionary.senses')}
               </span>
             </div>
 
@@ -52,11 +54,11 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
             <ol className="space-y-4 list-decimal list-inside text-slate-800">
               {displayDefinitions.map((def, dIndex) => (
                 <li key={dIndex} className="text-sm sm:text-base leading-relaxed pl-1 space-y-2">
-                  <span className="font-normal text-slate-900">{def.definition}</span>
+                  <span lang="en" className="font-normal text-slate-900">{def.definition}</span>
 
                   {/* Contextual Example */}
                   {def.example && (
-                    <div className="mt-1.5 pl-3 border-l-2 border-indigo-200 text-slate-600 italic text-xs sm:text-sm">
+                    <div lang="en" className="mt-1.5 pl-3 border-l-2 border-indigo-200 text-slate-600 italic text-xs sm:text-sm">
                       "{def.example}"
                     </div>
                   )}
@@ -66,11 +68,12 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
                       {def.synonyms && def.synonyms.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-500">Synonyms:</span>
+                          <span className="font-bold text-slate-500">{t('dictionary.synonyms')}:</span>
                           {def.synonyms.slice(0, 5).map((s, sIdx) => (
                             <button
                               key={sIdx}
                               type="button"
+                              lang="en"
                               onClick={() => onWordClick && onWordClick(s)}
                               className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium transition-colors cursor-pointer text-xs underline decoration-slate-300 underline-offset-2"
                             >
@@ -82,11 +85,12 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
 
                       {def.antonyms && def.antonyms.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-500">Antonyms:</span>
+                          <span className="font-bold text-slate-500">{t('dictionary.antonyms')}:</span>
                           {def.antonyms.slice(0, 5).map((a, aIdx) => (
                             <button
                               key={aIdx}
                               type="button"
+                              lang="en"
                               onClick={() => onWordClick && onWordClick(a)}
                               className="px-2 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium transition-colors cursor-pointer text-xs underline decoration-rose-200 underline-offset-2"
                             >
@@ -109,8 +113,8 @@ export const DictionaryMeaningSection: React.FC<DictionaryMeaningSectionProps> =
                 className="min-h-10 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50/60 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
               >
                 {isExpanded
-                  ? 'Show fewer definitions'
-                  : `Show all ${meaning.definitions.length} definitions`}
+                  ? t('dictionary.showFewerDefinitions')
+                  : t('dictionary.showAllDefinitions', { count: meaning.definitions.length })}
               </button>
             )}
           </section>

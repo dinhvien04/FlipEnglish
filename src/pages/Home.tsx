@@ -205,10 +205,9 @@ export const Home: React.FC<HomeProps> = ({
               type="button"
               id="home-open-today-plan-btn"
               onClick={onNavigateToday}
-              className="min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+              className="min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
             >
-              <span>{t('home.hero.todayPlan')}</span>
-              <span className="text-indigo-600 font-black">→</span>
+              {t('home.hero.todayPlan')}
             </button>
           </div>
         </section>
@@ -218,21 +217,32 @@ export const Home: React.FC<HomeProps> = ({
       <section className="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6">
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {t('home.guide.whereToStart')}
-            </h2>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  {t('home.guide.whereToStart')}
+                </h2>
+                {isBilingual && (
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:inline" lang="en">
+                    {t('bilingual.help')}
+                  </span>
+                )}
+              </div>
+            </div>
             {onNavigateHelp && (
               <button
                 type="button"
                 onClick={onNavigateHelp}
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
               >
-                {t('ui.nav.help')} →
+                {t('ui.nav.help')}
               </button>
             )}
           </div>
           <p className="text-xs sm:text-sm text-slate-600">
-            {t('home.guide.whereToStartSubtitle')}
+            {hasMeaningfulHistory
+              ? t('home.guide.whereToStartSubtitle')
+              : t('home.guide.whereToStartSubtitle')}
           </p>
         </div>
 
@@ -540,9 +550,16 @@ export const Home: React.FC<HomeProps> = ({
         <div className="space-y-4 border-b border-slate-200/90 pb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 id="curriculum-navigation-heading" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {t('home.levelLibrary.title')}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 id="curriculum-navigation-heading" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  {t('home.levelLibrary.title')}
+                </h2>
+                {isBilingual && (
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:inline" lang="en">
+                    {t('bilingual.curriculum')}
+                  </span>
+                )}
+              </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 {t('home.levelLibrary.subtitle')}
               </p>

@@ -25,7 +25,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
         onClick={onBack}
         className="mb-6 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
       >
-        ← {t('ui.common.back')}
+        {t('ui.common.back')}
       </button>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs">

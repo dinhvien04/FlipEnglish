@@ -49,7 +49,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             onClick={onBackToExamCenter}
             className="min-h-11 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
           >
-            ← {t('ui.common.back')}
+            {t('ui.common.back')}
           </button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{t('exam.history', { count: history.length })}</h1>

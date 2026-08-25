@@ -13,13 +13,14 @@ const VALID_STATUSES = new Set(['pending', 'completed', 'skipped']);
 const VALID_ROUTES = new Set(['unknown', 'know', 'explore']);
 const VALID_LEVELS = new Set(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 
-export function validateOnboardingState(data: any): data is OnboardingState {
+export function validateOnboardingState(data: unknown): data is OnboardingState {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  if (!VALID_STATUSES.has(data.status)) return false;
-  if (!isValidUiLanguageMode(data.selectedLanguage)) return false;
-  if (data.selectedRoute !== undefined && !VALID_ROUTES.has(data.selectedRoute)) return false;
-  if (data.selectedLevel !== undefined && !VALID_LEVELS.has(data.selectedLevel)) return false;
-  if (data.completedAt !== undefined && (typeof data.completedAt !== 'number' || !Number.isFinite(data.completedAt))) {
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.status !== 'string' || !VALID_STATUSES.has(obj.status)) return false;
+  if (obj.selectedLanguage !== undefined && !isValidUiLanguageMode(obj.selectedLanguage)) return false;
+  if (obj.selectedRoute !== undefined && (typeof obj.selectedRoute !== 'string' || !VALID_ROUTES.has(obj.selectedRoute))) return false;
+  if (obj.selectedLevel !== undefined && (typeof obj.selectedLevel !== 'string' || !VALID_LEVELS.has(obj.selectedLevel))) return false;
+  if (obj.completedAt !== undefined && (typeof obj.completedAt !== 'number' || !Number.isFinite(obj.completedAt))) {
     return false;
   }
   return true;
@@ -47,7 +48,7 @@ export function saveOnboardingState(state: OnboardingState): void {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
     window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
   } catch {
-    // ignore
+    // ignore storage quota errors
   }
 }
 
@@ -63,7 +64,7 @@ export function clearOnboardingState(): void {
 
 /**
  * Checks whether an existing user has meaningful study history.
- * If true, returning learners are NOT forced through blocking onboarding.
+ * Used for returning user backwards compatibility and reducing beginner guidance.
  */
 export function hasMeaningfulExistingLearnerData(): boolean {
   if (typeof window === 'undefined') return false;
@@ -94,6 +95,10 @@ export function hasMeaningfulExistingLearnerData(): boolean {
   }
 }
 
+/**
+ * PURE read-only helper to decide if onboarding should be displayed.
+ * MUST NOT perform any localStorage writes or dispatch any events.
+ */
 export function shouldShowOnboarding(): boolean {
   if (typeof window === 'undefined') return false;
   const state = loadOnboardingState();
@@ -101,13 +106,22 @@ export function shouldShowOnboarding(): boolean {
     return false;
   }
   if (hasMeaningfulExistingLearnerData()) {
-    // Automatically flag returning users as completed so onboarding never interrupts them
-    saveOnboardingState({
-      status: 'completed',
-      selectedLanguage: 'vi',
-      completedAt: Date.now(),
-    });
     return false;
   }
   return true;
+}
+
+/**
+ * Idempotent background migration for returning learners with existing data.
+ * Called outside of render phase (e.g. in App.tsx useEffect).
+ */
+export function migrateOnboardingStateForExistingUser(): void {
+  if (typeof window === 'undefined') return;
+  const state = loadOnboardingState();
+  if (!state && hasMeaningfulExistingLearnerData()) {
+    saveOnboardingState({
+      status: 'completed',
+      completedAt: Date.now(),
+    });
+  }
 }

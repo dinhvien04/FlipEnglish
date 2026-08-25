@@ -16,6 +16,7 @@ interface LearnProps {
   onFinishFlashcards: () => void;
   onBackToIntro: () => void;
   onLookupWord?: (word: string, resumeContext: LearnResumeContext) => void;
+  onSessionContextChange?: (resumeContext: LearnResumeContext) => void;
 }
 
 export const Learn: React.FC<LearnProps> = ({
@@ -27,6 +28,7 @@ export const Learn: React.FC<LearnProps> = ({
   onFinishFlashcards,
   onBackToIntro,
   onLookupWord,
+  onSessionContextChange,
 }) => {
   const { t } = useI18n();
   const totalWords = wordsToLearn.length;
@@ -40,6 +42,16 @@ export const Learn: React.FC<LearnProps> = ({
   const [hasCompletedAll, setHasCompletedAll] = useState<boolean>(() => {
     return initialResume ? initialResume.hasCompletedAll : false;
   });
+
+  // Keep parent session context in sync for header navigations
+  useEffect(() => {
+    onSessionContextChange?.({
+      lessonId: lesson.id,
+      flashcardIndex: currentIndex,
+      hasCompletedAll,
+      isReviewMistakesMode,
+    });
+  }, [lesson.id, currentIndex, hasCompletedAll, isReviewMistakesMode, onSessionContextChange]);
 
   // Signal consumption to App after initial mount/hydration (one-shot)
   const didConsumeResumeRef = useRef<boolean>(false);
@@ -186,7 +198,6 @@ export const Learn: React.FC<LearnProps> = ({
               className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
             >
               <span>{t('learn.flashcard.goToQuiz')}</span>
-              <span>→</span>
             </button>
             <button
               onClick={handleRestartCards}

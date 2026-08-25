@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lesson, LessonProgress } from '../types';
 import { SafeImage } from './SafeImage';
+import { useI18n } from '../features/i18n';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -15,6 +16,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   onSelect,
   className = '',
 }) => {
+  const { t } = useI18n();
   const isCompleted = progress?.completed ?? false;
   const bestScore = progress?.bestScore ?? 0;
 
@@ -34,7 +36,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
       onClick={() => onSelect(lesson)}
       role="button"
       tabIndex={0}
-      aria-label={`Open lesson: ${lesson.title}, Level ${lesson.level}`}
+      aria-label={t('curriculum.openLessonAria', { title: lesson.title, level: lesson.level })}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -67,20 +69,20 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         {/* Completed Badge Overlay */}
         {isCompleted && (
           <div className="absolute top-2.5 right-2.5 bg-emerald-600 text-white text-2xs sm:text-xs font-bold px-2 py-0.5 rounded-md shadow-2xs z-10">
-            <span>Score: {bestScore}%</span>
+            <span>{t('curriculum.score', { score: bestScore })}</span>
           </div>
         )}
 
         {/* Word Count Badge at bottom of image */}
         <div className="absolute bottom-2 left-2.5 text-white text-2xs sm:text-xs font-semibold drop-shadow-sm z-10">
-          <span>{lesson.words.length} Vocabulary Items</span>
+          <span>{t('curriculum.vocabItems', { count: lesson.words.length })}</span>
         </div>
       </div>
 
       {/* Card Content */}
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+          <h3 lang="en" className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
             {lesson.title}
           </h3>
           <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed h-8">
@@ -92,21 +94,19 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
           {isCompleted ? (
             <span className="text-emerald-700">
-              Completed
+              {t('curriculum.completedStatus')}
             </span>
           ) : (
             <span className="text-indigo-600 group-hover:text-indigo-700 transition-colors">
-              Start Lesson
+              {t('curriculum.startLesson')}
             </span>
           )}
 
           <span className="text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">
-            Open
+            {t('curriculum.open')}
           </span>
         </div>
       </div>
     </div>
   );
 };
-
-
