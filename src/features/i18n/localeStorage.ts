@@ -9,23 +9,47 @@ export function isValidUiLanguageMode(val: unknown): val is UiLanguageMode {
   return typeof val === 'string' && VALID_MODES.has(val);
 }
 
+export function normalizeStoredLanguagePreference(
+  value: unknown
+): StoredLanguagePreference | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const obj = value as Record<string, unknown>;
+  if (!isValidUiLanguageMode(obj.mode)) {
+    return null;
+  }
+
+  const explicit = typeof obj.explicit === 'boolean' ? obj.explicit : false;
+  const savedAt =
+    typeof obj.savedAt === 'number' && Number.isFinite(obj.savedAt)
+      ? obj.savedAt
+      : undefined;
+
+  return {
+    mode: obj.mode,
+    explicit,
+    savedAt,
+  };
+}
+
+export function parseStoredLanguagePreference(
+  raw: string | null
+): StoredLanguagePreference | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return normalizeStoredLanguagePreference(parsed);
+  } catch {
+    return null;
+  }
+}
+
 export function loadStoredLanguagePreference(): StoredLanguagePreference | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const obj = parsed as Record<string, unknown>;
-      if (isValidUiLanguageMode(obj.mode)) {
-        return {
-          mode: obj.mode,
-          explicit: typeof obj.explicit === 'boolean' ? obj.explicit : Boolean(obj.explicit),
-          savedAt: typeof obj.savedAt === 'number' && Number.isFinite(obj.savedAt) ? obj.savedAt : undefined,
-        };
-      }
-    }
-    return null;
+    return parseStoredLanguagePreference(localStorage.getItem(LANGUAGE_STORAGE_KEY));
   } catch (err) {
     return null;
   }

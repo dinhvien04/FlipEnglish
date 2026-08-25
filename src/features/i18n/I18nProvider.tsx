@@ -6,6 +6,7 @@ import { getTranslation } from './i18nCatalog';
 import {
   loadStoredLanguagePreference,
   saveStoredLanguagePreference,
+  parseStoredLanguagePreference,
   LANGUAGE_STORAGE_KEY,
   isValidUiLanguageMode,
 } from './localeStorage';
@@ -52,15 +53,11 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LANGUAGE_STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (parsed && typeof parsed === 'object' && isValidUiLanguageMode(parsed.mode)) {
-            setModeState(parsed.mode);
-            updateDocumentLanguageMetadata(parsed.mode);
-          }
-        } catch {
-          // ignore corrupted cross-tab payload
-        }
+        const preference = parseStoredLanguagePreference(e.newValue);
+        if (!preference) return;
+
+        setModeState(preference.mode);
+        updateDocumentLanguageMetadata(preference.mode);
       }
     };
 

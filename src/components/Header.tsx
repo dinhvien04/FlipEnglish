@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { LESSONS } from '../data/lessons';
-import { useI18n, UiLanguageMode } from '../features/i18n';
+import { useI18n, UiLanguageMode, LanguageChoiceGroup } from '../features/i18n';
 
 interface HeaderProps {
   onNavigateToday?: () => void;
@@ -261,7 +261,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
               className="min-h-11 px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-expanded={isLangMenuOpen}
-              aria-haspopup="true"
+              aria-controls="header-language-panel"
               aria-label={t('ui.language.title')}
             >
               <span className="uppercase text-2xs tracking-wider text-slate-500">
@@ -272,52 +272,15 @@ export const Header: React.FC<HeaderProps> = ({
 
             {isLangMenuOpen && (
               <div
-                className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-slate-200 py-2 z-50 animate-fade-in"
-                role="menu"
-                aria-label={t('accessibility.languageOptions')}
+                id="header-language-panel"
+                className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-slate-200 p-2 z-50 animate-fade-in"
               >
-                <button
-                  type="button"
-                  onClick={() => handleLanguageSelect('vi')}
-                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                    mode === 'vi' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                  role="menuitemradio"
-                  aria-checked={mode === 'vi'}
-                >
-                  <span>Tiếng Việt</span>
-                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
-                    {mode === 'vi' ? t('ui.language.badge') : ''}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLanguageSelect('bilingual')}
-                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                    mode === 'bilingual' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                  role="menuitemradio"
-                  aria-checked={mode === 'bilingual'}
-                >
-                  <span>Song ngữ / Bilingual</span>
-                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
-                    {mode === 'bilingual' ? t('ui.language.badge') : ''}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLanguageSelect('en')}
-                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                    mode === 'en' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                  role="menuitemradio"
-                  aria-checked={mode === 'en'}
-                >
-                  <span>English</span>
-                  <span className="text-2xs uppercase tracking-wider font-extrabold text-slate-400">
-                    {mode === 'en' ? t('ui.language.badge') : ''}
-                  </span>
-                </button>
+                <LanguageChoiceGroup
+                  mode={mode}
+                  name="flipenglish-ui-language-desktop"
+                  autoFocusSelected={true}
+                  onChange={(newMode) => handleLanguageSelect(newMode)}
+                />
               </div>
             )}
           </div>
@@ -377,44 +340,20 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {/* Language Switcher in Mobile Menu */}
             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-              <div className="text-2xs font-bold uppercase tracking-wider text-slate-500 px-1">
-                {t('ui.language.title')}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode('vi', true)}
-                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    mode === 'vi'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Tiếng Việt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('bilingual', true)}
-                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    mode === 'bilingual'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Song ngữ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('en', true)}
-                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    mode === 'en'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  English
-                </button>
-              </div>
+              <LanguageChoiceGroup
+                mode={mode}
+                name="flipenglish-ui-language-mobile"
+                onChange={(newMode) => setMode(newMode, true)}
+                legendHidden={false}
+                className="grid grid-cols-3 gap-2"
+                itemClassName={(checked) =>
+                  `min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center text-center border ${
+                    checked
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`
+                }
+              />
             </div>
 
             <div className="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2 pt-1">

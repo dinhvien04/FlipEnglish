@@ -3,6 +3,7 @@ export * from './i18nCatalog';
 export * from './I18nProvider';
 export * from './useI18n';
 export * from './localeStorage';
+export * from './LanguageChoiceGroup';
 export * from './localeDetection';
 export * from './resolveInitialLanguage';
 export * from './formatting';
