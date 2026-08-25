@@ -5,6 +5,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { batchAddLessonWordsToReview, batchAddItemsToReview } from '../utils/reviewStorage';
 import { LearnResumeContext } from '../types/sessionResume';
 import { normalizeLearnResumeContext } from '../utils/sessionResume';
+import { useI18n } from '../features/i18n';
 
 interface LearnProps {
   lesson: Lesson;
@@ -27,6 +28,7 @@ export const Learn: React.FC<LearnProps> = ({
   onBackToIntro,
   onLookupWord,
 }) => {
+  const { t } = useI18n();
   const totalWords = wordsToLearn.length;
 
   // Initialize from production normalized resume state if present
@@ -89,12 +91,12 @@ export const Learn: React.FC<LearnProps> = ({
   if (!currentWord || totalWords === 0) {
     return (
       <div className="max-w-md mx-auto py-12 text-center space-y-4">
-        <p className="text-slate-500">No vocabulary words found for this session.</p>
+        <p className="text-slate-500">{t('home.search.noResults', { query: '' })}</p>
         <button
           onClick={onBackToIntro}
           className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl cursor-pointer"
         >
-          Return to Lesson
+          {t('ui.common.back')}
         </button>
       </div>
     );
@@ -109,7 +111,7 @@ export const Learn: React.FC<LearnProps> = ({
           onClick={onBackToIntro}
           className="text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          Exit Lesson
+          {t('ui.common.back')}
         </button>
 
         <div className="text-center">
@@ -117,13 +119,13 @@ export const Learn: React.FC<LearnProps> = ({
             <span className="text-xs font-black px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
               {lesson.level}
             </span>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900" lang="en">
               {lesson.title}
             </h2>
           </div>
           {isReviewMistakesMode && (
             <span className="inline-block text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full mt-1">
-              Reviewing Mistakes
+              {t('result.reviewMistakesBtn')}
             </span>
           )}
         </div>
@@ -139,8 +141,8 @@ export const Learn: React.FC<LearnProps> = ({
         total={totalWords}
         label={
           isReviewMistakesMode
-            ? `Reviewing: ${hasCompletedAll ? totalWords : currentIndex + 1} / ${totalWords}`
-            : `Cards: ${hasCompletedAll ? totalWords : currentIndex + 1} of ${totalWords}`
+            ? `${t('result.reviewMistakesBtn')}: ${hasCompletedAll ? totalWords : currentIndex + 1} / ${totalWords}`
+            : `${t('learn.flashcard.progress', { current: hasCompletedAll ? totalWords : currentIndex + 1, total: totalWords })}`
         }
       />
 
@@ -165,37 +167,32 @@ export const Learn: React.FC<LearnProps> = ({
           className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-2xs text-center max-w-lg mx-auto space-y-6"
         >
           <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider">
-            Completed
+            {t('ui.common.done')}
           </div>
 
           <div className="space-y-2">
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
-              {isReviewMistakesMode
-                ? 'Mistakes Reviewed!'
-                : 'All Flashcards Completed!'}
+              {t('learn.flashcard.completedTitle')}
             </h3>
             <p className="text-sm sm:text-base text-slate-600">
-              {isReviewMistakesMode
-                ? 'Ready to test your memory again and boost your score?'
-                : 'Great job! Test your memory with the quick lesson quiz.'}
+              {t('learn.flashcard.completedDesc', { count: totalWords })}
             </p>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <button
-              id="review-cards-again-btn"
-              onClick={handleRestartCards}
-              className="px-6 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-            >
-              Review Cards Again
-            </button>
-
-            <button
-              id="start-exercises-btn"
+              id="flashcard-finish-btn"
               onClick={onFinishFlashcards}
-              className="px-8 py-3.5 rounded-xl font-extrabold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 cursor-pointer"
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
             >
-              {isReviewMistakesMode ? 'Retake Exercises' : 'Start Exercises'}
+              <span>{t('learn.flashcard.goToQuiz')}</span>
+              <span>→</span>
+            </button>
+            <button
+              onClick={handleRestartCards}
+              className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+            >
+              {t('learn.flashcard.reviewAgain')}
             </button>
           </div>
         </div>

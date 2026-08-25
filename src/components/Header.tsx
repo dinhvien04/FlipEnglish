@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { LESSONS } from '../data/lessons';
+import { useI18n, UiLanguageMode } from '../features/i18n';
 
 interface HeaderProps {
   onNavigateToday?: () => void;
@@ -11,6 +12,7 @@ interface HeaderProps {
   onNavigateConversation?: () => void;
   onNavigateFlipLens?: () => void;
   onNavigateExamCenter?: () => void;
+  onNavigateHelp?: () => void;
   currentView: string;
 }
 
@@ -22,14 +24,18 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateConversation,
   onNavigateFlipLens,
   onNavigateExamCenter,
+  onNavigateHelp,
   currentView,
 }) => {
+  const { mode, setMode, t, isBilingual } = useI18n();
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstMenuItemRef = useRef<HTMLButtonElement>(null);
+  const langButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -60,9 +66,10 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
-  // Close mobile menu on view change
+  // Close mobile & lang menu on view change
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsLangMenuOpen(false);
   }, [currentView]);
 
   // Focus management when menu opens/closes
@@ -74,19 +81,37 @@ export const Header: React.FC<HeaderProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-        menuButtonRef.current?.focus();
+      if (e.key === 'Escape') {
+        if (isLangMenuOpen) {
+          setIsLangMenuOpen(false);
+          langButtonRef.current?.focus();
+        } else if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          menuButtonRef.current?.focus();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, isLangMenuOpen]);
 
   const handleNavClick = (callback?: () => void) => {
     setIsMobileMenuOpen(false);
+    setIsLangMenuOpen(false);
     if (callback) callback();
     menuButtonRef.current?.focus();
+  };
+
+  const handleLanguageSelect = (newMode: UiLanguageMode) => {
+    setMode(newMode, true);
+    setIsLangMenuOpen(false);
+    langButtonRef.current?.focus();
+  };
+
+  const getLanguageButtonLabel = () => {
+    if (mode === 'vi') return 'Tiếng Việt';
+    if (mode === 'bilingual') return 'Song ngữ';
+    return 'English';
   };
 
   return (
@@ -105,18 +130,18 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Desktop Navigation (xl and up: >= 1280px) */}
-        <nav className="hidden xl:flex items-center gap-2 xl:gap-2.5" aria-label="Main Navigation">
+        <nav className="hidden xl:flex items-center gap-1.5 xl:gap-2" aria-label="Main Navigation">
           {onNavigateToday && (
             <button
               id="header-nav-today"
               onClick={onNavigateToday}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'today'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Today
+              {t('ui.nav.today')}
             </button>
           )}
 
@@ -124,39 +149,39 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-dictionary"
               onClick={onNavigateDictionary}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'dictionary'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Dictionary
+              {t('ui.nav.dictionary')}
             </button>
           )}
 
           <button
             id="header-nav-learning-path"
             onClick={onNavigateHome}
-            className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+            className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
               currentView === 'home' || currentView === 'lesson-intro'
                 ? 'bg-slate-100 text-slate-900'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            Curriculum
+            {t('ui.nav.curriculum')}
           </button>
 
           {onNavigateReview && (
             <button
               id="header-nav-review"
               onClick={onNavigateReview}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'review'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <span>Review</span>
+              <span>{t('ui.nav.review')}</span>
               {reviewStats.dueCount > 0 && (
                 <span
                   className={`text-2xs font-extrabold px-1.5 py-0.5 rounded-full ${
@@ -175,13 +200,13 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-conversation"
               onClick={onNavigateConversation}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('conversation')
                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Conversation
+              {t('ui.nav.conversation')}
             </button>
           )}
 
@@ -189,13 +214,13 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-exam-center"
               onClick={onNavigateExamCenter}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('exam-')
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Exams
+              {t('ui.nav.exams')}
             </button>
           )}
 
@@ -203,15 +228,89 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-fliplens"
               onClick={onNavigateFlipLens}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'flip-lens'
                   ? 'bg-slate-900 text-white'
                   : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/50'
               }`}
             >
-              FlipLens
+              {t('ui.nav.fliplens')}
             </button>
           )}
+
+          {onNavigateHelp && (
+            <button
+              id="header-nav-help"
+              onClick={onNavigateHelp}
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+                currentView === 'help'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              {t('ui.nav.help')}
+            </button>
+          )}
+
+          {/* Desktop Language Selector Popover */}
+          <div className="relative">
+            <button
+              ref={langButtonRef}
+              type="button"
+              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+              className="min-h-11 px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-expanded={isLangMenuOpen}
+              aria-haspopup="true"
+              aria-label={t('ui.language.title')}
+            >
+              <span className="uppercase text-2xs tracking-wider text-slate-500">
+                {t('ui.language.badge')}:
+              </span>
+              <span>{getLanguageButtonLabel()}</span>
+            </button>
+
+            {isLangMenuOpen && (
+              <div
+                className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-slate-200 py-2 z-50 animate-fade-in"
+                role="menu"
+                aria-label="Language selection options"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSelect('vi')}
+                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                    mode === 'vi' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                  role="menuitem"
+                >
+                  <span>Tiếng Việt</span>
+                  {mode === 'vi' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSelect('bilingual')}
+                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                    mode === 'bilingual' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                  role="menuitem"
+                >
+                  <span>Song ngữ / Bilingual</span>
+                  {mode === 'bilingual' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSelect('en')}
+                  className={`w-full px-4 py-2.5 text-left text-xs sm:text-sm font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                    mode === 'en' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                  role="menuitem"
+                >
+                  <span>English</span>
+                  {mode === 'en' && <span className="text-xs font-extrabold text-indigo-600">✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Progress Indicator - Pure text */}
           <div
@@ -220,7 +319,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
           >
             <span>
-              {stats.completedCount}/{stats.totalLessonsCount} Done
+              {stats.completedCount}/{stats.totalLessonsCount}
             </span>
           </div>
         </nav>
@@ -241,9 +340,9 @@ export const Header: React.FC<HeaderProps> = ({
             className="min-h-11 min-w-16 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-900 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation-drawer"
-            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-label={isMobileMenuOpen ? t('ui.nav.close') : t('ui.nav.menu')}
           >
-            {isMobileMenuOpen ? 'Close' : 'Menu'}
+            {isMobileMenuOpen ? t('ui.nav.close') : t('ui.nav.menu')}
           </button>
         </div>
       </div>
@@ -259,13 +358,55 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <div
-            className="bg-white border-b border-slate-200 p-4 sm:p-6 shadow-xl space-y-2 max-h-[calc(100dvh-64px)] overflow-y-auto"
+            className="bg-white border-b border-slate-200 p-4 sm:p-6 shadow-xl space-y-3 max-h-[calc(100dvh-64px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Site Navigation Menu"
           >
-            <div className="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2 pb-1">
-              Navigation Menu
+            {/* Language Switcher in Mobile Menu */}
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+              <div className="text-2xs font-bold uppercase tracking-wider text-slate-500 px-1">
+                {t('ui.language.title')}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('vi', true)}
+                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mode === 'vi'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Tiếng Việt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('bilingual', true)}
+                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mode === 'bilingual'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Song ngữ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('en', true)}
+                  className={`min-h-11 px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mode === 'en'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+
+            <div className="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2 pt-1">
+              {t('ui.nav.menu')}
             </div>
 
             {onNavigateToday && (
@@ -279,9 +420,9 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span className="min-w-0 truncate">Today's Plan</span>
+                <span className="min-w-0 truncate">{t('ui.nav.today')}</span>
                 <span className={`text-xs shrink-0 ${currentView === 'today' ? 'text-indigo-100' : 'text-slate-400'}`}>
-                  Daily Guide
+                  {t('ui.nav.todayDesc')}
                 </span>
               </button>
             )}
@@ -296,9 +437,9 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span className="min-w-0 truncate">Dictionary</span>
+                <span className="min-w-0 truncate">{t('ui.nav.dictionary')}</span>
                 <span className={`text-xs shrink-0 ${currentView === 'dictionary' ? 'text-indigo-100' : 'text-slate-400'}`}>
-                  Lexicon
+                  {t('ui.nav.dictionaryDesc')}
                 </span>
               </button>
             )}
@@ -313,8 +454,8 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <span className="min-w-0 truncate">Curriculum</span>
-              <span className="text-xs text-slate-400 shrink-0">All Lessons</span>
+              <span className="min-w-0 truncate">{t('ui.nav.curriculum')}</span>
+              <span className="text-xs text-slate-400 shrink-0">{t('ui.nav.curriculumDesc')}</span>
             </button>
 
             {onNavigateReview && (
@@ -327,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span className="min-w-0 truncate">Smart Review</span>
+                <span className="min-w-0 truncate">{t('ui.nav.review')}</span>
                 {reviewStats.dueCount > 0 ? (
                   <span
                     className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
@@ -336,10 +477,10 @@ export const Header: React.FC<HeaderProps> = ({
                         : 'bg-indigo-600 text-white'
                     }`}
                   >
-                    {reviewStats.dueCount} due
+                    {reviewStats.dueCount}
                   </span>
                 ) : (
-                  <span className="text-xs text-slate-400 shrink-0">0 due</span>
+                  <span className="text-xs text-slate-400 shrink-0">{t('ui.nav.reviewDesc')}</span>
                 )}
               </button>
             )}
@@ -354,8 +495,10 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span className="min-w-0 truncate">AI Conversation Lab</span>
-                <span className="text-xs text-indigo-600 font-semibold shrink-0">Interactive</span>
+                <span className="min-w-0 truncate">{t('ui.nav.conversation')}</span>
+                <span className="text-xs text-indigo-600 font-semibold shrink-0">
+                  {t('ui.nav.conversationDesc')}
+                </span>
               </button>
             )}
 
@@ -369,8 +512,8 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <span className="min-w-0 truncate">Practice Exams</span>
-                <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">CEFR Diagnostics</span>
+                <span className="min-w-0 truncate">{t('ui.nav.exams')}</span>
+                <span className="text-xs text-slate-400 shrink-0">{t('ui.nav.examsDesc')}</span>
               </button>
             )}
 
@@ -384,15 +527,36 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-indigo-600 hover:bg-indigo-50/50'
                 }`}
               >
-                <span className="min-w-0 truncate">FlipLens AI Scanner</span>
-                <span className="text-xs text-indigo-500 font-semibold shrink-0 hidden sm:inline">Camera/Photo</span>
+                <span className="min-w-0 truncate">{t('ui.nav.fliplens')}</span>
+                <span className="text-xs text-indigo-500 font-semibold shrink-0">
+                  {t('ui.nav.fliplensDesc')}
+                </span>
+              </button>
+            )}
+
+            {onNavigateHelp && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateHelp)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                  currentView === 'help'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span className="min-w-0 truncate">{t('ui.nav.help')}</span>
+                <span className="text-xs text-slate-400 shrink-0">{t('ui.nav.helpDesc')}</span>
               </button>
             )}
 
             <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 px-2 text-xs text-slate-500">
-              <span>Curriculum Progress:</span>
+              <span>{t('home.stats.overallProgress')}:</span>
               <span className="font-bold text-slate-800">
-                {stats.completedCount} of {stats.totalLessonsCount} Completed ({Math.round((stats.completedCount / stats.totalLessonsCount) * 100)}%)
+                {t('ui.nav.progress', {
+                  completed: stats.completedCount,
+                  total: stats.totalLessonsCount,
+                  percent: Math.round((stats.completedCount / stats.totalLessonsCount) * 100),
+                })}
               </span>
             </div>
           </div>

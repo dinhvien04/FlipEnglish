@@ -4,6 +4,7 @@ import { applyReviewRatingToItem } from '../../utils/reviewStorage';
 import { normalizeRatingBreakdown } from '../../utils/sessionResume';
 import { ReviewCard } from './ReviewCard';
 import { ProgressBar } from '../../components/ProgressBar';
+import { useI18n } from '../i18n';
 
 interface ReviewSessionProps {
   queue: ResolvedReviewItem[];
@@ -22,6 +23,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   onExit,
   onLookupWord,
 }) => {
+  const { t } = useI18n();
   const total = queue.length;
 
   const getSafeInitialIndex = () => {
@@ -86,12 +88,12 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   if (!currentItem || total === 0) {
     return (
       <div className="max-w-md mx-auto py-12 text-center space-y-4">
-        <p className="text-slate-500">No review items in queue.</p>
+        <p className="text-slate-500">{t('review.dashboard.noDueDesc')}</p>
         <button
           onClick={onExit}
           className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl cursor-pointer text-sm"
         >
-          Back to Review
+          {t('ui.common.back')}
         </button>
       </div>
     );
@@ -107,7 +109,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
           onClick={onExit}
           className="text-xs font-bold text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors"
         >
-          Exit Review
+          {t('ui.common.back')}
         </button>
 
         <div className="text-xs font-extrabold text-slate-700 font-mono tracking-wide">
@@ -116,7 +118,11 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar current={currentIndex + 1} total={total} />
+      <ProgressBar
+        current={currentIndex + 1}
+        total={total}
+        label={t('review.session.cardProgress', { current: currentIndex + 1, total })}
+      />
 
       {/* Review Card */}
       <ReviewCard

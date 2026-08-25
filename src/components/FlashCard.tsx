@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VocabWord } from '../types';
 import { speakWord } from '../utils/speech';
 import { SafeImage } from './SafeImage';
+import { useI18n } from '../features/i18n';
 
 interface FlashCardProps {
   word: VocabWord;
@@ -24,6 +25,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
   isFirst,
   isLast,
 }) => {
+  const { t } = useI18n();
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Reset flip state when word changes
@@ -90,7 +92,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
             {/* Top row */}
             <div className="w-full flex items-center justify-between text-xs font-semibold text-slate-400 mb-2 shrink-0 gap-2">
               <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold shrink-0">
-                Card {currentIndex + 1} of {totalWords}
+                {t('learn.flashcard.progress', { current: currentIndex + 1, total: totalWords })}
               </span>
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
                 {word.register && (
@@ -110,19 +112,19 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                       e.stopPropagation();
                       onLookupWord(word.word);
                     }}
-                    title="Look up in Dictionary"
+                    title={t('dictionary.title')}
                     className="min-h-11 px-3 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center border border-slate-200"
                   >
-                    Look up
+                    {t('learn.flashcard.lookupWord')}
                   </button>
                 )}
                 <button
                   id="speak-front-button"
                   onClick={(e) => handleSpeak(e, word.word)}
-                  title="Listen to pronunciation"
+                  title={t('dictionary.audio.play')}
                   className="min-h-11 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
                 >
-                  Play Audio
+                  {t('dictionary.audio.play')}
                 </button>
               </div>
             </div>
@@ -141,7 +143,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
                 <span className="text-2xs font-bold uppercase tracking-widest text-indigo-600 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-2xs mb-2">
                   {word.type && word.type !== 'word' ? word.type.replace('_', ' ') : (word.partOfSpeech || 'Lexical item')}
                 </span>
-                <span className="text-base sm:text-lg font-extrabold text-slate-800 max-w-xs line-clamp-2 break-words">
+                <span className="text-base sm:text-lg font-extrabold text-slate-800 max-w-xs line-clamp-2 break-words" lang="en">
                   {word.word}
                 </span>
                 <span className="text-xs text-slate-500 font-medium mt-1">
@@ -150,9 +152,9 @@ export const FlashCard: React.FC<FlashCardProps> = ({
               </div>
             )}
 
-            {/* Word & IPA Typography */}
+            {/* Word & IPA Typography (Always canonical English) */}
             <div className="flex flex-col items-center justify-center my-1.5 sm:my-2 space-y-1 min-w-0 px-2">
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 break-words max-w-full">
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 break-words max-w-full" lang="en">
                 {word.word}
               </h2>
               {word.pronunciation && (
@@ -164,7 +166,7 @@ export const FlashCard: React.FC<FlashCardProps> = ({
 
             {/* Bottom Flip Indicator */}
             <div className="flex items-center justify-center text-xs font-semibold text-indigo-600 bg-indigo-50/80 px-4 py-1.5 rounded-lg shrink-0 mx-auto">
-              <span>Tap card to see meaning</span>
+              <span>{t('learn.flashcard.flipHint')}</span>
             </div>
           </div>
 
@@ -178,119 +180,77 @@ export const FlashCard: React.FC<FlashCardProps> = ({
               <button
                 id="speak-back-button"
                 onClick={(e) => handleSpeak(e, word.example || word.word)}
-                title="Listen to sentence"
+                title={t('dictionary.audio.play')}
                 className="min-h-11 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
               >
-                Play Audio
+                {t('dictionary.audio.play')}
               </button>
             </div>
 
             {/* Back Content */}
             <div className="flex flex-col items-center justify-center my-auto space-y-3 px-1 min-w-0">
               <div className="space-y-1 max-w-full">
-                <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-300 break-words">
+                <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-300 break-words" lang="en">
                   {word.word}
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-amber-300 break-words">
+                <h3 className="text-xl sm:text-2xl font-black text-amber-300 break-words" lang="vi">
                   {word.meaning}
                 </h3>
               </div>
 
-              {/* Example sentence */}
+              {/* Example sentence (Canonical English) */}
               {word.example && (
-                <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 w-full text-left backdrop-blur-xs">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-2xs text-indigo-300 font-bold uppercase tracking-wider">Example Sentence</span>
-                    <button
-                      onClick={(e) => handleSpeak(e, word.example)}
-                      className="text-xs text-indigo-200 hover:text-white font-bold min-h-11 px-3 rounded-lg bg-white/10 hover:bg-white/20 inline-flex items-center cursor-pointer transition-colors"
-                    >
-                      Listen
-                    </button>
-                  </div>
-                  <p className="text-xs sm:text-sm font-normal italic text-white leading-relaxed break-words">
+                <div className="p-3 bg-white/10 rounded-2xl border border-white/10 max-w-md w-full">
+                  <p className="text-xs font-semibold text-slate-300 mb-1">
+                    {t('learn.flashcard.exampleSentence')}:
+                  </p>
+                  <p className="text-xs sm:text-sm text-slate-100 font-medium italic leading-relaxed" lang="en">
                     "{word.example}"
                   </p>
                 </div>
               )}
 
-              {/* Advanced Nuance / Collocations / Synonyms (if present) */}
-              {(word.nuance || (word.collocations && word.collocations.length > 0) || (word.synonyms && word.synonyms.length > 0)) && (
-                <div className="w-full space-y-1.5 text-left text-2xs">
-                  {word.nuance && (
-                    <div className="p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-400/20 text-slate-200 break-words">
-                      <span className="font-bold text-amber-300">Nuance: </span>
-                      <span>{word.nuance}</span>
-                    </div>
-                  )}
-
-                  {word.collocations && word.collocations.length > 0 && (
-                    <div className="flex flex-wrap gap-1 items-center">
-                      <span className="text-indigo-300 font-semibold mr-1">Collocations:</span>
-                      {word.collocations.map((c, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-white font-mono text-2xs break-words">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {word.synonyms && word.synonyms.length > 0 && (
-                    <div className="flex flex-wrap gap-1 items-center">
-                      <span className="text-indigo-300 font-semibold mr-1">Synonyms:</span>
-                      {word.synonyms.map((s, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 text-indigo-200 font-mono text-2xs break-words">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+              {/* English definition (if available) */}
+              {word.definition && (
+                <div className="p-3 bg-indigo-950/60 rounded-2xl border border-indigo-500/20 max-w-md w-full">
+                  <p className="text-xs font-semibold text-indigo-300 mb-1">
+                    {t('learn.flashcard.englishDefinition')}:
+                  </p>
+                  <p className="text-xs text-indigo-100 leading-relaxed" lang="en">
+                    {word.definition}
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Bottom Flip Back Prompt */}
-            <div className="flex items-center justify-center text-xs font-medium text-indigo-200 bg-white/10 px-4 py-1.5 rounded-lg hover:bg-white/20 transition-colors shrink-0 mx-auto mt-2 cursor-pointer">
-              <span>Tap to flip back</span>
+            {/* Bottom Actions */}
+            <div className="w-full flex items-center justify-between gap-3 pt-3 border-t border-white/10 shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrev();
+                }}
+                disabled={isFirst}
+                className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xs sm:text-sm text-white transition-colors cursor-pointer"
+              >
+                ← {t('learn.flashcard.prev')}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+                className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-xs sm:text-sm text-white shadow-md transition-colors cursor-pointer"
+              >
+                {isLast ? t('learn.flashcard.finish') : `${t('learn.flashcard.next')} →`}
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Navigation Controls Below Card */}
-      <div className="w-full mt-6 flex items-center justify-between gap-3 sm:gap-4">
-        <button
-          id="flashcard-prev-btn"
-          onClick={onPrev}
-          disabled={isFirst}
-          className={`min-h-12 flex-1 sm:flex-initial px-4 sm:px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center ${
-            isFirst
-              ? 'opacity-40 bg-slate-100 text-slate-400 cursor-not-allowed'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-2xs active:scale-98 cursor-pointer'
-          }`}
-        >
-          Previous
-        </button>
-
-        {/* Spacebar Flip shortcut button */}
-        <button
-          id="flashcard-flip-btn"
-          onClick={handleCardClick}
-          className="min-h-12 hidden sm:inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-          title="Shortcut: Spacebar"
-        >
-          Flip Card (Space)
-        </button>
-
-        <button
-          id="flashcard-next-btn"
-          onClick={onNext}
-          className="min-h-12 flex-1 sm:flex-initial px-5 sm:px-7 py-3 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-98 cursor-pointer flex items-center justify-center"
-        >
-          {isLast ? 'Complete' : 'Next Word'}
-        </button>
-      </div>
     </div>
   );
 };
-

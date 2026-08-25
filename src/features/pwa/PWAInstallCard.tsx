@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePWAInstall } from './usePWAInstall';
+import { useI18n } from '../i18n';
 
 /**
  * Text-only PWA Installation Card / Banner for Today Page / Footer.
@@ -7,6 +8,7 @@ import { usePWAInstall } from './usePWAInstall';
  * Zero-icon design, >=44px touch targets, accessible dialog and dismissal handling.
  */
 export const PWAInstallCard: React.FC = () => {
+  const { t } = useI18n();
   const { isInstalled, canShowPrompt, isNativePromptAvailable, installApp, dismissPrompt } =
     usePWAInstall();
   const [showIosGuide, setShowIosGuide] = useState(false);
@@ -28,7 +30,7 @@ export const PWAInstallCard: React.FC = () => {
 
   return (
     <section
-      aria-label="Install FlipEnglish Application"
+      aria-label={t('pwa.install')}
       className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4 animate-fadeIn"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -37,10 +39,10 @@ export const PWAInstallCard: React.FC = () => {
             App Experience
           </span>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-            Install FlipEnglish
+            {t('pwa.install')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-            Install FlipEnglish to your Home Screen for faster access, a clean full-screen view, and offline-ready vocabulary learning.
+            {t('pwa.installDesc')}
           </p>
         </div>
 
@@ -54,7 +56,7 @@ export const PWAInstallCard: React.FC = () => {
             {isNativePromptAvailable
               ? isInstalling
                 ? 'Installing...'
-                : 'Install'
+                : t('pwa.install')
               : showIosGuide
               ? 'Hide Guide'
               : 'Installation Guide'}

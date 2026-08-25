@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ConversationScenario, ConversationCategory } from '../../types/conversation';
 import { CONVERSATION_SCENARIOS } from '../../data/conversations/scenarios';
 import { loadConversationStorage } from '../../utils/conversationStorage';
+import { useI18n } from '../i18n';
 
 interface ConversationHomeProps {
   onSelectScenario: (scenario: ConversationScenario) => void;
@@ -14,6 +15,7 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
   onSelectScenario,
   onBackToHome,
 }) => {
+  const { t } = useI18n();
   const [selectedCategory, setSelectedCategory] = useState<ConversationCategory | 'All'>('All');
   const historyData = loadConversationStorage();
 
@@ -28,13 +30,13 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="inline-block px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-2">
-              AI Conversation Lab
+              {t('conversation.title')}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Conversation Practice
+              {t('conversation.title')}
             </h1>
             <p className="text-sm sm:text-base text-slate-600 mt-1 max-w-2xl">
-              Practice English in realistic situations with an AI conversation partner. Choose a scenario, get instant feedback on phrasing, and build speaking confidence.
+              {t('conversation.subtitle')}
             </p>
           </div>
 
@@ -43,7 +45,7 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
               onClick={onBackToHome}
               className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
             >
-              Curriculum
+              {t('ui.nav.curriculum')}
             </button>
           </div>
         </div>
@@ -104,10 +106,10 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
                 </div>
               </div>
 
-              <h3 className="text-base font-bold text-slate-900 mb-1.5">
+              <h3 className="text-base font-bold text-slate-900 mb-1.5" lang="en">
                 {scenario.title}
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              <p className="text-xs text-slate-600 leading-relaxed mb-4" lang="en">
                 {scenario.description}
               </p>
             </div>
@@ -120,7 +122,7 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
                 onClick={() => onSelectScenario(scenario)}
                 className="px-3.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white text-xs font-bold transition-all cursor-pointer"
               >
-                Start Practice
+                {t('conversation.startChat')}
               </button>
             </div>
           </div>
@@ -138,7 +140,7 @@ export const ConversationHome: React.FC<ConversationHomeProps> = ({
               <div key={item.id} className="py-3 flex items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-bold text-slate-900">
+                    <span className="text-xs font-bold text-slate-900" lang="en">
                       {item.scenarioTitle}
                     </span>
                     <span className="text-2xs px-1.5 py-0.2 rounded bg-slate-100 font-bold text-slate-600">

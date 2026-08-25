@@ -2,6 +2,7 @@ import React from 'react';
 import { CEFRLevel } from '../types';
 import { ExamMode } from '../types/exam';
 import { LEVEL_EXAM_CONFIGS, QUICK_TEST_CONFIG, FULL_MOCK_CONFIG, EXAM_DISCLAIMER } from '../data/exams/config';
+import { useI18n } from '../features/i18n';
 
 interface ExamIntroProps {
   mode: ExamMode;
@@ -16,6 +17,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
   onStartExam,
   onBackToExamCenter,
 }) => {
+  const { t } = useI18n();
   let title = `${level} Practice Exam`;
   let questionCount = 25;
   let durationMinutes = 20;
@@ -57,7 +59,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
         onClick={onBackToExamCenter}
         className="min-h-11 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer inline-flex items-center justify-center"
       >
-        Back to Exam Center
+        ← {t('ui.common.back')}
       </button>
 
       {/* Main Info Card */}
@@ -73,7 +75,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight" lang="en">
             {title}
           </h1>
 
@@ -113,7 +115,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
                   <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shadow-2xs">
                     {idx + 1}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-slate-900">{sec.title}</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900" lang="en">{sec.title}</span>
                 </div>
                 {sec.count && (
                   <span className="text-2xs font-semibold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
@@ -166,7 +168,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
             onClick={onBackToExamCenter}
             className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
           >
-            Cancel & Return
+            {t('ui.common.cancel')}
           </button>
 
           <button
@@ -175,7 +177,7 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
             onClick={onStartExam}
             className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-sm sm:text-base shadow-2xs transition-all cursor-pointer flex items-center justify-center"
           >
-            Start Exam
+            {t('exam.start')}
           </button>
         </div>
       </div>

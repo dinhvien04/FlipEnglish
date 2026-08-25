@@ -3,6 +3,7 @@ import { ResolvedReviewItem, ReviewRating } from '../../types/review';
 import { formatIntervalHuman } from '../../utils/reviewScheduler';
 import { speakWord } from '../../utils/speech';
 import { SafeImage } from '../../components/SafeImage';
+import { useI18n } from '../i18n';
 
 interface ReviewCardProps {
   item: ResolvedReviewItem;
@@ -12,6 +13,7 @@ interface ReviewCardProps {
 }
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWord, disabled = false }) => {
+  const { t } = useI18n();
   const [isRevealed, setIsRevealed] = useState(false);
   const { word, lesson, level, nextIntervals } = item;
 
@@ -102,7 +104,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
           >
             {level}
           </span>
-          <span className="text-xs font-medium text-slate-500 truncate max-w-[200px]">
+          <span className="text-xs font-medium text-slate-500 truncate max-w-[200px]" lang="en">
             {lesson.title}
           </span>
         </div>
@@ -110,17 +112,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
         <div className="flex items-center gap-1.5">
           {item.state.status === 'learning' && (
             <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-              Learning ({item.state.lapseCount > 0 ? `${item.state.lapseCount} lapse` : 'New'})
+              {t('review.dashboard.learning')} ({item.state.lapseCount > 0 ? `${item.state.lapseCount} lapse` : 'New'})
             </span>
           )}
           {item.state.status === 'review' && (
             <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
-              Review (Streak {item.state.correctStreak})
+              {t('ui.nav.review')} (Streak {item.state.correctStreak})
             </span>
           )}
           {item.state.status === 'mastered' && (
             <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Mastered
+              {t('review.dashboard.mastered')}
             </span>
           )}
         </div>
@@ -143,23 +145,23 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
         {/* Word / Expression Display */}
         <div className="space-y-2">
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight break-words" lang="en">
               {word.word}
             </h2>
             <button
               id={`speak-btn-${word.id}`}
               type="button"
               onClick={(e) => handleSpeak(e, word.word)}
-              aria-label={`Listen to pronunciation for ${word.word}`}
+              aria-label={t('dictionary.audio.play')}
               className="min-h-11 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 border border-indigo-200 cursor-pointer transition-colors inline-flex items-center justify-center"
             >
-              Play Audio
+              Audio
             </button>
           </div>
 
           <div className="flex items-center justify-center gap-2 text-sm text-slate-500 font-mono">
-            <span>{word.pronunciation}</span>
-            <span>•</span>
+            {word.pronunciation && <span>{word.pronunciation}</span>}
+            {word.pronunciation && <span>•</span>}
             <span className="capitalize font-sans font-medium text-slate-600">
               {word.partOfSpeech || word.type}
             </span>
@@ -179,9 +181,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               onClick={() => setIsRevealed(true)}
               className="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer text-sm"
             >
-              Reveal answer
+              {t('review.session.showAnswer')}
               <span className="ml-2 text-xs opacity-75 font-normal hidden sm:inline">
-                [Space or Enter]
+                [Space]
               </span>
             </button>
           </div>
@@ -192,7 +194,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-2xs uppercase tracking-wider font-bold text-slate-400">
-                  Meaning
+                  {t('learn.flashcard.vietnameseMeaning')}
                 </span>
                 {onLookupWord && (
                   <button
@@ -200,11 +202,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
                     onClick={() => onLookupWord(word.word)}
                     className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-50 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                   >
-                    Look up in Dictionary
+                    {t('learn.flashcard.lookupWord')}
                   </button>
                 )}
               </div>
-              <p className="text-lg font-bold text-slate-900">{word.meaning}</p>
+              <p className="text-lg font-bold text-slate-900" lang="vi">{word.meaning}</p>
             </div>
 
             {/* Example Sentence */}
@@ -212,21 +214,21 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               <div className="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-2xs uppercase tracking-wider font-bold text-indigo-600">
-                    Example Sentence
+                    {t('learn.flashcard.exampleSentence')}
                   </span>
                   <button
                     type="button"
                     onClick={(e) => handleSpeak(e, word.example)}
                     className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white/80 hover:bg-white active:bg-white/60 min-h-11 px-3 rounded-lg border border-indigo-100 cursor-pointer inline-flex items-center justify-center transition-colors"
                   >
-                    Listen
+                    Audio
                   </button>
                 </div>
-                <p className="text-sm text-slate-800 italic leading-relaxed">
+                <p className="text-sm text-slate-800 italic leading-relaxed" lang="en">
                   "{word.example}"
                 </p>
                 {word.exampleTranslation && (
-                  <p className="text-xs text-slate-500">{word.exampleTranslation}</p>
+                  <p className="text-xs text-slate-500" lang="vi">{word.exampleTranslation}</p>
                 )}
               </div>
             )}
@@ -236,24 +238,24 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               <div className="text-xs text-slate-600 space-y-1.5 pt-1">
                 {word.context && (
                   <p>
-                    <strong className="text-slate-700">Usage context:</strong> {word.context}
+                    <strong className="text-slate-700">Usage context:</strong> <span lang="en">{word.context}</span>
                   </p>
                 )}
                 {word.nuance && (
                   <p>
-                    <strong className="text-slate-700">Nuance:</strong> {word.nuance}
+                    <strong className="text-slate-700">Nuance:</strong> <span lang="en">{word.nuance}</span>
                   </p>
                 )}
                 {word.collocations && word.collocations.length > 0 && (
                   <p>
                     <strong className="text-slate-700">Collocations:</strong>{' '}
-                    {word.collocations.join(', ')}
+                    <span lang="en">{word.collocations.join(', ')}</span>
                   </p>
                 )}
                 {word.synonyms && word.synonyms.length > 0 && (
                   <p>
-                    <strong className="text-slate-700">Synonyms:</strong>{' '}
-                    {word.synonyms.join(', ')}
+                    <strong className="text-slate-700">{t('dictionary.synonyms')}:</strong>{' '}
+                    <span lang="en">{word.synonyms.join(', ')}</span>
                   </p>
                 )}
               </div>
@@ -266,7 +268,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
       {isRevealed && (
         <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 space-y-3">
           <div className="text-center text-xs font-bold text-slate-600">
-            How well did you remember this?
+            {t('review.session.ratePrompt')}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -279,7 +281,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 active:bg-rose-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
-                <span className="text-xs font-extrabold">Again</span>
+                <span className="text-xs font-extrabold">{t('review.session.ratingAgain')}</span>
                 <span className="text-2xs opacity-60 font-mono hidden sm:inline">[1]</span>
               </div>
               <span className="text-2xs font-semibold text-rose-600 mt-0.5">
@@ -296,7 +298,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
-                <span className="text-xs font-extrabold">Hard</span>
+                <span className="text-xs font-extrabold">{t('review.session.ratingHard')}</span>
                 <span className="text-2xs opacity-60 font-mono hidden sm:inline">[2]</span>
               </div>
               <span className="text-2xs font-semibold text-amber-700 mt-0.5">
@@ -313,7 +315,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100 active:bg-sky-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
-                <span className="text-xs font-extrabold">Good</span>
+                <span className="text-xs font-extrabold">{t('review.session.ratingGood')}</span>
                 <span className="text-2xs opacity-60 font-mono hidden sm:inline">[3]</span>
               </div>
               <span className="text-2xs font-semibold text-sky-700 mt-0.5">
@@ -330,7 +332,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
               className="min-h-14 flex flex-col items-center justify-center p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 active:bg-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
             >
               <div className="flex items-center gap-1">
-                <span className="text-xs font-extrabold">Easy</span>
+                <span className="text-xs font-extrabold">{t('review.session.ratingEasy')}</span>
                 <span className="text-2xs opacity-60 font-mono hidden sm:inline">[4]</span>
               </div>
               <span className="text-2xs font-semibold text-emerald-700 mt-0.5">

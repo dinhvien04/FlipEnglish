@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CEFRLevel } from '../types';
 import { ExamResultReport } from '../types/exam';
 import { getExamHistory } from '../utils/examStorage';
+import { useI18n } from '../features/i18n';
 
 interface ExamHistoryProps {
   onViewReport: (report: ExamResultReport) => void;
@@ -14,6 +15,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
   onViewReport,
   onBackToExamCenter,
 }) => {
+  const { t } = useI18n();
   const [history, setHistory] = useState<ExamResultReport[]>(() => getExamHistory());
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<'ALL' | CEFRLevel>('ALL');
 
@@ -47,10 +49,10 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             onClick={onBackToExamCenter}
             className="min-h-11 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
           >
-            Back
+            ← {t('ui.common.back')}
           </button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Exam History & Reports</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{t('exam.history', { count: history.length })}</h1>
             <p className="text-xs sm:text-sm text-slate-500">
               Review your past practice examinations, overall scores, and diagnostic reports.
             </p>
@@ -101,7 +103,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             onClick={onBackToExamCenter}
             className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-xs hover:bg-indigo-700 transition-colors cursor-pointer"
           >
-            Go to Exam Center
+            {t('exam.title')}
           </button>
         </div>
       ) : (
@@ -120,7 +122,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-snug line-clamp-1">
+                  <h3 className="text-base font-bold text-slate-900 leading-snug line-clamp-1" lang="en">
                     {report.title}
                   </h3>
                   <p className="text-2xs text-slate-400 mt-0.5">
@@ -148,7 +150,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
                 onClick={() => onViewReport(report)}
                 className="w-full min-h-11 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer flex items-center justify-center"
               >
-                View Full Report
+                View Report
               </button>
             </div>
           ))}

@@ -20,6 +20,7 @@ import { DictionarySearch } from './DictionarySearch';
 import { DictionaryEntryView } from './DictionaryEntryView';
 import { DictionaryHistory } from './DictionaryHistory';
 import { SavedWordsPanel } from './SavedWordsPanel';
+import { useI18n } from '../i18n';
 
 interface DictionaryPageProps {
   initialWord?: string;
@@ -36,6 +37,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
   onNavigateLesson,
   onNavigateReview,
 }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'history'>('search');
   const [searchMode, setSearchMode] = useState<'dictionary' | 'reverse'>('dictionary');
   const [currentQuery, setCurrentQuery] = useState<string>(initialWord);
@@ -97,12 +99,12 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
       try {
         const results = await lookupReverseDictionary(trimmed);
         if (results.length === 0) {
-          setErrorMessage(`No matching words found for "${trimmed}". Try phrasing your description differently.`);
+          setErrorMessage(t('dictionary.notFound', { word: trimmed }));
         } else {
           setReverseResults(results);
         }
       } catch {
-        setErrorMessage('Reverse dictionary lookup requires an internet connection.');
+        setErrorMessage(t('error.network'));
       } finally {
         setIsLoading(false);
       }
@@ -119,13 +121,13 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
         addRecentSearch(result.entry.word);
         setRecentSearches(getRecentSearches());
       } else {
-        setErrorMessage(result.error || `Word "${trimmed}" not found in dictionary.`);
+        setErrorMessage(result.error || t('dictionary.notFound', { word: trimmed }));
         if (result.spellingSuggestions && result.spellingSuggestions.length > 0) {
           setSpellingSuggestions(result.spellingSuggestions);
         }
       }
     } catch {
-      setErrorMessage('An unexpected error occurred during dictionary lookup.');
+      setErrorMessage(t('error.generic'));
     } finally {
       setIsLoading(false);
     }
@@ -141,12 +143,12 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
   };
 
   const returnLabel = returnContext?.view === 'learn'
-    ? 'Back to Lesson'
+    ? t('ui.common.back')
     : returnContext?.view === 'review'
-    ? 'Back to Smart Review'
+    ? t('ui.common.back')
     : returnContext?.view === 'today'
-    ? 'Back to Today'
-    : 'Back';
+    ? t('ui.common.back')
+    : t('ui.common.back');
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -159,21 +161,21 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               onClick={onReturn}
               className="min-h-11 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer inline-flex items-center"
             >
-              {returnLabel}
+              ← {returnLabel}
             </button>
           </div>
         )}
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            FlipEnglish Dictionary
+            {t('dictionary.title')}
           </h1>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-            Learner Lexicon & Wordbook
+            {t('ui.common.offlineAvailable')}
           </span>
         </div>
         <p className="text-sm sm:text-base text-slate-600">
-          Search English vocabulary, pronunciations, parts of speech, CEFR learning alignments, and personal offline saved words.
+          {t('dictionary.subtitle')}
         </p>
       </header>
 
@@ -188,7 +190,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          Search
+          {t('dictionary.tab.lookup')}
         </button>
 
         <button
@@ -203,16 +205,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <span>My Vocabulary</span>
-          {savedWords.length > 0 && (
-            <span
-              className={`text-2xs font-extrabold px-1.5 py-0.5 rounded-full ${
-                activeTab === 'saved' ? 'bg-white text-slate-900' : 'bg-slate-200 text-slate-700'
-              }`}
-            >
-              {savedWords.length}
-            </span>
-          )}
+          <span>{t('dictionary.tab.saved', { count: savedWords.length })}</span>
         </button>
 
         <button
@@ -224,7 +217,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          History
+          {t('dictionary.tab.history')}
         </button>
       </nav>
 
@@ -244,10 +237,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
           {isLoading && (
             <div className="p-8 text-center space-y-2">
               <p className="text-base font-bold text-slate-700">
-                Looking up "{currentQuery}"...
-              </p>
-              <p className="text-xs text-slate-400">
-                Querying FlipEnglish curriculum and dictionary providers
+                {t('ui.common.loading')}
               </p>
             </div>
           )}
@@ -256,7 +246,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
           {!isLoading && errorMessage && (
             <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-2xs space-y-4">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">Word Not Found</h3>
+                <h3 className="text-base font-bold text-slate-900">{t('dictionary.notFound', { word: currentQuery })}</h3>
                 <p className="text-sm text-slate-600">{errorMessage}</p>
               </div>
 
@@ -264,7 +254,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               {spellingSuggestions.length > 0 && (
                 <div className="pt-2 border-t border-slate-100 space-y-2">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Did you mean:
+                    {t('dictionary.spellingSuggestion', { word: '' })}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {spellingSuggestions.map((sug, idx) => (
@@ -273,6 +263,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                         type="button"
                         onClick={() => openDictionaryWord(sug)}
                         className="min-h-11 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer border border-indigo-200"
+                        lang="en"
                       >
                         {sug}
                       </button>
@@ -288,9 +279,8 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-                  Concept Matches ({reverseResults.length})
+                  {t('dictionary.reverseTitle')} ({reverseResults.length})
                 </h2>
-                <span className="text-2xs text-slate-400">Click any word to inspect full definition</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -302,12 +292,12 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     className="w-full min-h-14 p-4 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all cursor-pointer shadow-2xs space-y-1 group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-base font-black text-slate-900 group-hover:text-indigo-600">
+                      <span className="text-base font-black text-slate-900 group-hover:text-indigo-600" lang="en">
                         {item.word}
                       </span>
                     </div>
                     {item.definitionPreview && (
-                      <p className="text-xs text-slate-600 line-clamp-2">
+                      <p className="text-xs text-slate-600 line-clamp-2" lang="en">
                         {item.definitionPreview}
                       </p>
                     )}
@@ -333,10 +323,10 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
             <div className="space-y-6 pt-4">
               <div className="p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-2 shadow-2xs">
                 <h3 className="text-base font-bold text-slate-800">
-                  Explore English Vocabulary
+                  {t('dictionary.title')}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                  Type any English word or phrase above to view full lexical definitions, pronunciation, synonyms, and CEFR curriculum connections.
+                  {t('dictionary.subtitle')}
                 </p>
               </div>
 
@@ -344,7 +334,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
               {recentSearches.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Recent Searches
+                    {t('dictionary.recentSearches')}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {recentSearches.slice(0, 8).map((item, idx) => (
@@ -353,6 +343,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                         type="button"
                         onClick={() => openDictionaryWord(item.word)}
                         className="min-h-11 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                        lang="en"
                       >
                         {item.word}
                       </button>
@@ -390,10 +381,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
       {/* Provider Attribution Footer */}
       <footer className="pt-6 border-t border-slate-200 text-center text-xs text-slate-400 space-y-1">
         <p>
-          Dictionary data provided by FlipEnglish Curriculum and Free Dictionary API.
-        </p>
-        <p>
-          Word suggestions and relations powered in part by Datamuse.
+          {t('ui.common.disclaimerCefr')}
         </p>
       </footer>
     </div>

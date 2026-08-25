@@ -4,6 +4,7 @@ import { AIExamAnalysis, ExamResultReport } from '../types/exam';
 import { LESSONS } from '../data/lessons';
 import { EXAM_DISCLAIMER } from '../data/exams/config';
 import { getApiErrorMessage } from '../utils/apiError';
+import { useI18n } from '../features/i18n';
 
 interface ExamResultProps {
   report: ExamResultReport;
@@ -20,6 +21,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
   onSelectLesson,
   onStartAIPractice,
 }) => {
+  const { t } = useI18n();
   const [filterMode, setFilterMode] = useState<'all' | 'incorrect' | 'correct'>('all');
   const [aiAnalysis, setAiAnalysis] = useState<AIExamAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -166,12 +168,12 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight" lang="en">
               {report.title}
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-500 font-semibold">
-              Time Spent: {durationMin}m {durationSec}s
+              {t('exam.result.timeSpent', { minutes: durationMin, seconds: durationSec })}
             </p>
           </div>
 
@@ -199,7 +201,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
         {/* Section Score Breakdown */}
         <div className="space-y-4">
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">
-            Section-by-Section Performance
+            {t('exam.result.sectionBreakdown')}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -209,7 +211,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                 className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2"
               >
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-900">{sec.sectionTitle}</span>
+                  <span className="text-slate-900" lang="en">{sec.sectionTitle}</span>
                   <span className="text-indigo-600 font-black">
                     {sec.correct}/{sec.total} ({sec.percentage}%)
                   </span>
@@ -379,7 +381,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">
+                  <h3 className="text-base font-bold text-slate-900 leading-snug" lang="en">
                     {lesson.title}
                   </h3>
 
@@ -392,7 +394,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                   onClick={() => onSelectLesson(lesson)}
                   className="w-full min-h-11 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
                 >
-                  Study This Lesson
+                  {t('today.task.action.start')}
                 </button>
               </div>
             ))}
@@ -404,7 +406,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
       <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
-            <h2 className="text-xl font-black text-slate-900">Review Answers & Explanations</h2>
+            <h2 className="text-xl font-black text-slate-900">{t('exam.result.reviewAnswers')}</h2>
             <p className="text-xs text-slate-500">Examine correct choices and learn from mistakes.</p>
           </div>
 
@@ -463,7 +465,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                   className="bg-rose-50/30 rounded-2xl p-5 sm:p-6 border border-rose-200/80 space-y-4 shadow-2xs"
                 >
                   <div className="flex items-center justify-between gap-2 border-b border-rose-100 pb-2">
-                    <span className="text-xs font-black text-rose-900">
+                    <span className="text-xs font-black text-rose-900" lang="en">
                       {q.sectionTitle}
                     </span>
                     <span className="text-2xs font-extrabold uppercase px-2 py-0.5 rounded bg-rose-100 text-rose-700">
@@ -471,26 +473,26 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                     </span>
                   </div>
 
-                  <p className="text-sm sm:text-base font-bold text-slate-900 leading-snug whitespace-pre-line">
+                  <p className="text-sm sm:text-base font-bold text-slate-900 leading-snug whitespace-pre-line" lang="en">
                     {q.prompt}
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="bg-white rounded-xl p-3 border border-rose-200 space-y-1">
                       <p className="text-2xs font-extrabold uppercase text-slate-400">Your Answer:</p>
-                      <p className="font-bold text-rose-600">{item.userAnswer}</p>
+                      <p className="font-bold text-rose-600" lang="en">{item.userAnswer}</p>
                     </div>
 
                     <div className="bg-white rounded-xl p-3 border border-emerald-200 space-y-1">
                       <p className="text-2xs font-extrabold uppercase text-slate-400">Correct Answer:</p>
-                      <p className="font-bold text-emerald-600">{q.correctAnswer}</p>
+                      <p className="font-bold text-emerald-600" lang="en">{q.correctAnswer}</p>
                     </div>
                   </div>
 
                   {/* Built-in Explanation */}
                   <div className="bg-white/80 rounded-xl p-3.5 border border-slate-200 text-xs text-slate-700 space-y-1">
                     <p className="font-extrabold text-slate-900">Explanation:</p>
-                    <p className="leading-relaxed">{q.explanation}</p>
+                    <p className="leading-relaxed" lang="en">{q.explanation}</p>
                   </div>
 
                   {/* Gemini "Explain My Mistake" */}
@@ -541,7 +543,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           onClick={onRetakeExam}
           className="w-full sm:w-auto min-h-12 py-3 px-6 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer flex items-center justify-center"
         >
-          Retake Practice Exam
+          {t('exam.result.retake')}
         </button>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
@@ -562,7 +564,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
             onClick={onReturnToExamCenter}
             className="w-full sm:w-auto min-h-12 py-3 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
           >
-            Return to Exam Center
+            {t('ui.common.back')}
           </button>
         </div>
       </div>

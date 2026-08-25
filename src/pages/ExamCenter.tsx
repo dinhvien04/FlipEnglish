@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CEFRLevel } from '../types';
 import { ExamMode, ExamResultReport } from '../types/exam';
-import { EXAM_DISCLAIMER, LEVEL_EXAM_CONFIGS } from '../data/exams/config';
+import { LEVEL_EXAM_CONFIGS } from '../data/exams/config';
 import { getExamHistory, getLevelTrend } from '../utils/examStorage';
+import { useI18n } from '../features/i18n';
 
 interface ExamCenterProps {
   onStartExamFlow: (mode: ExamMode, level: CEFRLevel) => void;
@@ -19,6 +20,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
   onViewAllHistory,
   onStartPlacement,
 }) => {
+  const { t } = useI18n();
   const [examHistory, setExamHistory] = useState<ExamResultReport[]>(() => getExamHistory());
   const [selectedModalMode, setSelectedModalMode] = useState<ExamMode | null>(null);
   const [trendLevel, setTrendLevel] = useState<CEFRLevel>('B2');
@@ -54,11 +56,11 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-            Test Your English
+            {t('exam.title')}
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-            Challenge yourself with timed, exam-style practice from A1 to C2. Experience authentic question formats, discover your strengths and weaknesses, and receive targeted study recommendations.
+            {t('exam.subtitle')}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-300">
@@ -87,7 +89,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
             <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 max-w-md">
               <div className="space-y-0.5">
                 <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-700">
-                  Placement Check
+                  {t('placement.title')}
                 </span>
                 <p className="text-xs font-semibold text-slate-700">
                   Not sure which CEFR level fits you?
@@ -99,7 +101,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                 onClick={onStartPlacement}
                 className="min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
               >
-                Find My Level
+                {t('home.hero.startPlacement')}
               </button>
             </div>
           )}
@@ -119,7 +121,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               </div>
 
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                A short mixed challenge when you only have a few minutes. Tests vocabulary, context, listening, and level-appropriate usage.
+                {t('exam.mode.quickDesc')}
               </p>
 
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 text-2xs text-slate-500 font-semibold space-y-1">
@@ -134,7 +136,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               onClick={() => setSelectedModalMode('quick')}
               className="w-full min-h-12 py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
-              Start Quick Test
+              {t('exam.start')} (Quick Test)
             </button>
           </div>
 
@@ -170,7 +172,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               onClick={() => setSelectedModalMode('level')}
               className="relative z-10 w-full min-h-12 py-3.5 px-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
-              Choose Level & Start
+              {t('exam.start')} (Level Exam)
             </button>
           </div>
 
@@ -187,7 +189,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               </div>
 
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                A longer multi-section challenge testing vocabulary, use of English, full reading comprehension passages, context, and listening.
+                {t('exam.mode.mockDesc')}
               </p>
 
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 text-2xs text-slate-500 font-semibold space-y-1">
@@ -202,7 +204,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               onClick={() => setSelectedModalMode('mock')}
               className="w-full min-h-12 py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
-              Start Mock Exam
+              {t('exam.start')} (Mock Exam)
             </button>
           </div>
         </div>
@@ -282,7 +284,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
               onClick={onViewAllHistory}
               className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
             >
-              View All History ({examHistory.length})
+              {t('exam.history', { count: examHistory.length })}
             </button>
           </div>
 
@@ -300,7 +302,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                     <span className="text-2xs font-bold text-slate-400">{report.date}</span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1">
+                  <h4 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1" lang="en">
                     {report.title}
                   </h4>
 
@@ -334,7 +336,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
       {/* Unobtrusive Disclaimer */}
       <div className="text-center pt-4 border-t border-slate-200/80">
         <p className="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
-          {EXAM_DISCLAIMER}
+          {t('exam.disclaimer')}
         </p>
       </div>
 
@@ -359,7 +361,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                 onClick={() => setSelectedModalMode(null)}
                 className="min-h-9 text-xs font-bold text-slate-400 hover:text-slate-600 px-3 py-1 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer flex items-center justify-center"
               >
-                Cancel
+                {t('ui.common.cancel')}
               </button>
             </div>
 
@@ -379,7 +381,7 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
                         {lvl}
                       </span>
                     </div>
-                    <p className="text-xs font-bold text-slate-700">{config.title.split('—')[1] || lvl}</p>
+                    <p className="text-xs font-bold text-slate-700" lang="en">{config.title.split('—')[1] || lvl}</p>
                     <p className="text-2xs text-slate-400">
                       {selectedModalMode === 'quick'
                         ? '15 questions • 10m'
@@ -397,3 +399,4 @@ export const ExamCenter: React.FC<ExamCenterProps> = ({
     </div>
   );
 };
+

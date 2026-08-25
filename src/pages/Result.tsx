@@ -5,6 +5,7 @@ import { speakWord } from '../utils/speech';
 import { SafeImage } from '../components/SafeImage';
 import { AIPracticeModal } from '../components/AIPracticeModal';
 import { getApiErrorMessage } from '../utils/apiError';
+import { useI18n } from '../features/i18n';
 
 interface ResultProps {
   lesson: Lesson;
@@ -29,6 +30,7 @@ export const Result: React.FC<ResultProps> = ({
   onTryAgain,
   onBackToHome,
 }) => {
+  const { t } = useI18n();
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiQuestions, setAiQuestions] = useState<AIPracticeQuestion[] | null>(null);
@@ -79,10 +81,10 @@ export const Result: React.FC<ResultProps> = ({
   };
 
   const getFeedbackMessage = () => {
-    if (score === 100) return 'Flawless Master! You got every question right!';
-    if (score >= 80) return 'Great work! You demonstrated strong mastery of this topic.';
-    if (score >= 60) return 'Good effort! A targeted review will help you reach 100%.';
-    return 'Keep practicing! Review the vocabulary cards below to build recall.';
+    if (score === 100) return t('result.feedback.flawless');
+    if (score >= 80) return t('result.feedback.great');
+    if (score >= 60) return t('result.feedback.good');
+    return t('result.feedback.practice');
   };
 
   const getScoreColor = () => {
@@ -96,12 +98,12 @@ export const Result: React.FC<ResultProps> = ({
       {/* Top Results Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-2xs text-center space-y-6">
         <div className="inline-block px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold uppercase tracking-wider">
-          {lesson.level} • {lesson.title}
+          <span className="font-black">{lesson.level}</span> • <span lang="en">{lesson.title}</span>
         </div>
 
         <div className="space-y-2">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Lesson Completed
+            {t('result.title')}
           </h1>
           <p className="text-sm sm:text-base text-slate-600 font-medium max-w-md mx-auto">
             {getFeedbackMessage()}
@@ -114,17 +116,17 @@ export const Result: React.FC<ResultProps> = ({
             {score}%
           </div>
           <p className="text-xs font-bold uppercase tracking-wide opacity-80">
-            {correctCount} / {totalQuestions} Questions Correct
+            {t('result.questionsCorrect', { correct: correctCount, total: totalQuestions })}
           </p>
         </div>
 
         {/* Breakdown Stats */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-sm">
           <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100 text-center text-emerald-800 font-bold">
-            Correct: {correctCount}
+            {t('result.correct', { count: correctCount })}
           </div>
           <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 text-center text-rose-800 font-bold">
-            Incorrect: {incorrectCount}
+            {t('result.incorrect', { count: incorrectCount })}
           </div>
         </div>
 
@@ -133,9 +135,9 @@ export const Result: React.FC<ResultProps> = ({
           <div className="mt-8 pt-6 border-t border-slate-100 text-left space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black uppercase tracking-wider text-rose-600">
-                Words to review ({mistakeWords.length})
+                {t('result.wordsToReview', { count: mistakeWords.length })}
               </h3>
-              <span className="text-xs font-medium text-slate-500">Reinforce your memory</span>
+              <span className="text-xs font-medium text-slate-500">{t('result.reinforceMemory')}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -156,19 +158,21 @@ export const Result: React.FC<ResultProps> = ({
                     ) : null}
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-900 text-sm capitalize">{word.word}</span>
-                        <span className="text-2xs text-slate-400 font-mono">{word.pronunciation}</span>
+                        <span className="font-bold text-slate-900 text-sm capitalize" lang="en">{word.word}</span>
+                        {word.pronunciation && (
+                          <span className="text-2xs text-slate-400 font-mono">{word.pronunciation}</span>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-600 font-medium">{word.meaning}</p>
+                      <p className="text-xs text-slate-600 font-medium" lang="vi">{word.meaning}</p>
                     </div>
                   </div>
 
                   <button
                     onClick={() => speakWord(word.word)}
-                    title={`Play pronunciation for ${word.word}`}
+                    title={t('dictionary.audio.play')}
                     className="min-h-11 px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100 active:bg-rose-200 text-rose-700 text-xs font-bold transition-colors shrink-0 shadow-2xs border border-rose-200/60 cursor-pointer inline-flex items-center justify-center"
                   >
-                    Play
+                    Audio
                   </button>
                 </div>
               ))}
@@ -179,7 +183,7 @@ export const Result: React.FC<ResultProps> = ({
         {/* AI Error Alert if occurred */}
         {aiError && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left">
-            <p className="font-bold">AI Practice Note</p>
+            <p className="font-bold">{t('result.aiNote')}</p>
             <p className="mt-1">{aiError}</p>
           </div>
         )}
@@ -194,7 +198,7 @@ export const Result: React.FC<ResultProps> = ({
               disabled={isGeneratingAi}
               className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer flex items-center justify-center"
             >
-              {isGeneratingAi ? 'Generating Practice...' : 'Generate AI Practice'}
+              {isGeneratingAi ? t('result.aiGenerating') : t('result.aiPracticeBtn')}
             </button>
           )}
 
@@ -204,7 +208,7 @@ export const Result: React.FC<ResultProps> = ({
               onClick={onReviewMistakes}
               className="w-full sm:w-auto min-h-12 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer flex items-center justify-center"
             >
-              Flashcard Review
+              {t('result.reviewMistakesBtn')}
             </button>
           )}
 
@@ -213,7 +217,7 @@ export const Result: React.FC<ResultProps> = ({
             onClick={onTryAgain}
             className="w-full sm:w-auto min-h-12 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors active:scale-98 cursor-pointer flex items-center justify-center"
           >
-            Retake Quiz
+            {t('result.retakeQuizBtn')}
           </button>
 
           <button
@@ -225,7 +229,7 @@ export const Result: React.FC<ResultProps> = ({
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Back to Path
+            {t('result.backToPathBtn')}
           </button>
         </div>
       </div>

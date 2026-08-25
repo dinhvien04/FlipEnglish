@@ -14,6 +14,7 @@ import { getLessonById } from '../../data/lessons';
 import { REVIEW_UPDATED_EVENT } from '../../utils/reviewStorage';
 import { PLACEMENT_UPDATED_EVENT } from '../placement/placementStorage';
 import { PWAInstallCard } from '../pwa/PWAInstallCard';
+import { useI18n } from '../i18n';
 
 interface TodayPageProps {
   onSelectLesson: (lesson: Lesson) => void;
@@ -34,6 +35,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
   onNavigateConversation,
   onNavigateFlipLens,
 }) => {
+  const { t, formatDate } = useI18n();
   const [plan, setPlan] = useState<TodayStudyPlan>(() => getOrGenerateTodayPlan());
   const [preferredDailyMinutes, setPreferredDailyMinutes] = useState<AllowedDailyMinutes>(
     () => loadStudyPlanSettings().dailyMinutes
@@ -115,7 +117,6 @@ export const TodayPage: React.FC<TodayPageProps> = ({
 
   const handleCloseSettings = () => {
     setIsSettingsOpen(false);
-    // Return focus to Change Goal button
     setTimeout(() => {
       changeGoalButtonRef.current?.focus();
     }, 50);
@@ -133,12 +134,11 @@ export const TodayPage: React.FC<TodayPageProps> = ({
   const allTasksSkipped = skippedTasks === totalTasks && totalTasks > 0;
   const allTasksCompleted = completedTasks === totalTasks && totalTasks > 0;
 
-  // Format today's date nicely: e.g. "Tuesday, August 25"
-  const todayFormatted = new Intl.DateTimeFormat('en-US', {
+  const todayFormatted = formatDate(new Date(), {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-  }).format(new Date());
+  });
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
@@ -150,8 +150,11 @@ export const TodayPage: React.FC<TodayPageProps> = ({
               {todayFormatted}
             </span>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-              Today's Study Plan
+              {t('today.title')}
             </h1>
+            <p className="text-xs sm:text-sm text-slate-500">
+              {t('today.subtitle')}
+            </p>
           </div>
 
           {/* Daily Goal Control */}
@@ -164,18 +167,18 @@ export const TodayPage: React.FC<TodayPageProps> = ({
             {plan.dailyMinutes === preferredDailyMinutes ? (
               <>
                 <span>{plan.dailyMinutes} min goal</span>
-                <span className="text-slate-400 font-normal">· Change</span>
+                <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
               </>
             ) : (
               <>
-                <span>Today: {plan.dailyMinutes} min</span>
-                <span className="text-slate-400 font-normal">· Tomorrow: {preferredDailyMinutes} min</span>
+                <span>{plan.dailyMinutes} min</span>
+                <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Goal Feedback Notice (e.g. goal downgrade applied for tomorrow) */}
+        {/* Goal Feedback Notice */}
         {goalFeedbackMessage && (
           <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 flex items-start justify-between gap-3 animate-fadeIn">
             <p className="leading-relaxed font-medium">{goalFeedbackMessage}</p>
@@ -185,21 +188,21 @@ export const TodayPage: React.FC<TodayPageProps> = ({
               className="text-indigo-600 hover:text-indigo-800 font-bold text-xs shrink-0 cursor-pointer px-2 py-1 rounded-md bg-indigo-100/70 hover:bg-indigo-200 transition-colors"
               aria-label="Dismiss feedback message"
             >
-              Dismiss
+              {t('ui.common.dismiss')}
             </button>
           </div>
         )}
 
-        {/* Progress Tracker Bar (if scheduled tasks exist) */}
+        {/* Progress Tracker Bar */}
         {!isCurriculumCompleteState && (
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700">
               <span>
-                {completedTasks} of {totalTasks} activities completed
+                {t('today.target.completed', { completed: completedTasks, target: totalTasks })}
                 {skippedTasks > 0 ? ` (${skippedTasks} skipped)` : ''}
               </span>
               <span className="text-slate-400 font-normal">
-                {plan.tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0)} min planned
+                {plan.tasks.reduce((sum, t) => sum + t.estimatedMinutes, 0)} min
               </span>
             </div>
 
@@ -227,19 +230,19 @@ export const TodayPage: React.FC<TodayPageProps> = ({
         <section className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs space-y-6 animate-fadeIn">
           <div className="space-y-2 text-center sm:text-left">
             <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block">
-              Curriculum Complete
+              {t('today.target.allDone')}
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-              You've completed all FlipEnglish curriculum lessons
+              {t('learn.flashcard.completedTitle')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-              All structured curriculum units are finished. You can continue maintaining your vocabulary retention with Smart Review, take a Quick Test to benchmark your proficiency, or practice conversation freely.
+              {t('today.subtitle')}
             </p>
           </div>
 
           <div className="pt-4 border-t border-slate-100 space-y-3">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-              Optional Practice
+              {t('ui.common.practice')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
@@ -247,8 +250,8 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                 onClick={onNavigateReview}
                 className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1"
               >
-                <span className="block text-sm font-bold text-slate-900">Open Smart Review</span>
-                <span className="block text-2xs text-slate-500">Review scheduled vocabulary items</span>
+                <span className="block text-sm font-bold text-slate-900">{t('ui.nav.review')}</span>
+                <span className="block text-2xs text-slate-500">{t('review.subtitle')}</span>
               </button>
 
               <button
@@ -256,8 +259,8 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                 onClick={() => onNavigateQuickTest('B2')}
                 className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1"
               >
-                <span className="block text-sm font-bold text-slate-900">Take a Quick Test</span>
-                <span className="block text-2xs text-slate-500">15-question progress evaluation</span>
+                <span className="block text-sm font-bold text-slate-900">{t('exam.title')}</span>
+                <span className="block text-2xs text-slate-500">{t('exam.mode.quickDesc')}</span>
               </button>
 
               {onNavigateConversation && (
@@ -266,8 +269,8 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                   onClick={onNavigateConversation}
                   className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <span className="block text-sm font-bold text-slate-900">Open Conversation Lab</span>
-                  <span className="block text-2xs text-slate-500">Interactive dialogue practice</span>
+                  <span className="block text-sm font-bold text-slate-900">{t('ui.nav.conversation')}</span>
+                  <span className="block text-2xs text-slate-500">{t('conversation.subtitle')}</span>
                 </button>
               )}
 
@@ -277,8 +280,8 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                   onClick={onNavigateFlipLens}
                   className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <span className="block text-sm font-bold text-slate-900">Open FlipLens</span>
-                  <span className="block text-2xs text-slate-500">Visual vocabulary camera</span>
+                  <span className="block text-sm font-bold text-slate-900">{t('ui.nav.fliplens')}</span>
+                  <span className="block text-2xs text-slate-500">{t('fliplens.subtitle')}</span>
                 </button>
               )}
             </div>
@@ -308,24 +311,20 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                   }`}
                 >
                   {allTasksSkipped
-                    ? 'All Tasks Skipped'
+                    ? t('today.task.action.done')
                     : allTasksCompleted
-                    ? 'Daily Target Reached'
-                    : 'Plan Resolved'}
+                    ? t('today.target.allDone')
+                    : t('today.task.action.done')}
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
                   {allTasksSkipped
-                    ? "Today's plan is closed for today"
+                    ? t('today.target.allDone')
                     : allTasksCompleted
-                    ? "Today's study plan finished"
-                    : "Today's plan is resolved"}
+                    ? t('today.target.allDone')
+                    : t('today.task.action.done')}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-                  {allTasksSkipped
-                    ? `${skippedTasks} ${skippedTasks === 1 ? 'activity' : 'activities'} skipped. You can still practice freely or explore any curriculum lesson.`
-                    : allTasksCompleted
-                    ? `${completedTasks} ${completedTasks === 1 ? 'activity' : 'activities'} completed. You finished your planned learning blocks for today.`
-                    : `${completedTasks} ${completedTasks === 1 ? 'activity' : 'activities'} completed · ${skippedTasks} skipped.`}
+                  {t('today.target.completed', { completed: completedTasks, target: totalTasks })}
                 </p>
               </div>
 
@@ -339,7 +338,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
                 >
-                  Continue Learning Curriculum
+                  {t('home.hero.startCurriculum')}
                 </button>
                 <button
                   type="button"
@@ -350,7 +349,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
                       : 'bg-white hover:bg-emerald-50 text-emerald-900 border-emerald-200'
                   }`}
                 >
-                  Open Smart Review
+                  {t('ui.nav.review')}
                 </button>
               </div>
             </section>
@@ -359,7 +358,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
           {/* Task List */}
           <section className="space-y-4" aria-label="Today's scheduled learning activities">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-              Planned Activities
+              {t('today.tasks.title')}
             </h2>
 
             <div className="space-y-3">

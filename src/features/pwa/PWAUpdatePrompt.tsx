@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useI18n } from '../i18n';
 
 /**
  * PWA Update and Offline-Ready Notification Component.
@@ -9,6 +10,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
  * - Displays a quiet one-time "Ready for offline learning" notice when SW precaching is complete.
  */
 export const PWAUpdatePrompt: React.FC = () => {
+  const { t } = useI18n();
   const [offlineNoticeDismissed, setOfflineNoticeDismissed] = useState(false);
 
   const {
@@ -64,11 +66,11 @@ export const PWAUpdatePrompt: React.FC = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-3xs font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-500 text-white">
-              Update Available
+              {t('pwa.update.title')}
             </span>
           </div>
           <p className="text-xs sm:text-sm font-medium text-slate-200">
-            A new version of FlipEnglish is available. Update to load the latest improvements.
+            {t('pwa.update.desc')}
           </p>
         </div>
 
@@ -78,14 +80,14 @@ export const PWAUpdatePrompt: React.FC = () => {
             onClick={handleDismissUpdate}
             className="min-h-11 px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer inline-flex items-center justify-center"
           >
-            Later
+            {t('pwa.update.later')}
           </button>
           <button
             type="button"
             onClick={handleUpdate}
             className="min-h-11 px-5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-md transition-colors cursor-pointer inline-flex items-center justify-center"
           >
-            Update Now
+            {t('pwa.update.now')}
           </button>
         </div>
       </div>

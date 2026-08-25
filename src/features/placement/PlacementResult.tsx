@@ -8,6 +8,7 @@ import {
   isPlacementResultExportedToReview,
   markPlacementResultExportedToReview,
 } from './placementStorage';
+import { useI18n } from '../i18n';
 
 interface PlacementResultProps {
   report: PlacementResultReport;
@@ -24,6 +25,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   onSelectLesson,
   onNavigateReview,
 }) => {
+  const { t } = useI18n();
   const isAlreadyExported = isPlacementResultExportedToReview(report.id);
   const [addedWordsCount, setAddedWordsCount] = useState<number | null>(
     isAlreadyExported ? -1 : null
@@ -71,10 +73,10 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
-              Estimated FlipEnglish Level
+              {t('placement.result.title')}
             </div>
             <p className="text-2xs sm:text-xs text-slate-400">
-              Completed on {report.date} • {report.confidence}
+              Completed on {report.date} • {t('placement.result.confidence', { confidence: report.confidence })}
             </p>
           </div>
 
@@ -91,7 +93,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
 
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            {report.levelTitle}
+            {t('placement.result.estimatedLevel', { level: report.estimatedLevel })}
           </h1>
           <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
             {report.levelDescription}
@@ -101,7 +103,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         {/* Can-Do Descriptor Statement */}
         <div className="bg-slate-800/90 rounded-2xl p-5 border border-slate-700 space-y-1.5 text-xs sm:text-sm text-slate-300">
           <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-400 block">
-            FlipEnglish Level Profile
+            {t('placement.result.canDoTitle', { level: report.estimatedLevel })}
           </span>
           <p className="leading-relaxed">{report.canDoSummary}</p>
         </div>
@@ -118,7 +120,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Placement Check Performance
+              {t('placement.result.skillBreakdown')}
             </h2>
             <p className="text-xs text-slate-500">
               Overall score: {report.overallPercentage}% ({report.correctCount} of{' '}
@@ -215,7 +217,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         <section className="bg-indigo-50/80 rounded-3xl p-6 sm:p-7 border border-indigo-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-base font-extrabold text-indigo-950">
-              Missed Vocabulary & Expressions
+              {t('placement.result.exportToReview')}
             </h3>
             <p className="text-xs text-indigo-800 leading-relaxed max-w-xl">
               You answered {report.missedTargetItems.length} questions incorrectly ({canonicalWeakIds.length} curriculum items eligible for spaced repetition). Add them directly to your Smart Review queue for practice.
@@ -226,7 +228,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
             {addedWordsCount !== null ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3.5 py-2 rounded-xl">
-                  {addedWordsCount === -1 ? 'Items already added to Review' : `${addedWordsCount} items added to Review`}
+                  {addedWordsCount === -1 ? t('placement.result.exported') : `${addedWordsCount} items added to Review`}
                 </span>
                 {onNavigateReview && (
                   <button
@@ -234,7 +236,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                     onClick={onNavigateReview}
                     className="min-h-11 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors cursor-pointer inline-flex items-center"
                   >
-                    Go to Review
+                    {t('ui.nav.review')}
                   </button>
                 )}
               </div>
@@ -245,7 +247,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                 onClick={handleAddMissedToReview}
                 className="min-h-12 px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
               >
-                Add {canonicalWeakIds.length} items to Review
+                {t('placement.result.exportToReview')} ({canonicalWeakIds.length})
               </button>
             )}
           </div>
@@ -257,7 +259,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Recommended Next Steps
+              {t('placement.result.recommendedLessons')}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Personalized lesson modules tailored to your starting level and skill priorities.
@@ -283,7 +285,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                    <h4 className="text-sm font-bold text-slate-900 leading-snug" lang="en">
                       {rec.lessonTitle}
                     </h4>
 
@@ -298,7 +300,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                       onClick={() => onSelectLesson(fullLesson)}
                       className="w-full min-h-11 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center"
                     >
-                      Start Lesson
+                      {t('today.task.action.start')}
                     </button>
                   )}
                 </div>
@@ -316,7 +318,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
           onClick={() => onStartCurriculum(report.estimatedLevel)}
           className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm sm:text-base shadow-md transition-all cursor-pointer inline-flex items-center justify-center text-center"
         >
-          Start {report.estimatedLevel} Curriculum
+          {t('placement.result.startCurriculum', { level: report.estimatedLevel })}
         </button>
 
         <button
@@ -324,13 +326,13 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
           onClick={onRetake}
           className="min-h-12 sm:min-h-14 px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
         >
-          Take Placement Check Again
+          {t('result.retakeQuizBtn')}
         </button>
       </section>
 
       {/* Disclaimer */}
       <p className="text-2xs text-slate-400 text-center leading-relaxed">
-        This short placement check is designed to recommend a starting point inside FlipEnglish. It is not an official CEFR certification.
+        {t('placement.disclaimer')}
       </p>
     </div>
   );

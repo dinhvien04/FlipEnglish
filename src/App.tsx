@@ -42,6 +42,10 @@ import { PlacementSessionPage } from './features/placement/PlacementSession';
 import { PlacementResultPage } from './features/placement/PlacementResult';
 import { TodayPage } from './features/studyPlan/TodayPage';
 import { DictionaryPage } from './features/dictionary/DictionaryPage';
+import { HelpPage } from './pages/HelpPage';
+import { OnboardingPage } from './features/onboarding/OnboardingPage';
+import { shouldShowOnboarding, saveOnboardingState } from './features/onboarding/onboardingStorage';
+import { OnboardingRoute } from './features/onboarding/onboardingTypes';
 import {
   DictionaryReturnContext,
   LearnResumeContext,
@@ -51,7 +55,9 @@ import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>('today');
+  const [currentView, setCurrentView] = useState<AppView>(() => {
+    return shouldShowOnboarding() ? 'onboarding' : 'today';
+  });
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [isReviewMistakesMode, setIsReviewMistakesMode] = useState<boolean>(false);
   const [mistakeWords, setMistakeWords] = useState<VocabWord[]>([]);
@@ -261,6 +267,31 @@ export default function App() {
 
   const handleReviewResumeConsumed = () => {
     setResumedReviewContext(null);
+  };
+
+  const handleNavigateHelp = () => {
+    setSelectedLessonId(null);
+    setIsReviewMistakesMode(false);
+    setQuizResults(null);
+    setCurrentView('help');
+  };
+
+  const handleOpenOnboarding = () => {
+    setCurrentView('onboarding');
+  };
+
+  const handleCompleteOnboarding = (route: OnboardingRoute, level?: CEFRLevel) => {
+    if (route === 'know' && level) {
+      handleStartCurriculumAtLevel(level);
+    } else if (route === 'unknown') {
+      handleStartPlacementIntro();
+    } else {
+      handleNavigateToday();
+    }
+  };
+
+  const handleSkipOnboarding = () => {
+    handleNavigateToday();
   };
 
   // Conversation Handlers
@@ -628,7 +659,7 @@ export default function App() {
       )}
 
       {/* Sticky Header */}
-      {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && (
+      {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && currentView !== 'onboarding' && (
         <>
           <OfflineBanner />
           <Header
@@ -639,6 +670,7 @@ export default function App() {
             onNavigateConversation={handleNavigateConversation}
             onNavigateFlipLens={handleOpenFlipLens}
             onNavigateExamCenter={handleNavigateExamCenter}
+            onNavigateHelp={handleNavigateHelp}
             currentView={currentView}
           />
         </>
@@ -646,6 +678,29 @@ export default function App() {
 
       {/* Main View Router */}
       <main className="flex-1 pb-16">
+        {/* Onboarding View */}
+        {currentView === 'onboarding' && (
+          <OnboardingPage
+            onComplete={handleCompleteOnboarding}
+            onSkip={handleSkipOnboarding}
+          />
+        )}
+
+        {/* Feature Guide / Help View */}
+        {currentView === 'help' && (
+          <HelpPage
+            onNavigateToday={handleNavigateToday}
+            onNavigateDictionary={() => handleNavigateDictionary()}
+            onNavigateCurriculum={handleNavigateHome}
+            onNavigateReview={handleNavigateReview}
+            onNavigatePlacement={handleStartPlacementIntro}
+            onNavigateConversation={handleNavigateConversation}
+            onNavigateExams={handleNavigateExamCenter}
+            onNavigateFlipLens={handleOpenFlipLens}
+            onReopenOnboarding={handleOpenOnboarding}
+          />
+        )}
+
         {/* Today's Study Plan View */}
         {currentView === 'today' && (
           <TodayPage

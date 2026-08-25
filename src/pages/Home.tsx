@@ -11,6 +11,7 @@ import { CEFR_LEVELS_INFO } from '../data/curriculum/curriculumMeta';
 import { CourseShelf } from '../components/CourseShelf';
 import { LevelLibraryView } from '../components/LevelLibraryView';
 import { LessonCard } from '../components/LessonCard';
+import { useI18n } from '../features/i18n';
 
 interface HomeProps {
   onSelectLesson: (lesson: Lesson) => void;
@@ -20,6 +21,7 @@ interface HomeProps {
   onNavigateToday?: () => void;
   onStartPlacement?: () => void;
   onViewPlacementResult?: () => void;
+  onNavigateHelp?: () => void;
   initialLevelTab?: CEFRLevel | 'ALL';
 }
 
@@ -43,8 +45,10 @@ export const Home: React.FC<HomeProps> = ({
   onNavigateToday,
   onStartPlacement,
   onViewPlacementResult,
+  onNavigateHelp,
   initialLevelTab = 'ALL',
 }) => {
+  const { t, isBilingual, formatNumber, formatPercent } = useI18n();
   const [progress, setProgress] = useState<AllProgress>(() => getStoredProgress());
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
@@ -124,7 +128,7 @@ export const Home: React.FC<HomeProps> = ({
     return LESSONS.slice(0, 6);
   }, []);
 
-  // Global search results across all 72+ curriculum lessons
+  // Global search results across all 72 curriculum lessons
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase().trim();
@@ -133,7 +137,7 @@ export const Home: React.FC<HomeProps> = ({
         lesson.title.toLowerCase().includes(q) ||
         lesson.description.toLowerCase().includes(q) ||
         lesson.level.toLowerCase().includes(q) ||
-        (lesson.tags && lesson.tags.some((t) => t.toLowerCase().includes(q))) ||
+        (lesson.tags && lesson.tags.some((tag) => tag.toLowerCase().includes(q))) ||
         lesson.words.some(
           (w) =>
             w.word.toLowerCase().includes(q) ||
@@ -167,6 +171,8 @@ export const Home: React.FC<HomeProps> = ({
     return [selectedLevelTab];
   }, [selectedLevelTab]);
 
+  const hasMeaningfulHistory = stats.completedCount > 0 || reviewStats.totalTracked > 0 || latestPlacement !== null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
       {/* Today's Daily Plan Entrance Widget */}
@@ -175,21 +181,22 @@ export const Home: React.FC<HomeProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-2xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-indigo-200 border border-white/20">
-                Today's Daily Plan
+                {t('today.title')}
               </span>
               <span className="text-2xs text-indigo-300 font-bold">
-                {todayPlan.dailyMinutes} min goal
+                {todayPlan.dailyMinutes} min
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              {todayPlan.tasks.filter((t) => t.status === 'completed').length === todayPlan.tasks.length && todayPlan.tasks.length > 0
-                ? "Today's Study Plan Completed"
-                : `${todayPlan.tasks.filter((t) => t.status === 'completed').length} of ${todayPlan.tasks.length} daily activities completed`}
+              {todayPlan.tasks.filter((tk) => tk.status === 'completed').length === todayPlan.tasks.length && todayPlan.tasks.length > 0
+                ? t('today.target.allDone')
+                : t('today.target.completed', {
+                    completed: todayPlan.tasks.filter((tk) => tk.status === 'completed').length,
+                    target: todayPlan.tasks.length,
+                  })}
             </h2>
             <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed max-w-xl">
-              {todayPlan.tasks.filter((t) => t.status === 'completed').length === todayPlan.tasks.length && todayPlan.tasks.length > 0
-                ? 'Great job reaching your learning goal for today! Feel free to practice freely or review vocabulary.'
-                : 'Follow your personalized, zero-distraction study roadmap for today.'}
+              {t('today.subtitle')}
             </p>
           </div>
 
@@ -200,12 +207,110 @@ export const Home: React.FC<HomeProps> = ({
               onClick={onNavigateToday}
               className="min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-2"
             >
-              <span>Open Today's Plan</span>
+              <span>{t('home.hero.todayPlan')}</span>
               <span className="text-indigo-600 font-black">→</span>
             </button>
           </div>
         </section>
       )}
+
+      {/* Beginner Guidance: "Where Should I Start?" (Prominent for beginners, compact/accessible for returning) */}
+      <section className="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-6">
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              {t('home.guide.whereToStart')}
+            </h2>
+            {onNavigateHelp && (
+              <button
+                type="button"
+                onClick={onNavigateHelp}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+              >
+                {t('ui.nav.help')} →
+              </button>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-slate-600">
+            {t('home.guide.whereToStartSubtitle')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Option 1: Unknown Level */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-2xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                1. {t('placement.title')}
+              </span>
+              <h3 className="text-base font-bold text-slate-900">
+                {t('home.guide.unknownLevelTitle')}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {t('home.guide.unknownLevelDesc')}
+              </p>
+            </div>
+            {onStartPlacement && (
+              <button
+                type="button"
+                onClick={onStartPlacement}
+                className="w-full min-h-11 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              >
+                {t('home.guide.unknownLevelAction')}
+              </button>
+            )}
+          </div>
+
+          {/* Option 2: Know Level */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-2xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                2. {t('ui.nav.curriculum')}
+              </span>
+              <h3 className="text-base font-bold text-slate-900">
+                {t('home.guide.knowLevelTitle')}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {t('home.guide.knowLevelDesc')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('curriculum-navigation-heading');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+            >
+              {t('home.guide.knowLevelAction')}
+            </button>
+          </div>
+
+          {/* Option 3: Spaced Repetition Review */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <span className="text-2xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                3. {t('review.title')}
+              </span>
+              <h3 className="text-base font-bold text-slate-900">
+                {t('home.guide.reviewTitle')}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {t('home.guide.reviewDesc')}
+              </p>
+            </div>
+            {onNavigateReview && (
+              <button
+                type="button"
+                onClick={onNavigateReview}
+                className="w-full min-h-11 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              >
+                {t('home.guide.reviewAction')}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* Editorial Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
@@ -214,27 +319,26 @@ export const Home: React.FC<HomeProps> = ({
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="max-w-2xl space-y-4 text-center lg:text-left">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
-              <span>Comprehensive CEFR A1 — C2 Curriculum</span>
+              <span>{t('home.levelLibrary.title')}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-              Master English Vocabulary <br className="hidden sm:inline" />
-              <span className="text-indigo-400">with Real-World Visuals</span>
+              {t('home.hero.title')}
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-              From beginner essentials to advanced vocabulary precision. Learn with realistic photographic cards, English pronunciation playback, listening challenges, and targeted AI feedback.
+              {t('home.hero.subtitle')}
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-slate-300">
               <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span>{LESSONS.length} Structured Lessons</span>
+                <span>{LESSONS.length} {t('ui.nav.curriculum')}</span>
               </div>
               <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span>{totalWordsInApp}+ Curated Items</span>
+                <span>{totalWordsInApp}+ {t('ui.nav.dictionary')}</span>
               </div>
               <div className="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span>Zero Sign-up Required</span>
+                <span>{t('ui.common.offlineAvailable')}</span>
               </div>
             </div>
           </div>
@@ -246,7 +350,7 @@ export const Home: React.FC<HomeProps> = ({
               <div className="bg-slate-800/95 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-400">
-                    Estimated Starting Level
+                    {t('home.stats.estimatedLevel')}
                   </span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                     {latestPlacement.confidence}
@@ -259,10 +363,10 @@ export const Home: React.FC<HomeProps> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white leading-tight">
-                      {latestPlacement.estimatedLevel} Starting Foundation
+                      {latestPlacement.estimatedLevel} Foundation
                     </h3>
                     <p className="text-2xs text-slate-400 mt-0.5">
-                      Score: {latestPlacement.overallPercentage}% • {latestPlacement.date}
+                      {t('ui.common.score')}: {latestPlacement.overallPercentage}% • {latestPlacement.date}
                     </p>
                   </div>
                 </div>
@@ -274,7 +378,7 @@ export const Home: React.FC<HomeProps> = ({
                     onClick={() => handleOpenViewAll(latestPlacement.estimatedLevel)}
                     className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer inline-flex items-center justify-center"
                   >
-                    Continue {latestPlacement.estimatedLevel}
+                    {t('ui.common.continue')} {latestPlacement.estimatedLevel}
                   </button>
                   {onViewPlacementResult && (
                     <button
@@ -283,7 +387,7 @@ export const Home: React.FC<HomeProps> = ({
                       onClick={onViewPlacementResult}
                       className="min-h-11 px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors cursor-pointer inline-flex items-center justify-center"
                     >
-                      View Result
+                      {t('ui.common.details')}
                     </button>
                   )}
                 </div>
@@ -292,13 +396,13 @@ export const Home: React.FC<HomeProps> = ({
               /* Onboarding Placement Check CTA */
               <div className="bg-slate-800/95 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
                 <div className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-2xs font-bold uppercase tracking-wider">
-                  Not sure where to start?
+                  {t('home.guide.unknownLevelTitle')}
                 </div>
                 <h3 className="text-base font-bold text-white leading-snug">
-                  Take a short English level check and get a recommended learning path.
+                  {t('home.guide.unknownLevelDesc')}
                 </h3>
                 <p className="text-2xs text-slate-300">
-                  24 adaptive questions • 10–15 minutes • A1 to C2
+                  24 questions • ~10 min • A1 to C2
                 </p>
                 <button
                   type="button"
@@ -306,7 +410,7 @@ export const Home: React.FC<HomeProps> = ({
                   onClick={onStartPlacement}
                   className="w-full min-h-12 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
                 >
-                  Find My Level
+                  {t('home.hero.quickPlacement')}
                 </button>
               </div>
             ) : null}
@@ -315,9 +419,9 @@ export const Home: React.FC<HomeProps> = ({
             <div className="bg-slate-800/90 backdrop-blur-md p-5 rounded-2xl border border-slate-700 shadow-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xs font-bold uppercase tracking-wider text-slate-400">Curriculum Progress</p>
+                  <p className="text-2xs font-bold uppercase tracking-wider text-slate-400">{t('home.stats.overallProgress')}</p>
                   <p className="text-lg font-black text-white">
-                    {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} Lessons</span>
+                    {stats.completedCount} <span className="text-xs font-normal text-slate-400">/ {stats.totalLessonsCount} {t('ui.common.all')}</span>
                   </p>
                 </div>
                 <span className="text-xs font-extrabold text-indigo-400">{stats.percentage}%</span>
@@ -333,7 +437,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
                 <p className="text-2xs text-slate-400 text-right">
                   {stats.completedCount === stats.totalLessonsCount && stats.totalLessonsCount > 0
-                    ? 'All lessons completed!'
+                    ? t('today.target.allDone')
                     : `${stats.totalLessonsCount - stats.completedCount} lessons remaining`}
                 </p>
               </div>
@@ -349,19 +453,19 @@ export const Home: React.FC<HomeProps> = ({
           <div className="relative z-10 space-y-2.5">
             <div className="flex items-center gap-2">
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/15 text-indigo-200 border border-white/20 text-xs font-bold uppercase tracking-wider">
-                <span>Spaced Repetition</span>
+                <span>{t('ui.nav.review')}</span>
               </div>
               {reviewStats.dueCount > 0 && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-2xs font-extrabold shadow-2xs">
-                  {reviewStats.dueCount} Due Now
+                  {reviewStats.dueCount} Due
                 </span>
               )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Smart Review
+              {t('review.title')}
             </h2>
             <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-              Active memory recall with automated spaced repetition schedules. Keep mastered vocabulary permanent.
+              {t('review.subtitle')}
             </p>
           </div>
 
@@ -373,8 +477,8 @@ export const Home: React.FC<HomeProps> = ({
               className="self-start min-h-12 px-6 py-3 rounded-2xl bg-white hover:bg-slate-100 active:scale-98 text-indigo-950 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
             >
               {reviewStats.dueCount > 0
-                ? `Review ${reviewStats.dueCount} Due Items`
-                : 'Open Review'}
+                ? `${t('review.title')} (${reviewStats.dueCount})`
+                : t('ui.common.open' in t ? t('ui.nav.review') : t('review.title'))}
             </button>
           )}
         </div>
@@ -383,13 +487,13 @@ export const Home: React.FC<HomeProps> = ({
         <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
           <div className="relative z-10 space-y-2.5">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
-              <span>FlipLens</span>
+              <span>{t('ui.nav.fliplens')}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Visual Learning from Photos
+              {t('fliplens.title')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Take or upload a photo and turn real-world objects into vocabulary you can study.
+              {t('fliplens.subtitle')}
             </p>
           </div>
 
@@ -399,7 +503,7 @@ export const Home: React.FC<HomeProps> = ({
             onClick={onOpenFlipLens}
             className="self-start min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
           >
-            Try FlipLens
+            {t('ui.nav.fliplens')}
           </button>
         </div>
 
@@ -407,13 +511,13 @@ export const Home: React.FC<HomeProps> = ({
         <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6 md:col-span-2 lg:col-span-1">
           <div className="relative z-10 space-y-2.5">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
-              <span>Practice Exams</span>
+              <span>{t('ui.nav.exams')}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Timed CEFR Assessments
+              {t('exam.title')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Test your vocabulary, Use of English, reading and listening with timed A1–C2 practice exams.
+              {t('exam.subtitle')}
             </p>
           </div>
 
@@ -424,7 +528,7 @@ export const Home: React.FC<HomeProps> = ({
               onClick={onOpenExamCenter}
               className="self-start min-h-12 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
             >
-              Go to Exam Center
+              {t('exam.title')}
             </button>
           )}
         </div>
@@ -436,25 +540,25 @@ export const Home: React.FC<HomeProps> = ({
         <div className="space-y-4 border-b border-slate-200/90 pb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Curriculum Shelves
+              <h2 id="curriculum-navigation-heading" className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                {t('home.levelLibrary.title')}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Browse courses horizontally by CEFR level or select a tier below.
+                {t('home.levelLibrary.subtitle')}
               </p>
             </div>
 
             {/* Global Search Bar */}
             <div className="relative w-full md:w-80">
               <label htmlFor="home-search-input" className="sr-only">
-                Search lessons, words or topics
+                {t('ui.common.search')}
               </label>
               <input
                 type="search"
                 id="home-search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search lessons, words or topics..."
+                placeholder={t('home.search.placeholder')}
                 className="w-full pl-4 pr-14 py-2.5 bg-white rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
               />
               {searchQuery && (
@@ -464,7 +568,7 @@ export const Home: React.FC<HomeProps> = ({
                   aria-label="Clear search input"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-11 px-3 inline-flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
                 >
-                  Clear
+                  {t('ui.common.cancel')}
                 </button>
               )}
             </div>
@@ -482,7 +586,7 @@ export const Home: React.FC<HomeProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              All Shelves ({LESSONS.length})
+              {t('home.filter.all')} ({LESSONS.length})
             </button>
 
             {ALL_LEVEL_KEYS.map((lvl) => {
@@ -522,10 +626,10 @@ export const Home: React.FC<HomeProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-xl font-bold text-slate-900">
-                  Search Results for "{searchQuery}"
+                  {t('ui.common.search')}: "{searchQuery}"
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Found {searchResults.length} {searchResults.length === 1 ? 'lesson' : 'lessons'} across the curriculum.
+                  Found {searchResults.length} lessons across curriculum.
                 </p>
               </div>
 
@@ -534,7 +638,7 @@ export const Home: React.FC<HomeProps> = ({
                 onClick={() => setSearchQuery('')}
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
               >
-                Clear Search
+                {t('ui.common.cancel')}
               </button>
             </div>
 
@@ -551,14 +655,13 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             ) : (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                <p className="text-base font-bold text-slate-700">No lessons matched "{searchQuery}"</p>
-                <p className="text-xs text-slate-500 mt-1">Try searching for other words like "business", "food", "travel", or "idiom".</p>
+                <p className="text-base font-bold text-slate-700">{t('home.search.noResults', { query: searchQuery })}</p>
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
                   className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors cursor-pointer"
                 >
-                  Reset Search
+                  {t('ui.common.tryAgain')}
                 </button>
               </div>
             )}
@@ -579,10 +682,10 @@ export const Home: React.FC<HomeProps> = ({
             {continueLearningLessons.length > 0 && selectedLevelTab === 'ALL' && (
               <CourseShelf
                 shelfId="continue-learning"
-                title="Continue Learning"
+                title={t('home.resume.title')}
                 badgeLabel="Recent"
                 badgeStyle="bg-emerald-600 text-white"
-                description="Pick up right where you left off with your recently practiced vocabulary topics."
+                description={t('home.resume.subtitle')}
                 lessons={continueLearningLessons}
                 progress={progress}
                 onSelectLesson={onSelectLesson}
@@ -593,10 +696,10 @@ export const Home: React.FC<HomeProps> = ({
             {selectedLevelTab === 'ALL' && (
               <CourseShelf
                 shelfId="popular-start"
-                title="Start Here — Popular Foundations"
-                badgeLabel="Recommended"
+                title={t('home.startingPoints.title')}
+                badgeLabel="Foundation"
                 badgeStyle="bg-amber-600 text-white"
-                description="Essential starter topics covering high-frequency daily conversations, travel, food, and workplace skills."
+                description={t('home.startingPoints.subtitle')}
                 lessons={popularLessons}
                 progress={progress}
                 onSelectLesson={onSelectLesson}

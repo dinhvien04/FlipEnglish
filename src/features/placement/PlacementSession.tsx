@@ -17,6 +17,7 @@ import {
   savePlacementResultToHistory,
 } from './placementStorage';
 import { speakWord } from '../../utils/speech';
+import { useI18n } from '../i18n';
 
 interface PlacementSessionProps {
   initialSession: PlacementSession;
@@ -31,6 +32,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
   onExitPlacement,
   onRestartPlacement,
 }) => {
+  const { t } = useI18n();
   const [session, setSession] = useState<PlacementSession>(initialSession);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -161,14 +163,15 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
     const nextStageQuestions = selectPlacementQuestionsForStage(
       nextLevel,
       nextStageIndex,
-      session.sessionSeed,
+      session.seed,
       existingQuestionIds,
       existingTargets
     );
 
-    // Requirement 8: Next stage guard (must have exactly 6 valid questions)
-    if (nextStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
-      setGenerationError('Placement Check could not prepare enough valid questions for this level.');
+    if (nextStageQuestions.length < PLACEMENT_STAGE_SIZE) {
+      setGenerationError(
+        `Unable to prepare stage ${nextStageIndex + 1} with level ${nextLevel}. Please restart placement test.`
+      );
       return;
     }
 
@@ -179,62 +182,37 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       isLocked: false,
     };
 
-    // Lock current stage to prevent cross-stage back navigation
-    const updatedStages = session.stages.map((s, idx) =>
-      idx === session.currentStageIndex ? { ...s, isLocked: true } : s
-    );
-
     setSession((prev) => ({
       ...prev,
       currentStageIndex: nextStageIndex,
       currentQuestionInStageIndex: 0,
-      currentLevel: nextLevel,
-      stages: [...updatedStages, nextStage],
+      stages: [...prev.stages, nextStage],
       stageResults: updatedStageResults,
     }));
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [
-    currentQuestion,
-    session,
-    currentStage,
-    onFinishPlacement,
-  ]);
+  }, [currentQuestion, currentStage, session, onFinishPlacement]);
 
   if (generationError) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-6 animate-fadeIn">
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-4">
-          <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            Stage Generation Issue
-          </span>
-          <h3 className="text-xl font-black text-slate-900">
-            {generationError}
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600">
-            We could not assemble the required questions for the next stage. You can restart or return to the main dashboard.
-          </p>
-          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                clearActivePlacement();
-                if (onRestartPlacement) {
-                  onRestartPlacement();
-                } else {
-                  onExitPlacement();
-                }
-              }}
-              className="min-h-12 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
-            >
-              Restart Check
-            </button>
+      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
+        <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl space-y-3">
+          <p className="text-sm font-bold text-amber-900">{generationError}</p>
+          <div className="flex gap-3 justify-center">
+            {onRestartPlacement && (
+              <button
+                type="button"
+                onClick={onRestartPlacement}
+                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                {t('result.retakeQuizBtn')}
+              </button>
+            )}
             <button
               type="button"
               onClick={onExitPlacement}
-              className="min-h-12 px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+              className="px-4 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
             >
-              Return Home
+              {t('ui.common.back')}
             </button>
           </div>
         </div>
@@ -244,14 +222,14 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
 
   if (!currentQuestion) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <p className="text-base font-bold text-slate-800">Placement session data could not be loaded.</p>
+      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
+        <p className="text-slate-600">{t('ui.common.loading')}</p>
         <button
           type="button"
           onClick={onExitPlacement}
           className="min-h-12 px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-xs sm:text-sm font-bold cursor-pointer inline-flex items-center justify-center"
         >
-          Return to Home
+          {t('ui.common.back')}
         </button>
       </div>
     );
@@ -268,16 +246,16 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-600 text-white">
-              Placement Check
+              {t('placement.title')}
             </span>
             <span className="text-xs sm:text-sm text-slate-300 font-semibold hidden xs:inline">
-              Stage {session.currentStageIndex + 1} of {PLACEMENT_STAGE_COUNT}
+              {t('placement.session.stage', { stage: session.currentStageIndex + 1, level: currentStage.level })}
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-xs sm:text-sm font-extrabold text-indigo-300">
-              Question {currentGlobalQuestionNumber} of {totalGlobalQuestions}
+              {t('placement.session.questionProgress', { current: currentGlobalQuestionNumber, total: totalGlobalQuestions })}
             </span>
 
             <button
@@ -285,7 +263,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               onClick={onExitPlacement}
               className="min-h-10 px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
             >
-              Exit
+              {t('ui.common.back')}
             </button>
           </div>
         </div>
@@ -293,7 +271,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
         {/* Global Progress Bar */}
         <div className="w-full bg-slate-800 h-1.5 overflow-hidden">
           <div
-            className="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full transition-all duration-300 ease-out"
+            className="bg-linear-to-r from-indigo-500 to-indigo-400 h-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercentage}%` }}
             role="progressbar"
             aria-valuenow={currentGlobalQuestionNumber}
@@ -305,7 +283,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
 
       {/* Main Placement Question Container */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col justify-between">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 flex-1 flex flex-col justify-between min-h-[480px]">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 flex-1 flex flex-col justify-between min-h-120">
           <div className="space-y-6">
             {/* Skill Badge */}
             <div className="flex items-center justify-between">
@@ -328,7 +306,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
                     Reading: {currentQuestion.passageTitle}
                   </h3>
                 )}
-                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line font-serif">
+                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line font-serif" lang="en">
                   {currentQuestion.passage}
                 </p>
               </div>
@@ -338,7 +316,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
             {currentQuestion.skill === 'listening' && (
               <div className="bg-indigo-50/60 rounded-2xl p-5 border border-indigo-100 space-y-3">
                 <p className="text-xs font-bold text-indigo-900">
-                  Listen to the audio recording to answer the question:
+                  {t('exercise.audioChallenge')}
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <button
@@ -347,7 +325,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
                     disabled={isPlayingAudio}
                     className="min-h-12 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50"
                   >
-                    <span>Play Audio</span>
+                    <span>{t('dictionary.audio.play')}</span>
                   </button>
                   <button
                     type="button"
@@ -363,7 +341,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
 
             {/* Question Prompt */}
             <div className="space-y-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug whitespace-pre-line">
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug whitespace-pre-line" lang="en">
                 {currentQuestion.prompt}
               </h2>
             </div>
@@ -395,7 +373,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
                       >
                         {letter}
                       </span>
-                      <span className="text-xs sm:text-sm leading-snug break-words">
+                      <span className="text-xs sm:text-sm leading-snug break-words" lang="en">
                         {opt.text}
                       </span>
                     </div>
@@ -421,7 +399,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               disabled={isFirstInStage}
               className="min-h-12 px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center"
             >
-              Previous
+              {t('learn.flashcard.prev')}
             </button>
 
             <button
@@ -432,8 +410,8 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center"
             >
               {session.currentStageIndex === PLACEMENT_STAGE_COUNT - 1 && session.currentQuestionInStageIndex === PLACEMENT_STAGE_SIZE - 1
-                ? 'Finish Placement Check'
-                : 'Continue'}
+                ? t('placement.session.submit')
+                : t('placement.session.next')}
             </button>
           </div>
         </div>

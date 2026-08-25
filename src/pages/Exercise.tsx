@@ -4,6 +4,7 @@ import { generateQuiz } from '../utils/quizGenerator';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { recordQuizMistake, batchAddLessonWordsToReview } from '../utils/reviewStorage';
+import { useI18n } from '../features/i18n';
 
 interface ExerciseProps {
   lesson: Lesson;
@@ -22,6 +23,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
   onFinishQuiz,
   onExitQuiz,
 }) => {
+  const { t } = useI18n();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -77,7 +79,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
   if (!currentQuestion || totalQuestions === 0) {
     return (
       <div className="max-w-md mx-auto py-12 text-center space-y-4">
-        <p className="text-slate-500">Preparing exercise questions...</p>
+        <p className="text-slate-500">{t('ui.common.loading')}</p>
       </div>
     );
   }
@@ -91,37 +93,35 @@ export const Exercise: React.FC<ExerciseProps> = ({
           onClick={onExitQuiz}
           className="text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
         >
-          Exit Quiz
+          {t('ui.common.back')}
         </button>
 
         <div className="text-center">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">
-            {lesson.title} Practice
+          <h2 className="text-base sm:text-lg font-bold text-slate-900" lang="en">
+            {lesson.title}
           </h2>
+          <span className="text-xs font-semibold text-slate-400">
+            {t('exercise.title')}
+          </span>
         </div>
 
-        <div className="w-16 text-right text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+        <div className="w-16 text-right text-xs font-bold text-slate-500">
           {currentIndex + 1} / {totalQuestions}
         </div>
       </div>
 
-      {/* Progress */}
+      {/* Progress Bar */}
       <ProgressBar
         current={currentIndex + 1}
         total={totalQuestions}
-        label={`Question ${currentIndex + 1} of ${totalQuestions}`}
+        label={t('exercise.questionProgress', { current: currentIndex + 1, total: totalQuestions })}
       />
 
-      {/* Question Card */}
+      {/* Main Question Card */}
       <div className="mt-4">
         <QuizQuestionCard
-          key={currentQuestion.id}
           question={currentQuestion}
-          questionNumber={currentIndex + 1}
-          totalQuestions={totalQuestions}
           onAnswerSubmit={handleAnswerSubmit}
-          lessonTitle={lesson.title}
-          lessonLevel={lesson.level}
         />
       </div>
     </div>

@@ -1,16 +1,21 @@
 import React from 'react';
+import { useI18n } from '../features/i18n';
 
 interface FooterProps {
   onNavigateHome: () => void;
   onNavigateFlipLens: () => void;
   onNavigateExamCenter: () => void;
+  onNavigateHelp?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onNavigateHome,
   onNavigateFlipLens,
   onNavigateExamCenter,
+  onNavigateHelp,
 }) => {
+  const { t } = useI18n();
+
   return (
     <footer className="mt-auto border-t border-slate-200 bg-white py-12 text-slate-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +25,7 @@ export const Footer: React.FC<FooterProps> = ({
               Flip<span className="text-indigo-600">English</span>
             </span>
             <p className="text-xs text-slate-500">
-              Learn English vocabulary from A1 to C2 through real-world context and structured practice.
+              {t('home.hero.subtitle')}
             </p>
           </div>
 
@@ -30,27 +35,36 @@ export const Footer: React.FC<FooterProps> = ({
               onClick={onNavigateHome}
               className="hover:text-indigo-600 transition-colors cursor-pointer"
             >
-              Curriculum
+              {t('ui.nav.curriculum')}
             </button>
             <button
               type="button"
               onClick={onNavigateFlipLens}
               className="hover:text-indigo-600 transition-colors cursor-pointer"
             >
-              FlipLens
+              {t('ui.nav.fliplens')}
             </button>
             <button
               type="button"
               onClick={onNavigateExamCenter}
               className="hover:text-indigo-600 transition-colors cursor-pointer"
             >
-              Exam Center
+              {t('ui.nav.exams')}
             </button>
+            {onNavigateHelp && (
+              <button
+                type="button"
+                onClick={onNavigateHelp}
+                className="hover:text-indigo-600 transition-colors cursor-pointer"
+              >
+                {t('ui.nav.help')}
+              </button>
+            )}
           </nav>
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-2xs text-slate-400">
-          <p>© {new Date().getFullYear()} FlipEnglish. Practice for self-paced language learning and assessment.</p>
+          <p>© {new Date().getFullYear()} FlipEnglish. {t('ui.common.disclaimerCefr')}</p>
           <p>Powered by modern web standards and Google Gemini AI.</p>
         </div>
       </div>

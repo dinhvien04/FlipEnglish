@@ -18,6 +18,7 @@ import { ReviewSession } from './ReviewSession';
 import { ReviewResult } from './ReviewResult';
 import { ReviewResumeContext } from '../../types/sessionResume';
 import { normalizeReviewResumeContext } from '../../utils/sessionResume';
+import { useI18n } from '../i18n';
 
 interface ReviewDashboardProps {
   onNavigateToHome: () => void;
@@ -32,6 +33,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   onResumeConsumed,
   onLookupWord,
 }) => {
+  const { t } = useI18n();
   const [stats, setStats] = useState<ReviewDashboardStats>(getReviewDashboardStats());
 
   // Normalized review resume if present and valid
@@ -167,10 +169,10 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Smart Review
+            {t('review.title')}
           </h1>
           <p className="text-sm text-slate-500 mt-1 max-w-xl">
-            Review vocabulary at increasing intervals based on your recall history.
+            {t('review.subtitle')}
           </p>
         </div>
 
@@ -181,7 +183,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
             onClick={onNavigateToHome}
             className="min-h-11 px-4 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
           >
-            Curriculum
+            {t('ui.nav.curriculum')}
           </button>
         </div>
       </div>
@@ -198,7 +200,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
           }`}
         >
           <div className="text-2xs font-extrabold uppercase tracking-wider text-slate-600">
-            Due for Review
+            {t('home.stats.dueReviews')}
           </div>
           <div
             className={`text-3xl sm:text-4xl font-black mt-2 ${
@@ -209,42 +211,42 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
           </div>
           <div className="text-2xs text-slate-500 mt-1">
             {hasDueItems
-              ? `${Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE)} in next batch`
-              : 'All up to date'}
+              ? `${Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE)} in batch`
+              : t('review.dashboard.noDueTitle')}
           </div>
         </div>
 
         {/* Card 2: In Learning */}
         <div id="stat-learning" className="p-5 bg-white rounded-2xl border border-slate-200">
           <div className="text-2xs font-extrabold uppercase tracking-wider text-slate-600">
-            Learning Stage
+            {t('review.dashboard.learning')}
           </div>
           <div className="text-3xl sm:text-4xl font-black text-amber-600 mt-2">
             {stats.learningCount}
           </div>
-          <div className="text-2xs text-slate-500 mt-1">Short intervals (10m - 1d)</div>
+          <div className="text-2xs text-slate-500 mt-1">10m - 1d</div>
         </div>
 
         {/* Card 3: In Review */}
         <div id="stat-reviewing" className="p-5 bg-white rounded-2xl border border-slate-200">
           <div className="text-2xs font-extrabold uppercase tracking-wider text-slate-600">
-            Solidifying
+            {t('ui.nav.review')}
           </div>
           <div className="text-3xl sm:text-4xl font-black text-sky-600 mt-2">
             {stats.reviewCount}
           </div>
-          <div className="text-2xs text-slate-500 mt-1">Medium intervals (3d - 30d)</div>
+          <div className="text-2xs text-slate-500 mt-1">3d - 30d</div>
         </div>
 
         {/* Card 4: Mastered */}
         <div id="stat-mastered" className="p-5 bg-white rounded-2xl border border-slate-200">
           <div className="text-2xs font-extrabold uppercase tracking-wider text-slate-600">
-            Mastered
+            {t('review.dashboard.mastered')}
           </div>
           <div className="text-3xl sm:text-4xl font-black text-emerald-600 mt-2">
             {stats.masteredCount}
           </div>
-          <div className="text-2xs text-slate-500 mt-1">Long-term memory (30d+)</div>
+          <div className="text-2xs text-slate-500 mt-1">30d+</div>
         </div>
       </div>
 
@@ -253,13 +255,13 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
           <div className="space-y-2 text-center sm:text-left">
             <span className="text-2xs font-black uppercase tracking-wider text-indigo-300 bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-700">
-              Ready for recall
+              {t('home.stats.dueReviews')}
             </span>
             <h2 className="text-xl sm:text-2xl font-bold">
-              {stats.dueCount} {stats.dueCount === 1 ? 'item is' : 'items are'} ready for review
+              {t('review.dashboard.dueCount', { count: stats.dueCount })}
             </h2>
             <p className="text-xs text-indigo-200 max-w-md">
-              Complete a quick 5-minute session to strengthen memory traces before they fade.
+              {t('review.subtitle')}
             </p>
           </div>
 
@@ -269,21 +271,18 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
             onClick={handleStartDueReview}
             className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-indigo-900 font-extrabold rounded-2xl shadow-sm transition-all transform hover:-translate-y-0.5 cursor-pointer text-sm shrink-0"
           >
-            Start Review ({Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE)} items)
+            {t('review.dashboard.startReview', { count: Math.min(stats.dueCount, DEFAULT_SESSION_MAX_DUE) })}
           </button>
         </div>
       ) : hasTrackedItems ? (
         /* Up to date state */
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center space-y-4 shadow-xs">
           <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs uppercase tracking-wider">
-            All Caught Up
+            {t('review.dashboard.noDueTitle')}
           </div>
           <h2 className="text-xl font-bold text-slate-900">
-            No items are due for review right now
+            {t('review.dashboard.noDueDesc')}
           </h2>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            Next review items are scheduled for {stats.dueTomorrowCount > 0 ? 'tomorrow' : 'the coming days'}.
-          </p>
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -292,7 +291,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               onClick={handleStartAllReview}
               className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-colors cursor-pointer text-xs"
             >
-              Practice tracked ({Math.min(stats.totalTracked, DEFAULT_SESSION_MAX_DUE)} of {stats.totalTracked} items)
+              {t('review.dashboard.startReview', { count: Math.min(stats.totalTracked, DEFAULT_SESSION_MAX_DUE) })}
             </button>
 
             <button
@@ -301,7 +300,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               onClick={onNavigateToHome}
               className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-xs"
             >
-              Learn new lessons
+              {t('home.hero.startCurriculum')}
             </button>
           </div>
         </div>
@@ -309,14 +308,14 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         /* Empty state: No tracked items */
         <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-5 shadow-xs">
           <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wider">
-            Smart Review Queue
+            {t('review.title')}
           </div>
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-slate-900">
-              No Vocabulary in Review Yet
+              {t('review.dashboard.noDueTitle')}
             </h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
-              Words are added to Smart Review automatically when you study lesson flashcards or make mistakes in quizzes and exams.
+              {t('review.dashboard.noDueDesc')}
             </p>
           </div>
 
@@ -327,7 +326,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               onClick={handleAddA1Essentials}
               className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer text-xs"
             >
-              Add A1 Starter Pack to Review
+              {t('dictionary.addToReview')} (A1)
             </button>
 
             <button
@@ -336,7 +335,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               onClick={onNavigateToHome}
               className="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer text-xs"
             >
-              Browse Curriculum
+              {t('home.hero.startCurriculum')}
             </button>
           </div>
         </div>
@@ -347,34 +346,34 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-1">
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-600">
-              Activity Today
+              {t('today.title')}
             </span>
             <div className="text-2xl font-black text-slate-800">
-              {stats.reviewedTodayCount} items
+              {stats.reviewedTodayCount}
             </div>
-            <p className="text-2xs text-slate-500">Reviewed since midnight</p>
+            <p className="text-2xs text-slate-500">{t('review.result.reviewedCount', { count: stats.reviewedTodayCount })}</p>
           </div>
 
           <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-1">
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-600">
-              Upcoming Forecast
+              {t('home.stats.dueReviews')}
             </span>
             <div className="text-2xl font-black text-slate-800">
-              {stats.dueTomorrowCount} tomorrow
+              {stats.dueTomorrowCount}
             </div>
             <p className="text-2xs text-slate-500">
-              {stats.dueNext7DaysCount} items in next 7 days
+              {stats.dueNext7DaysCount} (7 days)
             </p>
           </div>
 
           <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-1">
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-600">
-              Recent Recall Accuracy
+              {t('home.stats.overallProgress')}
             </span>
             <div className="text-2xl font-black text-slate-800">
               {stats.recentAccuracy !== null ? `${stats.recentAccuracy}%` : 'N/A'}
             </div>
-            <p className="text-2xs text-slate-500">Successful recalls (Hard, Good, Easy) in last 50 reviews</p>
+            <p className="text-2xs text-slate-500">Recent Accuracy</p>
           </div>
         </div>
       )}
@@ -382,7 +381,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
       {/* Maintenance / Reset Area */}
       {hasTrackedItems && (
         <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-400">
-          <span>{stats.totalTracked} total vocabulary items tracked in local spaced repetition</span>
+          <span>{stats.totalTracked} {t('review.dashboard.totalTracked')}</span>
 
           {!showResetConfirm ? (
             <button
@@ -391,12 +390,12 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
               onClick={() => setShowResetConfirm(true)}
               className="text-2xs font-semibold text-slate-600 hover:text-rose-600 transition-colors cursor-pointer"
             >
-              Reset Review Data
+              Reset
             </button>
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-2xs text-rose-600 font-bold">
-                Reset review data? (Preserves lesson scores)
+                Reset review data?
               </span>
               <button
                 id="confirm-reset-btn"
@@ -404,7 +403,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                 onClick={handleConfirmReset}
                 className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-2xs cursor-pointer"
               >
-                Yes, Reset
+                Yes
               </button>
               <button
                 id="cancel-reset-btn"
@@ -412,7 +411,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                 onClick={() => setShowResetConfirm(false)}
                 className="px-2 py-1 bg-slate-100 text-slate-700 rounded font-bold text-2xs cursor-pointer"
               >
-                Cancel
+                {t('ui.common.cancel')}
               </button>
             </div>
           )}

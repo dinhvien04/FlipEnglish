@@ -8,6 +8,7 @@ import { saveActiveExam, clearActiveExam, saveExamResultToHistory } from '../uti
 import { calculateExamResult } from '../utils/examScoring';
 import { recordQuizMistake } from '../utils/reviewStorage';
 import { resolveCurriculumItem, resolveCurriculumItemByText } from '../utils/curriculumIndex';
+import { useI18n } from '../features/i18n';
 
 interface ExamSessionProps {
   initialSession: ExamSession;
@@ -18,6 +19,7 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
   initialSession,
   onFinishExam,
 }) => {
+  const { t } = useI18n();
   const [session, setSession] = useState<ExamSession>(initialSession);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -149,7 +151,7 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
             <span className="text-xs font-black px-2 sm:px-2.5 py-1 rounded-md bg-indigo-600 text-white shrink-0">
               {session.level}
             </span>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-200 truncate hidden xs:block sm:block">
+            <h2 className="text-xs sm:text-sm font-bold text-slate-200 truncate hidden xs:block sm:block" lang="en">
               {session.title}
             </h2>
           </div>
@@ -170,7 +172,7 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
               aria-label="Open question navigator drawer"
               className="lg:hidden min-h-11 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xs font-bold text-slate-200 border border-slate-700 cursor-pointer flex items-center justify-center"
             >
-              Questions
+              {t('exam.session.navTitle')}
             </button>
           </div>
         </div>
@@ -197,7 +199,7 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
               />
             ) : (
               <div className="text-center py-12">
-                <p>No questions found in this session.</p>
+                <p>{t('ui.common.loading')}</p>
               </div>
             )}
           </div>
@@ -231,14 +233,14 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
         >
           <div className="bg-white w-full max-w-sm h-full p-6 flex flex-col justify-between space-y-4 shadow-2xl animate-slideLeft">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="text-base font-extrabold text-slate-900">Questions</h3>
+              <h3 className="text-base font-extrabold text-slate-900">{t('exam.session.navTitle')}</h3>
               <button
                 ref={drawerCloseBtnRef}
                 type="button"
                 onClick={handleCloseDrawer}
                 className="min-h-11 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold cursor-pointer inline-flex items-center justify-center"
               >
-                Close
+                {t('ui.common.cancel')}
               </button>
             </div>
 

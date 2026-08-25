@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ConversationScenario } from '../../types/conversation';
 import { CEFRLevel } from '../../types';
+import { useI18n } from '../i18n';
 
 interface ConversationSetupProps {
   scenario: ConversationScenario;
@@ -13,6 +14,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
   onStartSession,
   onBack,
 }) => {
+  const { t } = useI18n();
   const [selectedLevel, setSelectedLevel] = useState<CEFRLevel>(
     scenario.supportedLevels[0] || 'A1'
   );
@@ -23,7 +25,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
         onClick={onBack}
         className="mb-6 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
       >
-        Back to Scenarios
+        ← {t('ui.common.back')}
       </button>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs">
@@ -37,11 +39,11 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
           </span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2" lang="en">
           {scenario.title}
         </h1>
 
-        <p className="text-sm text-slate-600 leading-relaxed mb-6">
+        <p className="text-sm text-slate-600 leading-relaxed mb-6" lang="en">
           {scenario.description}
         </p>
 
@@ -51,7 +53,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Your Goal
             </span>
-            <p className="text-xs text-slate-800 font-medium">
+            <p className="text-xs text-slate-800 font-medium" lang="en">
               {scenario.learnerGoal}
             </p>
           </div>
@@ -60,7 +62,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
               AI Partner Role
             </span>
-            <p className="text-xs text-slate-800 font-medium">
+            <p className="text-xs text-slate-800 font-medium" lang="en">
               {scenario.aiRole}
             </p>
           </div>
@@ -78,7 +80,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
                   key={idx}
                   className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1"
                 >
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-slate-900" lang="en">
                     "{exp.expression}"
                   </span>
                   <span className="text-slate-500 font-normal">
@@ -131,7 +133,7 @@ export const ConversationSetup: React.FC<ConversationSetupProps> = ({
           onClick={() => onStartSession(scenario, selectedLevel)}
           className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm tracking-wide shadow-xs transition-all cursor-pointer"
         >
-          Start Conversation Session
+          {t('conversation.startChat')}
         </button>
       </div>
     </div>

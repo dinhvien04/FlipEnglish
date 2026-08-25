@@ -5,6 +5,7 @@ import {
   PLACEMENT_STAGE_SIZE,
   PLACEMENT_TOTAL_QUESTIONS,
 } from './placementTypes';
+import { useI18n } from '../i18n';
 
 interface PlacementIntroProps {
   onStartPlacement: () => void;
@@ -21,6 +22,8 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
   onViewPreviousResult,
   startError,
 }) => {
+  const { t } = useI18n();
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
       {/* Back Button */}
@@ -30,7 +33,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           onClick={onBack}
           className="min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-2"
         >
-          Back
+          ← {t('ui.common.back')}
         </button>
       </div>
 
@@ -54,14 +57,14 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
               onClick={onStartPlacement}
               className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
             >
-              Try Again
+              {t('result.retakeQuizBtn')}
             </button>
             <button
               type="button"
               onClick={onBack}
               className="min-h-11 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center"
             >
-              Back to Home
+              {t('ui.common.back')}
             </button>
           </div>
         </div>
@@ -76,11 +79,11 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-            Find your recommended starting level
+            {t('placement.title')}
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
-            Answer a short set of questions that adapts to your performance. We will estimate an appropriate starting point across the FlipEnglish A1–C2 curriculum.
+            {t('placement.subtitle')}
           </p>
         </div>
 
@@ -93,14 +96,14 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-black text-slate-900">
-                  Estimated Level: {latestHistoryItem.estimatedLevel}
+                  {t('placement.result.estimatedLevel', { level: latestHistoryItem.estimatedLevel })}
                 </span>
                 <span className="text-xs font-bold px-2 py-0.5 rounded bg-white text-indigo-700 border border-indigo-200">
                   {latestHistoryItem.overallPercentage}%
                 </span>
               </div>
               <p className="text-2xs text-slate-500">
-                Completed on {latestHistoryItem.date} • {latestHistoryItem.confidence}
+                Completed on {latestHistoryItem.date} • {t('placement.result.confidence', { confidence: latestHistoryItem.confidence })}
               </p>
             </div>
 
@@ -119,7 +122,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
         {/* 4 Skill Dimensions Grid */}
         <div className="space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-            Skills Tested During Placement Check
+            {t('placement.intro.feature2')}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -161,7 +164,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           </div>
           <div className="flex items-start gap-2">
             <span className="font-bold text-indigo-600">•</span>
-            <span><strong>Estimated time:</strong> 10 to 15 minutes.</span>
+            <span><strong>{t('placement.intro.feature3')}</strong></span>
           </div>
           <div className="flex items-start gap-2">
             <span className="font-bold text-indigo-600">•</span>
@@ -181,7 +184,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
             onClick={onStartPlacement}
             className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm sm:text-base shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
           >
-            Start Placement Check
+            {t('placement.intro.start')}
           </button>
 
           <button
@@ -189,13 +192,13 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
             onClick={onBack}
             className="min-h-12 sm:min-h-14 px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
           >
-            Cancel
+            {t('ui.common.cancel')}
           </button>
         </div>
 
         {/* Unobtrusive Disclaimer */}
         <p className="text-2xs text-slate-400 border-t border-slate-100 pt-4 leading-relaxed">
-          This short placement check is designed to recommend an appropriate starting point inside FlipEnglish. It is not an official CEFR certification or formal examination.
+          {t('placement.disclaimer')}
         </p>
       </div>
     </div>
