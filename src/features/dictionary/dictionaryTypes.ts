@@ -1,4 +1,9 @@
 import { CEFRLevel } from '../../types';
+export type {
+  LearnResumeContext,
+  ReviewResumeContext,
+  DictionaryReturnContext,
+} from '../../types/sessionResume';
 
 export interface DictionaryPronunciation {
   text?: string;
@@ -88,31 +93,3 @@ export interface RecentSearchItem {
   searchedAt: number;
 }
 
-export interface LearnResumeContext {
-  lessonId: string;
-  flashcardIndex: number;
-  hasCompletedAll: boolean;
-  isReviewMistakesMode: boolean;
-}
-
-export interface ReviewResumeContext {
-  activeQueue: any[]; // ResolvedReviewItem[]
-  currentIndex: number;
-  ratingBreakdown: Record<string, number>;
-}
-
-export type DictionaryReturnContext =
-  | {
-      source: 'learn';
-      view: 'learn';
-      learnContext: LearnResumeContext;
-    }
-  | {
-      source: 'review';
-      view: 'review';
-      reviewContext: ReviewResumeContext;
-    }
-  | {
-      source: 'view';
-      view: import('../../types').AppView;
-    };

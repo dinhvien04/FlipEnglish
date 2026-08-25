@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lesson, VocabWord } from '../types';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { batchAddLessonWordsToReview, batchAddItemsToReview } from '../utils/reviewStorage';
-import { LearnResumeContext } from '../features/dictionary/dictionaryTypes';
+import { LearnResumeContext } from '../types/sessionResume';
+import { normalizeLearnResumeContext } from '../utils/sessionResume';
 
 interface LearnProps {
   lesson: Lesson;
   wordsToLearn: VocabWord[];
   isReviewMistakesMode?: boolean;
   resumeState?: LearnResumeContext | null;
+  onResumeConsumed?: () => void;
   onFinishFlashcards: () => void;
   onBackToIntro: () => void;
   onLookupWord?: (word: string, resumeContext: LearnResumeContext) => void;
@@ -20,40 +22,32 @@ export const Learn: React.FC<LearnProps> = ({
   wordsToLearn,
   isReviewMistakesMode = false,
   resumeState = null,
+  onResumeConsumed,
   onFinishFlashcards,
   onBackToIntro,
   onLookupWord,
 }) => {
   const totalWords = wordsToLearn.length;
 
-  // Initialize from valid resume state if matching this lesson
-  const getInitialIndex = () => {
-    if (
-      resumeState &&
-      resumeState.lessonId === lesson.id &&
-      typeof resumeState.flashcardIndex === 'number' &&
-      Number.isInteger(resumeState.flashcardIndex) &&
-      resumeState.flashcardIndex >= 0 &&
-      resumeState.flashcardIndex < totalWords
-    ) {
-      return resumeState.flashcardIndex;
-    }
-    return 0;
-  };
+  // Initialize from production normalized resume state if present
+  const initialResume = normalizeLearnResumeContext(resumeState, lesson.id, totalWords);
 
-  const getInitialCompleted = () => {
-    if (
-      resumeState &&
-      resumeState.lessonId === lesson.id &&
-      typeof resumeState.hasCompletedAll === 'boolean'
-    ) {
-      return resumeState.hasCompletedAll;
-    }
-    return false;
-  };
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    return initialResume ? initialResume.currentIndex : 0;
+  });
+  const [hasCompletedAll, setHasCompletedAll] = useState<boolean>(() => {
+    return initialResume ? initialResume.hasCompletedAll : false;
+  });
 
-  const [currentIndex, setCurrentIndex] = useState<number>(getInitialIndex);
-  const [hasCompletedAll, setHasCompletedAll] = useState<boolean>(getInitialCompleted);
+  // Signal consumption to App after initial mount/hydration (one-shot)
+  const didConsumeResumeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (resumeState && !didConsumeResumeRef.current) {
+      didConsumeResumeRef.current = true;
+      onResumeConsumed?.();
+    }
+  }, [resumeState, onResumeConsumed]);
 
   const currentWord = wordsToLearn[currentIndex];
 

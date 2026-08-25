@@ -47,6 +47,11 @@ import {
   DictionaryEntry,
   SavedDictionaryWord,
 } from '../src/features/dictionary/dictionaryTypes';
+import {
+  normalizeLearnResumeContext,
+  normalizeReviewResumeContext,
+  normalizeRatingBreakdown,
+} from '../src/utils/sessionResume';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -522,91 +527,83 @@ async function runTests() {
   clearRecentSearches();
   assert(getRecentSearches().length === 0, 'History cleared completely');
 
-  console.log('\n--- 10. Learn & Smart Review Session Resume Integrity ---');
-  // Learn Resume State validation logic
+  console.log('\n--- 10. Learn & Smart Review Session Resume Production Helper Integrity ---');
+  // Learn Resume State validation via actual production helper
   const mockLessonLength = 10;
-  const validateLearnResume = (state: any, targetLessonId: string, totalCount: number): number => {
-    if (
-      state &&
-      state.lessonId === targetLessonId &&
-      typeof state.flashcardIndex === 'number' &&
-      Number.isInteger(state.flashcardIndex) &&
-      state.flashcardIndex >= 0 &&
-      state.flashcardIndex < totalCount
-    ) {
-      return state.flashcardIndex;
-    }
-    return 0;
-  };
 
-  assert(
-    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 6, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 6,
-    'Valid flashcard resume index (6 / 10) accepted'
+  const validLearn = normalizeLearnResumeContext(
+    { lessonId: 'food-drink', flashcardIndex: 6, hasCompletedAll: false, isReviewMistakesMode: false },
+    'food-drink',
+    mockLessonLength
   );
-  assert(
-    validateLearnResume({ lessonId: 'greetings', flashcardIndex: 6, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
-    'Mismatch lessonId falls back to index 0'
-  );
-  assert(
-    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: -1, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
-    'Negative flashcard index safely falls back to 0'
-  );
-  assert(
-    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 999, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
-    'Out-of-bounds flashcard index safely falls back to 0'
-  );
-  assert(
-    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 3.5, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
-    'Floating point flashcard index safely falls back to 0'
-  );
+  assert(validLearn !== null && validLearn.currentIndex === 6, 'Valid flashcard resume index (6 / 10) accepted');
+  assert(validLearn?.hasCompletedAll === false, 'Completion status false correctly preserved');
 
-  // Review Resume State validation logic
-  const mockReviewQueueLength = 10;
-  const validateReviewResume = (
-    resumeContext: any,
-    queueLength: number
-  ): { index: number; breakdown: Record<string, number> } => {
-    let index = 0;
-    if (
-      resumeContext &&
-      typeof resumeContext.currentIndex === 'number' &&
-      Number.isInteger(resumeContext.currentIndex) &&
-      resumeContext.currentIndex >= 0 &&
-      resumeContext.currentIndex < queueLength
-    ) {
-      index = resumeContext.currentIndex;
-    }
+  const validLearnCompleted = normalizeLearnResumeContext(
+    { lessonId: 'food-drink', flashcardIndex: 9, hasCompletedAll: true, isReviewMistakesMode: false },
+    'food-drink',
+    mockLessonLength
+  );
+  assert(validLearnCompleted !== null && validLearnCompleted.hasCompletedAll === true, 'Completion status true correctly preserved for same lesson');
 
-    const b = resumeContext?.ratingBreakdown;
-    const breakdown: Record<string, number> = {
-      again: typeof b?.again === 'number' && b.again >= 0 ? Math.floor(b.again) : 0,
-      hard: typeof b?.hard === 'number' && b.hard >= 0 ? Math.floor(b.hard) : 0,
-      good: typeof b?.good === 'number' && b.good >= 0 ? Math.floor(b.good) : 0,
-      easy: typeof b?.easy === 'number' && b.easy >= 0 ? Math.floor(b.easy) : 0,
-    };
+  const mismatchLesson = normalizeLearnResumeContext(
+    { lessonId: 'greetings', flashcardIndex: 6, hasCompletedAll: true, isReviewMistakesMode: false },
+    'food-drink',
+    mockLessonLength
+  );
+  assert(mismatchLesson === null, 'Mismatch lessonId is rejected (null)');
 
-    return { index, breakdown };
-  };
+  // Numeric edge cases: negative, out-of-bounds, float, NaN, Infinity, -Infinity
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: -1, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, 'Negative flashcard index rejected');
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: 999, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, 'Out-of-bounds flashcard index rejected');
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: 3.5, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, 'Floating point flashcard index rejected');
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: NaN, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, 'NaN flashcard index rejected');
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: Infinity, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, 'Infinity flashcard index rejected');
+  assert(normalizeLearnResumeContext({ lessonId: 'food-drink', flashcardIndex: -Infinity, hasCompletedAll: false, isReviewMistakesMode: false }, 'food-drink', mockLessonLength) === null, '-Infinity flashcard index rejected');
 
-  const validReviewContext = {
+  // Review Resume State validation via actual production helper
+  const mockReviewQueue = Array.from({ length: 10 }, (_, i) => ({
+    state: {} as any,
+    word: { id: `w_${i}`, word: `word_${i}`, meaning: 'test' } as any,
+    lesson: {} as any,
+    level: 'A1' as any,
+    isOverdue: false,
+    nextIntervals: { again: 10, hard: 1440, good: 4320, easy: 10080 },
+  }));
+
+  const validReview = normalizeReviewResumeContext({
+    activeQueue: mockReviewQueue,
     currentIndex: 2,
     ratingBreakdown: { again: 0, hard: 1, good: 1, easy: 0 },
-  };
-  const parsedReview = validateReviewResume(validReviewContext, mockReviewQueueLength);
-  assert(parsedReview.index === 2, 'Valid review session resume index (2) accepted');
-  assert(parsedReview.breakdown.good === 1 && parsedReview.breakdown.hard === 1, 'Previous rating breakdown preserved');
+  });
+  assert(validReview !== null && validReview.currentIndex === 2, 'Valid review session resume index (2) accepted');
+  assert(validReview?.ratingBreakdown.good === 1 && validReview?.ratingBreakdown.hard === 1, 'Previous rating breakdown preserved');
 
-  const invalidReviewIndex = {
-    currentIndex: 15,
-    ratingBreakdown: { again: 0, hard: 1, good: 1, easy: 0 },
-  };
-  assert(validateReviewResume(invalidReviewIndex, mockReviewQueueLength).index === 0, 'Out-of-bounds review index falls back to 0');
+  // Review index edge cases
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: -1, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Negative review index rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: 10, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Index equal to length rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: 15, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Out-of-bounds review index rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: 2.5, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Floating point review index rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: NaN, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'NaN review index rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: Infinity, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Infinity review index rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: mockReviewQueue, currentIndex: -Infinity, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, '-Infinity review index rejected');
 
-  const invalidNegativeRating = {
-    currentIndex: 2,
-    ratingBreakdown: { again: -5, hard: 1, good: 1, easy: 0 },
-  };
-  assert(validateReviewResume(invalidNegativeRating, mockReviewQueueLength).breakdown.again === 0, 'Negative rating counts sanitized to 0');
+  // Empty or invalid queue
+  assert(normalizeReviewResumeContext({ activeQueue: [], currentIndex: 0, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Empty activeQueue rejected');
+  assert(normalizeReviewResumeContext({ activeQueue: [{ bad: 'item' }] as any, currentIndex: 0, ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 } }) === null, 'Malformed activeQueue item rejected');
+
+  // Rating breakdown normalization and sanitization (NaN, Infinity, float, negative)
+  const breakdownWithNegative = normalizeRatingBreakdown({ again: -5, hard: 1, good: 1, easy: 0 });
+  assert(breakdownWithNegative.again === 0 && breakdownWithNegative.hard === 0, 'Invalid rating counts cause reset to safe zero breakdown');
+
+  const breakdownWithFloat = normalizeRatingBreakdown({ again: 0, hard: 1.5, good: 1, easy: 0 });
+  assert(breakdownWithFloat.hard === 0, 'Floating point rating count resets breakdown to safe zeros');
+
+  const breakdownWithNaN = normalizeRatingBreakdown({ again: 0, hard: NaN, good: 1, easy: 0 });
+  assert(breakdownWithNaN.good === 0, 'NaN rating count resets breakdown to safe zeros');
+
+  const breakdownWithInfinity = normalizeRatingBreakdown({ again: 0, hard: 0, good: Infinity, easy: 0 });
+  assert(breakdownWithInfinity.good === 0, 'Infinity rating count resets breakdown to safe zeros');
 
   console.log('\n============================================================');
   console.log('🎉 ALL FLIPENGLISH DICTIONARY TESTS PASSED SUCCESSFULLY! 🎉');

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ResolvedReviewItem, ReviewRating, ReviewSessionSummary } from '../../types/review';
 import { applyReviewRatingToItem } from '../../utils/reviewStorage';
+import { normalizeRatingBreakdown } from '../../utils/sessionResume';
 import { ReviewCard } from './ReviewCard';
 import { ProgressBar } from '../../components/ProgressBar';
 
@@ -26,6 +27,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   const getSafeInitialIndex = () => {
     if (
       typeof initialIndex === 'number' &&
+      Number.isFinite(initialIndex) &&
       Number.isInteger(initialIndex) &&
       initialIndex >= 0 &&
       initialIndex < total
@@ -36,21 +38,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   };
 
   const getSafeInitialBreakdown = (): Record<ReviewRating, number> => {
-    if (initialRatingBreakdown && typeof initialRatingBreakdown === 'object') {
-      const b = initialRatingBreakdown;
-      return {
-        again: typeof b.again === 'number' && b.again >= 0 ? Math.floor(b.again) : 0,
-        hard: typeof b.hard === 'number' && b.hard >= 0 ? Math.floor(b.hard) : 0,
-        good: typeof b.good === 'number' && b.good >= 0 ? Math.floor(b.good) : 0,
-        easy: typeof b.easy === 'number' && b.easy >= 0 ? Math.floor(b.easy) : 0,
-      };
-    }
-    return {
-      again: 0,
-      hard: 0,
-      good: 0,
-      easy: 0,
-    };
+    return normalizeRatingBreakdown(initialRatingBreakdown);
   };
 
   const [currentIndex, setCurrentIndex] = useState<number>(getSafeInitialIndex);

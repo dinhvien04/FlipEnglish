@@ -46,7 +46,7 @@ import {
   DictionaryReturnContext,
   LearnResumeContext,
   ReviewResumeContext,
-} from './features/dictionary/dictionaryTypes';
+} from './types/sessionResume';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 
@@ -219,6 +219,7 @@ export default function App() {
   };
 
   const handleFinishFlashcards = () => {
+    setResumedLearnContext(null);
     setCurrentView('exercise');
   };
 
@@ -229,6 +230,7 @@ export default function App() {
     mistakeWords: VocabWord[];
     totalQuestions: number;
   }) => {
+    setResumedLearnContext(null);
     setQuizResults(results);
     setMistakeWords(results.mistakeWords);
     setCurrentView('result');
@@ -236,19 +238,30 @@ export default function App() {
 
   const handleReviewMistakes = () => {
     if (mistakeWords.length > 0) {
+      setResumedLearnContext(null);
       setIsReviewMistakesMode(true);
       setCurrentView('learn');
     }
   };
 
   const handleTryAgain = () => {
+    setResumedLearnContext(null);
     setIsReviewMistakesMode(false);
     setCurrentView('exercise');
   };
 
   const handleBackToIntro = () => {
+    setResumedLearnContext(null);
     setIsReviewMistakesMode(false);
     setCurrentView('lesson-intro');
+  };
+
+  const handleLearnResumeConsumed = () => {
+    setResumedLearnContext(null);
+  };
+
+  const handleReviewResumeConsumed = () => {
+    setResumedReviewContext(null);
   };
 
   // Conversation Handlers
@@ -699,6 +712,7 @@ export default function App() {
           <ReviewDashboard
             onNavigateToHome={handleNavigateHome}
             resumeContext={resumedReviewContext}
+            onResumeConsumed={handleReviewResumeConsumed}
             onLookupWord={(word, reviewContext) =>
               handleNavigateDictionary(word, {
                 source: 'review',
@@ -765,6 +779,7 @@ export default function App() {
             wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
             isReviewMistakesMode={isReviewMistakesMode}
             resumeState={resumedLearnContext}
+            onResumeConsumed={handleLearnResumeConsumed}
             onFinishFlashcards={handleFinishFlashcards}
             onBackToIntro={handleBackToIntro}
             onLookupWord={(word, learnContext) =>

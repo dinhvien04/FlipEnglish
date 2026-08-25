@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ReviewDashboardStats,
   ResolvedReviewItem,
@@ -16,28 +16,45 @@ import {
 } from '../../utils/reviewStorage';
 import { ReviewSession } from './ReviewSession';
 import { ReviewResult } from './ReviewResult';
-import { ReviewResumeContext } from '../dictionary/dictionaryTypes';
+import { ReviewResumeContext } from '../../types/sessionResume';
+import { normalizeReviewResumeContext } from '../../utils/sessionResume';
 
 interface ReviewDashboardProps {
   onNavigateToHome: () => void;
   resumeContext?: ReviewResumeContext | null;
+  onResumeConsumed?: () => void;
   onLookupWord?: (word: string, resumeContext: ReviewResumeContext) => void;
 }
 
 export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   onNavigateToHome,
   resumeContext = null,
+  onResumeConsumed,
   onLookupWord,
 }) => {
   const [stats, setStats] = useState<ReviewDashboardStats>(getReviewDashboardStats());
+
+  // Normalized review resume if present and valid
+  const normalizedResume = normalizeReviewResumeContext(resumeContext);
+
   const [activeQueue, setActiveQueue] = useState<ResolvedReviewItem[] | null>(() => {
-    if (resumeContext && Array.isArray(resumeContext.activeQueue) && resumeContext.activeQueue.length > 0) {
-      return resumeContext.activeQueue;
+    if (normalizedResume) {
+      return normalizedResume.activeQueue;
     }
     return null;
   });
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Signal consumption of resume context (one-shot) after initial mount
+  const didConsumeResumeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (resumeContext && !didConsumeResumeRef.current) {
+      didConsumeResumeRef.current = true;
+      onResumeConsumed?.();
+    }
+  }, [resumeContext, onResumeConsumed]);
 
   // Sync state whenever review updates occur
   const refreshStats = () => {
@@ -117,8 +134,8 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     return (
       <ReviewSession
         queue={activeQueue}
-        initialIndex={resumeContext?.currentIndex}
-        initialRatingBreakdown={resumeContext?.ratingBreakdown as any}
+        initialIndex={normalizedResume?.currentIndex}
+        initialRatingBreakdown={normalizedResume?.ratingBreakdown}
         onFinishSession={handleFinishSession}
         onExit={handleExitSession}
         onLookupWord={onLookupWord ? handleLookup : undefined}
