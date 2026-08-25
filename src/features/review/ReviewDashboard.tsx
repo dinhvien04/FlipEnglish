@@ -3,6 +3,7 @@ import {
   ReviewDashboardStats,
   ResolvedReviewItem,
   ReviewSessionSummary,
+  ReviewRating,
 } from '../../types/review';
 import {
   getReviewDashboardStats,
@@ -15,15 +16,26 @@ import {
 } from '../../utils/reviewStorage';
 import { ReviewSession } from './ReviewSession';
 import { ReviewResult } from './ReviewResult';
+import { ReviewResumeContext } from '../dictionary/dictionaryTypes';
 
 interface ReviewDashboardProps {
   onNavigateToHome: () => void;
-  onLookupWord?: (word: string) => void;
+  resumeContext?: ReviewResumeContext | null;
+  onLookupWord?: (word: string, resumeContext: ReviewResumeContext) => void;
 }
 
-export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHome, onLookupWord }) => {
+export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
+  onNavigateToHome,
+  resumeContext = null,
+  onLookupWord,
+}) => {
   const [stats, setStats] = useState<ReviewDashboardStats>(getReviewDashboardStats());
-  const [activeQueue, setActiveQueue] = useState<ResolvedReviewItem[] | null>(null);
+  const [activeQueue, setActiveQueue] = useState<ResolvedReviewItem[] | null>(() => {
+    if (resumeContext && Array.isArray(resumeContext.activeQueue) && resumeContext.activeQueue.length > 0) {
+      return resumeContext.activeQueue;
+    }
+    return null;
+  });
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -74,6 +86,19 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
     refreshStats();
   };
 
+  const handleLookup = (
+    word: string,
+    sessionState: { currentIndex: number; ratingBreakdown: Record<ReviewRating, number> }
+  ) => {
+    if (onLookupWord && activeQueue) {
+      onLookupWord(word, {
+        activeQueue,
+        currentIndex: sessionState.currentIndex,
+        ratingBreakdown: sessionState.ratingBreakdown,
+      });
+    }
+  };
+
   const handleAddA1Essentials = () => {
     batchAddLessonWordsToReview('greetings');
     batchAddLessonWordsToReview('family');
@@ -92,9 +117,11 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({ onNavigateToHo
     return (
       <ReviewSession
         queue={activeQueue}
+        initialIndex={resumeContext?.currentIndex}
+        initialRatingBreakdown={resumeContext?.ratingBreakdown as any}
         onFinishSession={handleFinishSession}
         onExit={handleExitSession}
-        onLookupWord={onLookupWord}
+        onLookupWord={onLookupWord ? handleLookup : undefined}
       />
     );
   }

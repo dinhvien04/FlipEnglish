@@ -1,30 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lesson, VocabWord } from '../types';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { batchAddLessonWordsToReview, batchAddItemsToReview } from '../utils/reviewStorage';
+import { LearnResumeContext } from '../features/dictionary/dictionaryTypes';
 
 interface LearnProps {
   lesson: Lesson;
   wordsToLearn: VocabWord[];
   isReviewMistakesMode?: boolean;
+  resumeState?: LearnResumeContext | null;
   onFinishFlashcards: () => void;
   onBackToIntro: () => void;
-  onLookupWord?: (word: string) => void;
+  onLookupWord?: (word: string, resumeContext: LearnResumeContext) => void;
 }
 
 export const Learn: React.FC<LearnProps> = ({
   lesson,
   wordsToLearn,
   isReviewMistakesMode = false,
+  resumeState = null,
   onFinishFlashcards,
   onBackToIntro,
   onLookupWord,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [hasCompletedAll, setHasCompletedAll] = useState(false);
-
   const totalWords = wordsToLearn.length;
+
+  // Initialize from valid resume state if matching this lesson
+  const getInitialIndex = () => {
+    if (
+      resumeState &&
+      resumeState.lessonId === lesson.id &&
+      typeof resumeState.flashcardIndex === 'number' &&
+      Number.isInteger(resumeState.flashcardIndex) &&
+      resumeState.flashcardIndex >= 0 &&
+      resumeState.flashcardIndex < totalWords
+    ) {
+      return resumeState.flashcardIndex;
+    }
+    return 0;
+  };
+
+  const getInitialCompleted = () => {
+    if (
+      resumeState &&
+      resumeState.lessonId === lesson.id &&
+      typeof resumeState.hasCompletedAll === 'boolean'
+    ) {
+      return resumeState.hasCompletedAll;
+    }
+    return false;
+  };
+
+  const [currentIndex, setCurrentIndex] = useState<number>(getInitialIndex);
+  const [hasCompletedAll, setHasCompletedAll] = useState<boolean>(getInitialCompleted);
+
   const currentWord = wordsToLearn[currentIndex];
 
   const handleNext = () => {
@@ -49,6 +79,17 @@ export const Learn: React.FC<LearnProps> = ({
   const handleRestartCards = () => {
     setCurrentIndex(0);
     setHasCompletedAll(false);
+  };
+
+  const handleLookup = (word: string) => {
+    if (onLookupWord) {
+      onLookupWord(word, {
+        lessonId: lesson.id,
+        flashcardIndex: currentIndex,
+        hasCompletedAll,
+        isReviewMistakesMode,
+      });
+    }
   };
 
   if (!currentWord || totalWords === 0) {
@@ -118,7 +159,7 @@ export const Learn: React.FC<LearnProps> = ({
             totalWords={totalWords}
             onNext={handleNext}
             onPrev={handlePrev}
-            onLookupWord={onLookupWord}
+            onLookupWord={onLookupWord ? handleLookup : undefined}
             isFirst={currentIndex === 0}
             isLast={currentIndex === totalWords - 1}
           />

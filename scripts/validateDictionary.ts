@@ -325,6 +325,52 @@ async function runTests() {
   assert(greetingCurriculumWord !== null, 'Canonical curriculum match resolved by wordId and lessonId');
   assert(greetingCurriculumWord?.level === 'A1', 'Canonical CEFR level preserved accurately');
 
+  // F. Fake / manipulated curriculum IDs in saved snapshot -> NEVER builds fake curriculum match
+  const savedFakeCurriculum: SavedDictionaryWord = {
+    schemaVersion: 1,
+    id: 'saved_fake_curr',
+    normalizedWord: 'astronomer',
+    displayWord: 'astronomer',
+    savedAt: 1700000000000,
+    source: 'curriculum',
+    curriculumWordId: 'fake-word-id',
+    lessonId: 'fake-lesson-id',
+    snapshot: {
+      word: 'astronomer',
+      normalizedWord: 'astronomer',
+      cefrLevel: 'C2',
+      lessonTitle: 'Super Advanced Astronomy',
+      primaryMeaningVi: 'nhà thiên văn học',
+    },
+  };
+
+  const reconstitutedFake = buildDictionaryEntryFromSavedSnapshot(savedFakeCurriculum);
+  assert(reconstitutedFake.curriculumMatches === undefined, 'Manipulated snapshot with invalid IDs has no curriculumMatches');
+  assert(reconstitutedFake.source !== 'flipenglish', 'Manipulated snapshot cannot claim flipenglish source');
+
+  // G. Fake IDs with a word that DOES exist in bundled curriculum -> Derives real canonical data from bundle
+  const savedFakeIdsRealWord: SavedDictionaryWord = {
+    schemaVersion: 1,
+    id: 'saved_fake_id_hello',
+    normalizedWord: 'hello',
+    displayWord: 'hello',
+    savedAt: 1700000000000,
+    source: 'curriculum',
+    curriculumWordId: 'corrupted-word-id',
+    lessonId: 'corrupted-lesson-id',
+    snapshot: {
+      word: 'hello',
+      normalizedWord: 'hello',
+      cefrLevel: 'C2',
+      lessonTitle: 'Fake Level Title',
+    },
+  };
+
+  const reconstitutedRealWord = buildDictionaryEntryFromSavedSnapshot(savedFakeIdsRealWord);
+  assert(reconstitutedRealWord.curriculumMatches !== undefined && reconstitutedRealWord.curriculumMatches.length > 0, 'Real bundled curriculum word matches bundled index');
+  assert(reconstitutedRealWord.curriculumMatches![0].level === 'A1', 'Bundled curriculum matches canonical A1 level, ignoring snapshot claim of C2');
+  assert(reconstitutedRealWord.curriculumMatches![0].lessonTitle === 'Greetings & Introductions', 'Bundled curriculum matches canonical lesson title');
+
   console.log('\n--- 6. Cache TTL & Fresh/Stale Decision Tests ---');
   const now = 1700000000000;
   const fiveMinsAgo = now - 5 * 60 * 1000;
@@ -475,6 +521,92 @@ async function runTests() {
 
   clearRecentSearches();
   assert(getRecentSearches().length === 0, 'History cleared completely');
+
+  console.log('\n--- 10. Learn & Smart Review Session Resume Integrity ---');
+  // Learn Resume State validation logic
+  const mockLessonLength = 10;
+  const validateLearnResume = (state: any, targetLessonId: string, totalCount: number): number => {
+    if (
+      state &&
+      state.lessonId === targetLessonId &&
+      typeof state.flashcardIndex === 'number' &&
+      Number.isInteger(state.flashcardIndex) &&
+      state.flashcardIndex >= 0 &&
+      state.flashcardIndex < totalCount
+    ) {
+      return state.flashcardIndex;
+    }
+    return 0;
+  };
+
+  assert(
+    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 6, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 6,
+    'Valid flashcard resume index (6 / 10) accepted'
+  );
+  assert(
+    validateLearnResume({ lessonId: 'greetings', flashcardIndex: 6, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
+    'Mismatch lessonId falls back to index 0'
+  );
+  assert(
+    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: -1, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
+    'Negative flashcard index safely falls back to 0'
+  );
+  assert(
+    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 999, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
+    'Out-of-bounds flashcard index safely falls back to 0'
+  );
+  assert(
+    validateLearnResume({ lessonId: 'food-drink', flashcardIndex: 3.5, hasCompletedAll: false }, 'food-drink', mockLessonLength) === 0,
+    'Floating point flashcard index safely falls back to 0'
+  );
+
+  // Review Resume State validation logic
+  const mockReviewQueueLength = 10;
+  const validateReviewResume = (
+    resumeContext: any,
+    queueLength: number
+  ): { index: number; breakdown: Record<string, number> } => {
+    let index = 0;
+    if (
+      resumeContext &&
+      typeof resumeContext.currentIndex === 'number' &&
+      Number.isInteger(resumeContext.currentIndex) &&
+      resumeContext.currentIndex >= 0 &&
+      resumeContext.currentIndex < queueLength
+    ) {
+      index = resumeContext.currentIndex;
+    }
+
+    const b = resumeContext?.ratingBreakdown;
+    const breakdown: Record<string, number> = {
+      again: typeof b?.again === 'number' && b.again >= 0 ? Math.floor(b.again) : 0,
+      hard: typeof b?.hard === 'number' && b.hard >= 0 ? Math.floor(b.hard) : 0,
+      good: typeof b?.good === 'number' && b.good >= 0 ? Math.floor(b.good) : 0,
+      easy: typeof b?.easy === 'number' && b.easy >= 0 ? Math.floor(b.easy) : 0,
+    };
+
+    return { index, breakdown };
+  };
+
+  const validReviewContext = {
+    currentIndex: 2,
+    ratingBreakdown: { again: 0, hard: 1, good: 1, easy: 0 },
+  };
+  const parsedReview = validateReviewResume(validReviewContext, mockReviewQueueLength);
+  assert(parsedReview.index === 2, 'Valid review session resume index (2) accepted');
+  assert(parsedReview.breakdown.good === 1 && parsedReview.breakdown.hard === 1, 'Previous rating breakdown preserved');
+
+  const invalidReviewIndex = {
+    currentIndex: 15,
+    ratingBreakdown: { again: 0, hard: 1, good: 1, easy: 0 },
+  };
+  assert(validateReviewResume(invalidReviewIndex, mockReviewQueueLength).index === 0, 'Out-of-bounds review index falls back to 0');
+
+  const invalidNegativeRating = {
+    currentIndex: 2,
+    ratingBreakdown: { again: -5, hard: 1, good: 1, easy: 0 },
+  };
+  assert(validateReviewResume(invalidNegativeRating, mockReviewQueueLength).breakdown.again === 0, 'Negative rating counts sanitized to 0');
 
   console.log('\n============================================================');
   console.log('🎉 ALL FLIPENGLISH DICTIONARY TESTS PASSED SUCCESSFULLY! 🎉');

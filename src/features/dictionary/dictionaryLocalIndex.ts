@@ -265,22 +265,18 @@ export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionary
     pronunciations.push({ audioUrl: snapshot.audioUrl });
   }
 
-  // Resolve curriculum match: prefer canonical lookup by IDs first
+  // Resolve curriculum match: ONLY from current canonical FlipEnglish curriculum data
   const curriculumMatches: CurriculumDictionaryMatch[] = [];
   if (savedWord.curriculumWordId && savedWord.lessonId) {
     const canonicalMatch = getCurriculumMatchByIds(savedWord.curriculumWordId, savedWord.lessonId);
     if (canonicalMatch) {
       curriculumMatches.push(canonicalMatch);
-    } else if (snapshot?.cefrLevel && snapshot?.lessonTitle) {
-      // Valid snapshot metadata without fake level fallback
-      curriculumMatches.push({
-        wordId: savedWord.curriculumWordId,
-        lessonId: savedWord.lessonId,
-        lessonTitle: snapshot.lessonTitle,
-        level: snapshot.cefrLevel,
-        meaning: snapshot.primaryMeaningVi,
-        partOfSpeech: snapshot.primaryPartOfSpeech,
-      });
+    } else {
+      // Fallback: check if normalized word exists in current bundled curriculum
+      const localMatches = getCurriculumMatchesForWord(normalizedWord);
+      if (localMatches.length > 0) {
+        curriculumMatches.push(...localMatches);
+      }
     }
   } else {
     // If no wordId/lessonId, check if normalized word matches local curriculum index
@@ -289,6 +285,8 @@ export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionary
       curriculumMatches.push(...localMatches);
     }
   }
+
+  const hasCanonicalMatches = curriculumMatches.length > 0;
 
   return {
     schemaVersion: 1,
@@ -300,8 +298,8 @@ export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionary
     meanings,
     synonyms: [],
     antonyms: [],
-    curriculumMatches: curriculumMatches.length > 0 ? curriculumMatches : undefined,
-    source: savedWord.source === 'curriculum' ? 'flipenglish' : 'dictionaryapi',
+    curriculumMatches: hasCanonicalMatches ? curriculumMatches : undefined,
+    source: hasCanonicalMatches ? 'flipenglish' : 'dictionaryapi',
     fetchedAt: savedWord.savedAt,
   };
 }

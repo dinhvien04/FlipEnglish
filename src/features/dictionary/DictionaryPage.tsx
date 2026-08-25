@@ -4,6 +4,7 @@ import {
   RecentSearchItem,
   SavedDictionaryWord,
   ReverseDictionaryResult,
+  DictionaryReturnContext,
 } from './dictionaryTypes';
 import {
   lookupDictionary,
@@ -22,7 +23,7 @@ import { SavedWordsPanel } from './SavedWordsPanel';
 
 interface DictionaryPageProps {
   initialWord?: string;
-  returnView?: string | null;
+  returnContext?: DictionaryReturnContext | null;
   onReturn?: () => void;
   onNavigateLesson?: (lessonId: string) => void;
   onNavigateReview?: () => void;
@@ -30,7 +31,7 @@ interface DictionaryPageProps {
 
 export const DictionaryPage: React.FC<DictionaryPageProps> = ({
   initialWord = '',
-  returnView = null,
+  returnContext = null,
   onReturn,
   onNavigateLesson,
   onNavigateReview,
@@ -59,10 +60,20 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
     refreshSavedWords();
   }, []);
 
+  // Canonical word-open helper: ALWAYS executes standard Dictionary Lookup
+  const openDictionaryWord = (word: string) => {
+    const clean = word.trim();
+    if (!clean) return;
+
+    setSearchMode('dictionary');
+    setReverseResults([]);
+    handleSearch(clean, 'dictionary');
+  };
+
   // Perform initial search if initialWord is provided
   useEffect(() => {
     if (initialWord && initialWord.trim()) {
-      handleSearch(initialWord.trim());
+      openDictionaryWord(initialWord.trim());
     }
   }, [initialWord]);
 
@@ -126,16 +137,14 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
   };
 
   const handleSelectReverseWord = (word: string) => {
-    setSearchMode('dictionary');
-    setReverseResults([]);
-    handleSearch(word, 'dictionary');
+    openDictionaryWord(word);
   };
 
-  const returnLabel = returnView === 'learn' || returnView === 'exercise'
+  const returnLabel = returnContext?.view === 'learn'
     ? 'Back to Lesson'
-    : returnView === 'review'
+    : returnContext?.view === 'review'
     ? 'Back to Smart Review'
-    : returnView === 'today'
+    : returnContext?.view === 'today'
     ? 'Back to Today'
     : 'Back';
 
@@ -143,7 +152,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Page Header */}
       <header className="space-y-3">
-        {onReturn && returnView && (
+        {onReturn && returnContext && (
           <div>
             <button
               type="button"
@@ -262,7 +271,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => handleSearch(sug)}
+                        onClick={() => openDictionaryWord(sug)}
                         className="min-h-11 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer border border-indigo-200"
                       >
                         {sug}
@@ -313,7 +322,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
             <DictionaryEntryView
               entry={entry}
               isOfflineCached={isOfflineCached}
-              onWordClick={handleSearch}
+              onWordClick={openDictionaryWord}
               onNavigateLesson={onNavigateLesson}
               onNavigateReview={onNavigateReview}
             />
@@ -342,7 +351,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => handleSearch(item.word)}
+                        onClick={() => openDictionaryWord(item.word)}
                         className="min-h-11 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
                       >
                         {item.word}
@@ -361,7 +370,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
           savedWords={savedWords}
           onSelectWord={(word) => {
             setActiveTab('search');
-            handleSearch(word);
+            openDictionaryWord(word);
           }}
           onRefreshSaved={refreshSavedWords}
         />
@@ -372,7 +381,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
           history={recentSearches}
           onSelectWord={(word) => {
             setActiveTab('search');
-            handleSearch(word);
+            openDictionaryWord(word);
           }}
           onClearHistory={handleClearHistory}
         />

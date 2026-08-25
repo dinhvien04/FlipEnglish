@@ -42,6 +42,11 @@ import { PlacementSessionPage } from './features/placement/PlacementSession';
 import { PlacementResultPage } from './features/placement/PlacementResult';
 import { TodayPage } from './features/studyPlan/TodayPage';
 import { DictionaryPage } from './features/dictionary/DictionaryPage';
+import {
+  DictionaryReturnContext,
+  LearnResumeContext,
+  ReviewResumeContext,
+} from './features/dictionary/dictionaryTypes';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 
@@ -76,7 +81,11 @@ export default function App() {
 
   // Dictionary Initial Word State & Navigation Context
   const [dictionarySearchWord, setDictionarySearchWord] = useState<string>('');
-  const [dictionaryReturnView, setDictionaryReturnView] = useState<AppView | null>(null);
+  const [dictionaryReturnContext, setDictionaryReturnContext] = useState<DictionaryReturnContext | null>(null);
+
+  // Resumed Session States
+  const [resumedLearnContext, setResumedLearnContext] = useState<LearnResumeContext | null>(null);
+  const [resumedReviewContext, setResumedReviewContext] = useState<ReviewResumeContext | null>(null);
 
   // Conversation States
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
@@ -113,22 +122,46 @@ export default function App() {
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
+    setResumedLearnContext(null);
+    setResumedReviewContext(null);
     setCurrentView('today');
   };
 
-  const handleNavigateDictionary = (searchWord?: string) => {
+  const handleNavigateDictionary = (
+    searchWord?: string,
+    returnContextOverride?: DictionaryReturnContext
+  ) => {
     setDictionarySearchWord(searchWord || '');
-    if (currentView !== 'dictionary') {
-      setDictionaryReturnView(currentView);
+    if (returnContextOverride) {
+      setDictionaryReturnContext(returnContextOverride);
+    } else if (currentView !== 'dictionary') {
+      setDictionaryReturnContext({
+        source: 'view',
+        view: currentView,
+      });
     }
     setCurrentView('dictionary');
   };
 
   const handleReturnFromDictionary = () => {
-    if (dictionaryReturnView) {
-      setCurrentView(dictionaryReturnView);
-      setDictionaryReturnView(null);
+    if (dictionaryReturnContext) {
+      if (dictionaryReturnContext.source === 'learn') {
+        setResumedLearnContext(dictionaryReturnContext.learnContext);
+        setSelectedLessonId(dictionaryReturnContext.learnContext.lessonId);
+        setIsReviewMistakesMode(dictionaryReturnContext.learnContext.isReviewMistakesMode);
+        setCurrentView('learn');
+      } else if (dictionaryReturnContext.source === 'review') {
+        setResumedReviewContext(dictionaryReturnContext.reviewContext);
+        setCurrentView('review');
+      } else {
+        setResumedLearnContext(null);
+        setResumedReviewContext(null);
+        setCurrentView(dictionaryReturnContext.view);
+      }
+      setDictionaryReturnContext(null);
     } else {
+      setResumedLearnContext(null);
+      setResumedReviewContext(null);
       setCurrentView('home');
     }
   };
@@ -139,12 +172,16 @@ export default function App() {
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
+    setResumedLearnContext(null);
+    setResumedReviewContext(null);
   };
 
   const handleNavigateReview = () => {
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
+    setResumedLearnContext(null);
+    setResumedReviewContext(null);
     setCurrentView('review');
   };
 
@@ -164,17 +201,20 @@ export default function App() {
   const handleSelectLesson = (lesson: Lesson) => {
     setSelectedLessonId(lesson.id);
     setIsReviewMistakesMode(false);
+    setResumedLearnContext(null);
     setCurrentView('lesson-intro');
   };
 
   const handleSelectLessonById = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setIsReviewMistakesMode(false);
+    setResumedLearnContext(null);
     setCurrentView('lesson-intro');
   };
 
   const handleStartLearning = () => {
     setIsReviewMistakesMode(false);
+    setResumedLearnContext(null);
     setCurrentView('learn');
   };
 
@@ -602,7 +642,7 @@ export default function App() {
         {currentView === 'dictionary' && (
           <DictionaryPage
             initialWord={dictionarySearchWord}
-            returnView={dictionaryReturnView}
+            returnContext={dictionaryReturnContext}
             onReturn={handleReturnFromDictionary}
             onNavigateLesson={handleSelectLessonById}
             onNavigateReview={handleNavigateReview}
@@ -658,7 +698,14 @@ export default function App() {
         {currentView === 'review' && (
           <ReviewDashboard
             onNavigateToHome={handleNavigateHome}
-            onLookupWord={(word) => handleNavigateDictionary(word)}
+            resumeContext={resumedReviewContext}
+            onLookupWord={(word, reviewContext) =>
+              handleNavigateDictionary(word, {
+                source: 'review',
+                view: 'review',
+                reviewContext,
+              })
+            }
           />
         )}
 
@@ -717,9 +764,16 @@ export default function App() {
             lesson={selectedLesson}
             wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
             isReviewMistakesMode={isReviewMistakesMode}
+            resumeState={resumedLearnContext}
             onFinishFlashcards={handleFinishFlashcards}
             onBackToIntro={handleBackToIntro}
-            onLookupWord={(word) => handleNavigateDictionary(word)}
+            onLookupWord={(word, learnContext) =>
+              handleNavigateDictionary(word, {
+                source: 'learn',
+                view: 'learn',
+                learnContext,
+              })
+            }
           />
         )}
 

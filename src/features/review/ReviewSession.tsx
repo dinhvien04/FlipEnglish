@@ -6,27 +6,57 @@ import { ProgressBar } from '../../components/ProgressBar';
 
 interface ReviewSessionProps {
   queue: ResolvedReviewItem[];
+  initialIndex?: number;
+  initialRatingBreakdown?: Record<ReviewRating, number>;
   onFinishSession: (summary: ReviewSessionSummary) => void;
   onExit: () => void;
-  onLookupWord?: (word: string) => void;
+  onLookupWord?: (word: string, sessionState: { currentIndex: number; ratingBreakdown: Record<ReviewRating, number> }) => void;
 }
 
 export const ReviewSession: React.FC<ReviewSessionProps> = ({
   queue,
+  initialIndex = 0,
+  initialRatingBreakdown,
   onFinishSession,
   onExit,
   onLookupWord,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [ratingBreakdown, setRatingBreakdown] = useState<Record<ReviewRating, number>>({
-    again: 0,
-    hard: 0,
-    good: 0,
-    easy: 0,
-  });
+  const total = queue.length;
+
+  const getSafeInitialIndex = () => {
+    if (
+      typeof initialIndex === 'number' &&
+      Number.isInteger(initialIndex) &&
+      initialIndex >= 0 &&
+      initialIndex < total
+    ) {
+      return initialIndex;
+    }
+    return 0;
+  };
+
+  const getSafeInitialBreakdown = (): Record<ReviewRating, number> => {
+    if (initialRatingBreakdown && typeof initialRatingBreakdown === 'object') {
+      const b = initialRatingBreakdown;
+      return {
+        again: typeof b.again === 'number' && b.again >= 0 ? Math.floor(b.again) : 0,
+        hard: typeof b.hard === 'number' && b.hard >= 0 ? Math.floor(b.hard) : 0,
+        good: typeof b.good === 'number' && b.good >= 0 ? Math.floor(b.good) : 0,
+        easy: typeof b.easy === 'number' && b.easy >= 0 ? Math.floor(b.easy) : 0,
+      };
+    }
+    return {
+      again: 0,
+      hard: 0,
+      good: 0,
+      easy: 0,
+    };
+  };
+
+  const [currentIndex, setCurrentIndex] = useState<number>(getSafeInitialIndex);
+  const [ratingBreakdown, setRatingBreakdown] = useState<Record<ReviewRating, number>>(getSafeInitialBreakdown);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const total = queue.length;
   const currentItem = queue[currentIndex];
 
   const handleRate = (rating: ReviewRating) => {
@@ -52,6 +82,15 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         ratingBreakdown: updatedBreakdown,
         reviewedItems: queue,
         finishedAt: Date.now(),
+      });
+    }
+  };
+
+  const handleLookup = (word: string) => {
+    if (onLookupWord) {
+      onLookupWord(word, {
+        currentIndex,
+        ratingBreakdown,
       });
     }
   };
@@ -96,7 +135,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         key={currentItem.word.id}
         item={currentItem}
         onRate={handleRate}
-        onLookupWord={onLookupWord}
+        onLookupWord={onLookupWord ? handleLookup : undefined}
         disabled={isProcessing}
       />
     </div>
