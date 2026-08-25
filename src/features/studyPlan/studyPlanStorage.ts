@@ -6,12 +6,14 @@ import {
   TodayStudyPlan,
   CompactStudyPlanHistoryItem,
   StudyPlanTask,
+  StudyPlanTaskEvidence,
   StudyPlanGoalUpdateResult,
 } from './studyPlanTypes';
 import {
   getLocalDateKey,
   isValidLocalDateKey,
   generateTodayStudyPlan,
+  getTaskTargetKey,
 } from './studyPlanEngine';
 import { buildStudyPlanContext } from './studyPlanContext';
 import { getLessonById } from '../../data/lessons';
@@ -26,6 +28,19 @@ export const STUDY_PLAN_HISTORY_KEY = 'flipenglish_study_plan_history_v1';
 export const STUDY_PLAN_UPDATED_EVENT = 'flipenglish_study_plan_updated';
 
 const MAX_HISTORY_DAYS = 30;
+
+const ALLOWED_EVIDENCE_KEYS = new Set([
+  'reviewedTodayBaseline',
+  'reviewTargetCount',
+  'lessonId',
+  'wasCompletedAtPlanCreation',
+  'latestPlacementResultIdAtCreation',
+  'examHistoryLatestIdAtCreation',
+  'examLevel',
+  'examMode',
+]);
+
+const VALID_CEFR_LEVELS = new Set(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 
 function emitStudyPlanUpdate(): void {
   if (typeof window !== 'undefined') {
@@ -60,6 +75,87 @@ export function validateStudyPlanSettings(data: any): data is StudyPlanSettings 
 }
 
 /**
+ * Validates untrusted task evidence with strict key and type enforcement.
+ */
+export function validateStudyPlanTaskEvidence(evidence: any, taskType: string): evidence is StudyPlanTaskEvidence {
+  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return false;
+
+  // Strict unknown key rejection
+  for (const key of Object.keys(evidence)) {
+    if (!ALLOWED_EVIDENCE_KEYS.has(key)) {
+      return false;
+    }
+  }
+
+  if (taskType === 'review') {
+    if (
+      typeof evidence.reviewedTodayBaseline !== 'number' ||
+      !Number.isInteger(evidence.reviewedTodayBaseline) ||
+      evidence.reviewedTodayBaseline < 0 ||
+      evidence.reviewedTodayBaseline > 10000
+    ) {
+      return false;
+    }
+    if (
+      typeof evidence.reviewTargetCount !== 'number' ||
+      !Number.isInteger(evidence.reviewTargetCount) ||
+      evidence.reviewTargetCount < 1 ||
+      evidence.reviewTargetCount > 100
+    ) {
+      return false;
+    }
+    // Must not contain other task-specific evidence
+    if (evidence.lessonId !== undefined || evidence.examLevel !== undefined || evidence.examMode !== undefined) {
+      return false;
+    }
+  } else if (taskType === 'lesson') {
+    if (typeof evidence.lessonId !== 'string' || !evidence.lessonId.trim() || !getLessonById(evidence.lessonId)) {
+      return false;
+    }
+    if (evidence.wasCompletedAtPlanCreation !== undefined && typeof evidence.wasCompletedAtPlanCreation !== 'boolean') {
+      return false;
+    }
+    if (evidence.reviewTargetCount !== undefined || evidence.reviewedTodayBaseline !== undefined) {
+      return false;
+    }
+    if (evidence.examLevel !== undefined || evidence.examMode !== undefined) {
+      return false;
+    }
+  } else if (taskType === 'placement') {
+    if (
+      evidence.latestPlacementResultIdAtCreation !== null &&
+      evidence.latestPlacementResultIdAtCreation !== undefined &&
+      (typeof evidence.latestPlacementResultIdAtCreation !== 'string' ||
+        evidence.latestPlacementResultIdAtCreation.length > 100)
+    ) {
+      return false;
+    }
+    if (evidence.lessonId !== undefined || evidence.reviewTargetCount !== undefined) {
+      return false;
+    }
+    if (evidence.examLevel !== undefined || evidence.examMode !== undefined) {
+      return false;
+    }
+  } else if (taskType === 'quick-test') {
+    if (evidence.examMode !== 'quick') return false;
+    if (typeof evidence.examLevel !== 'string' || !VALID_CEFR_LEVELS.has(evidence.examLevel)) return false;
+    if (
+      evidence.examHistoryLatestIdAtCreation !== null &&
+      evidence.examHistoryLatestIdAtCreation !== undefined &&
+      (typeof evidence.examHistoryLatestIdAtCreation !== 'string' ||
+        evidence.examHistoryLatestIdAtCreation.length > 100)
+    ) {
+      return false;
+    }
+    if (evidence.lessonId !== undefined || evidence.reviewTargetCount !== undefined) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Validates a single untrusted StudyPlanTask object.
  */
 export function validateStudyPlanTask(task: any): task is StudyPlanTask {
@@ -69,31 +165,72 @@ export function validateStudyPlanTask(task: any): task is StudyPlanTask {
   if (typeof task.title !== 'string' || !task.title.trim() || task.title.length > 150) return false;
   if (typeof task.description !== 'string' || !task.description.trim() || task.description.length > 300) return false;
   if (typeof task.reason !== 'string' || !task.reason.trim() || task.reason.length > 300) return false;
-  if (typeof task.estimatedMinutes !== 'number' || task.estimatedMinutes < 1 || task.estimatedMinutes > 30) return false;
+  if (
+    typeof task.estimatedMinutes !== 'number' ||
+    !Number.isInteger(task.estimatedMinutes) ||
+    task.estimatedMinutes < 1 ||
+    task.estimatedMinutes > 30
+  ) {
+    return false;
+  }
   if (!['pending', 'completed', 'skipped'].includes(task.status)) return false;
 
-  // Task-specific constraints & forbidden field validation
+  // Task-specific constraints & strict forbidden field validation
   if (task.type === 'lesson') {
-    if (typeof task.lessonId !== 'string' || !task.lessonId.trim() || !getLessonById(task.lessonId)) return false;
+    if (typeof task.lessonId !== 'string' || !task.lessonId.trim()) return false;
+    const canonicalLesson = getLessonById(task.lessonId);
+    if (!canonicalLesson) return false;
+    if (task.level !== undefined && task.level !== canonicalLesson.level) return false;
     if (task.reviewItemTarget !== undefined) return false;
+    if (task.evidence) {
+      if (!validateStudyPlanTaskEvidence(task.evidence, 'lesson')) return false;
+      if (task.evidence.lessonId !== task.lessonId) return false;
+    }
   } else if (task.type === 'placement') {
     if (task.lessonId !== undefined) return false;
     if (task.reviewItemTarget !== undefined) return false;
+    if (task.evidence && !validateStudyPlanTaskEvidence(task.evidence, 'placement')) return false;
   } else if (task.type === 'review') {
     if (task.lessonId !== undefined) return false;
     if (
-      task.reviewItemTarget !== undefined &&
-      (typeof task.reviewItemTarget !== 'number' || task.reviewItemTarget < 1 || task.reviewItemTarget > 100)
+      typeof task.reviewItemTarget !== 'number' ||
+      !Number.isInteger(task.reviewItemTarget) ||
+      task.reviewItemTarget < 1 ||
+      task.reviewItemTarget > 100
     ) {
       return false;
     }
+    // Review task strictly requires valid evidence with matching target count
+    if (!task.evidence || !validateStudyPlanTaskEvidence(task.evidence, 'review')) return false;
+    if (task.evidence.reviewTargetCount !== task.reviewItemTarget) return false;
   } else if (task.type === 'quick-test') {
     if (task.lessonId !== undefined) return false;
     if (task.reviewItemTarget !== undefined) return false;
+    if (typeof task.level !== 'string' || !VALID_CEFR_LEVELS.has(task.level)) return false;
+    if (!task.evidence || !validateStudyPlanTaskEvidence(task.evidence, 'quick-test')) return false;
+    if (task.evidence.examMode !== 'quick') return false;
+    if (task.evidence.examLevel !== task.level) return false;
   }
 
-  if (typeof task.createdAt !== 'number' || !Number.isFinite(task.createdAt)) return false;
-  if (task.completedAt !== undefined && (typeof task.completedAt !== 'number' || !Number.isFinite(task.completedAt))) return false;
+  // Strict timestamp validation
+  if (
+    typeof task.createdAt !== 'number' ||
+    !Number.isFinite(task.createdAt) ||
+    task.createdAt <= 0 ||
+    task.createdAt > Date.now() + 86400000
+  ) {
+    return false;
+  }
+  if (task.completedAt !== undefined) {
+    if (
+      typeof task.completedAt !== 'number' ||
+      !Number.isFinite(task.completedAt) ||
+      task.completedAt < task.createdAt ||
+      task.completedAt > Date.now() + 86400000
+    ) {
+      return false;
+    }
+  }
 
   return true;
 }
@@ -107,7 +244,13 @@ export function validateTodayStudyPlan(data: any): data is TodayStudyPlan {
   if (typeof data.id !== 'string' || !data.id.trim() || data.id.length > 100) return false;
   if (!isValidLocalDateKey(data.localDate)) return false;
   if (!ALLOWED_DAILY_MINUTES.includes(data.dailyMinutes)) return false;
-  if (typeof data.planSeed !== 'number' || !Number.isFinite(data.planSeed) || data.planSeed < 0) return false;
+  if (
+    typeof data.planSeed !== 'number' ||
+    !Number.isInteger(data.planSeed) ||
+    data.planSeed < 0
+  ) {
+    return false;
+  }
   if (
     typeof data.createdAt !== 'number' ||
     !Number.isFinite(data.createdAt) ||
@@ -125,7 +268,18 @@ export function validateTodayStudyPlan(data: any): data is TodayStudyPlan {
     return false;
   }
 
-  if (!Array.isArray(data.tasks) || data.tasks.length < 1 || data.tasks.length > 4) return false;
+  const state = data.state || 'scheduled';
+  if (state !== 'scheduled' && state !== 'curriculum-complete') return false;
+
+  if (!Array.isArray(data.tasks)) return false;
+
+  // Invariants per state
+  if (state === 'curriculum-complete') {
+    if (data.tasks.length > 4) return false;
+  } else {
+    // state === 'scheduled' requires 1 to 4 tasks
+    if (data.tasks.length < 1 || data.tasks.length > 4) return false;
+  }
 
   const seenIds = new Set<string>();
   let totalEstimatedMinutes = 0;
@@ -149,13 +303,36 @@ export function validateTodayStudyPlan(data: any): data is TodayStudyPlan {
 export function validateHistoryItem(item: any): item is CompactStudyPlanHistoryItem {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
   if (!isValidLocalDateKey(item.date)) return false;
-  if (typeof item.plannedMinutes !== 'number' || item.plannedMinutes < 1 || item.plannedMinutes > 30) return false;
-  if (typeof item.taskCount !== 'number' || item.taskCount < 1 || item.taskCount > 4) return false;
-  if (typeof item.completedCount !== 'number' || item.completedCount < 0 || item.completedCount > item.taskCount) return false;
-  if (typeof item.skippedCount !== 'number' || item.skippedCount < 0 || item.skippedCount > item.taskCount) return false;
+  if (!ALLOWED_DAILY_MINUTES.includes(item.plannedMinutes)) return false;
+  if (typeof item.taskCount !== 'number' || !Number.isInteger(item.taskCount) || item.taskCount < 0 || item.taskCount > 4) {
+    return false;
+  }
+  if (
+    typeof item.completedCount !== 'number' ||
+    !Number.isInteger(item.completedCount) ||
+    item.completedCount < 0 ||
+    item.completedCount > item.taskCount
+  ) {
+    return false;
+  }
+  if (
+    typeof item.skippedCount !== 'number' ||
+    !Number.isInteger(item.skippedCount) ||
+    item.skippedCount < 0 ||
+    item.skippedCount > item.taskCount
+  ) {
+    return false;
+  }
   // Invariant: sum of completed and skipped cannot exceed total task count
   if (item.completedCount + item.skippedCount > item.taskCount) return false;
-  if (typeof item.completedAt !== 'number' || !Number.isFinite(item.completedAt)) return false;
+  if (
+    typeof item.completedAt !== 'number' ||
+    !Number.isFinite(item.completedAt) ||
+    item.completedAt <= 0 ||
+    item.completedAt > Date.now() + 86400000
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -196,15 +373,17 @@ export function loadStudyPlanSettings(): StudyPlanSettings {
 
 /**
  * Saves StudyPlanSettings to localStorage safely.
+ * Returns true if validated and saved; false otherwise.
  */
-export function saveStudyPlanSettings(settings: StudyPlanSettings): void {
-  if (typeof window === 'undefined') return;
+export function saveStudyPlanSettings(settings: StudyPlanSettings): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    if (!validateStudyPlanSettings(settings)) return;
+    if (!validateStudyPlanSettings(settings)) return false;
     localStorage.setItem(STUDY_PLAN_SETTINGS_KEY, JSON.stringify(settings));
     emitStudyPlanUpdate();
+    return true;
   } catch (err) {
-    // Storage quota or serialization issue
+    return false;
   }
 }
 
@@ -227,8 +406,8 @@ export function loadStudyPlanHistory(): CompactStudyPlanHistoryItem[] {
 /**
  * Saves a completed/archived day's summary into history.
  */
-export function archivePlanToHistory(plan: TodayStudyPlan): void {
-  if (typeof window === 'undefined') return;
+export function archivePlanToHistory(plan: TodayStudyPlan): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     const history = loadStudyPlanHistory();
     const completedCount = plan.tasks.filter((t) => t.status === 'completed').length;
@@ -243,13 +422,16 @@ export function archivePlanToHistory(plan: TodayStudyPlan): void {
       completedAt: Date.now(),
     };
 
+    if (!validateHistoryItem(historyItem)) return false;
+
     const newHistory = [historyItem, ...history.filter((h) => h.date !== plan.localDate)].slice(
       0,
       MAX_HISTORY_DAYS
     );
     localStorage.setItem(STUDY_PLAN_HISTORY_KEY, JSON.stringify(newHistory));
+    return true;
   } catch (err) {
-    // Ignore
+    return false;
   }
 }
 
@@ -393,15 +575,17 @@ export function getOrGenerateTodayPlan(): TodayStudyPlan {
 
 /**
  * Saves TodayStudyPlan to localStorage safely.
+ * Returns true if validated and saved; false otherwise.
  */
-export function saveTodayPlan(plan: TodayStudyPlan): void {
-  if (typeof window === 'undefined') return;
+export function saveTodayPlan(plan: TodayStudyPlan): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    if (!validateTodayStudyPlan(plan)) return;
+    if (!validateTodayStudyPlan(plan)) return false;
     localStorage.setItem(TODAY_PLAN_KEY, JSON.stringify(plan));
     emitStudyPlanUpdate();
+    return true;
   } catch (err) {
-    // Ignore
+    return false;
   }
 }
 
@@ -438,8 +622,12 @@ export function updateTaskStatus(taskId: string, status: 'completed' | 'skipped'
  * Updates the user's daily time goal in settings (for future days) and adapts today's plan
  * if possible without violating budget invariants.
  *
- * If completed/skipped tasks already exceed newMinutes, today's plan is preserved while settings
- * are updated for tomorrow, returning appliedToToday: false and an informative explanation.
+ * Employs safe greedy allocation:
+ * 1. Generates candidate tasks with full newGoal.
+ * 2. Deduplicates against preserved completed/skipped tasks.
+ * 3. Greedily adds only candidate tasks that fit exact remaining budget (newGoal - resolvedMinutes).
+ * 4. Respects max 4 total tasks.
+ * 5. Requires validateTodayStudyPlan(mergedPlan) === true before saving/returning.
  */
 export function updateDailyGoalAndRegeneratePlan(
   newMinutes: AllowedDailyMinutes
@@ -455,21 +643,25 @@ export function updateDailyGoalAndRegeneratePlan(
   const localDate = getLocalDateKey();
   const currentPlan = getOrGenerateTodayPlan();
 
-  const completedOrSkipped = currentPlan.tasks.filter(
+  const preservedTasks = currentPlan.tasks.filter(
     (t) => t.status === 'completed' || t.status === 'skipped'
   );
 
   // If no tasks have started yet, regenerate fresh plan for today
-  if (completedOrSkipped.length === 0) {
+  if (preservedTasks.length === 0) {
     const context = buildStudyPlanContext();
     const newPlan = generateTodayStudyPlan(context, updatedSettings, localDate);
-    saveTodayPlan(newPlan);
-    return { plan: newPlan, appliedToToday: true };
+    const saved = saveTodayPlan(newPlan);
+    if (saved) {
+      return { plan: newPlan, appliedToToday: true };
+    } else {
+      return { plan: currentPlan, appliedToToday: false, message: 'Could not save new daily plan.' };
+    }
   }
 
   // Calculate resolved minutes already committed today
   let resolvedMinutes = 0;
-  for (const t of completedOrSkipped) {
+  for (const t of preservedTasks) {
     resolvedMinutes += t.estimatedMinutes;
   }
 
@@ -482,59 +674,50 @@ export function updateDailyGoalAndRegeneratePlan(
     };
   }
 
-  const remainingMinutes = Math.max(0, newMinutes - resolvedMinutes);
+  const remainingBudget = newMinutes - resolvedMinutes;
+  const context = buildStudyPlanContext();
+  const candidatePlan = generateTodayStudyPlan(context, updatedSettings, localDate);
 
-  // If budget allows additional tasks and we have room (< 4 tasks)
-  if (remainingMinutes >= 2 && currentPlan.tasks.length < 4) {
-    const context = buildStudyPlanContext();
-    const clampedRemainingDailyMinutes: AllowedDailyMinutes =
-      remainingMinutes <= 5
-        ? 5
-        : remainingMinutes <= 10
-        ? 10
-        : remainingMinutes <= 15
-        ? 15
-        : remainingMinutes <= 20
-        ? 20
-        : 30;
+  const preservedTargetKeys = new Set(preservedTasks.map(getTaskTargetKey));
+  const additionalTasks: StudyPlanTask[] = [];
+  let additionalMinutes = 0;
 
-    const tempSettings: StudyPlanSettings = {
-      ...updatedSettings,
-      dailyMinutes: clampedRemainingDailyMinutes,
-    };
-    const freshPlan = generateTodayStudyPlan(context, tempSettings, localDate);
-
-    const existingTargetIds = new Set(
-      completedOrSkipped.map((t) => (t.type === 'lesson' ? t.lessonId : t.type))
-    );
-
-    const additionalTasks: StudyPlanTask[] = [];
-    for (const ft of freshPlan.tasks) {
-      if (completedOrSkipped.length + additionalTasks.length >= 4) break;
-      const targetId = ft.type === 'lesson' ? ft.lessonId : ft.type;
-      if (!existingTargetIds.has(targetId)) {
-        existingTargetIds.add(targetId);
-        additionalTasks.push(ft);
+  for (const candidateTask of candidatePlan.tasks) {
+    if (preservedTasks.length + additionalTasks.length >= 4) break;
+    const targetKey = getTaskTargetKey(candidateTask);
+    if (!preservedTargetKeys.has(targetKey)) {
+      if (additionalMinutes + candidateTask.estimatedMinutes <= remainingBudget) {
+        preservedTargetKeys.add(targetKey);
+        additionalTasks.push(candidateTask);
+        additionalMinutes += candidateTask.estimatedMinutes;
       }
     }
-
-    const mergedPlan: TodayStudyPlan = {
-      ...currentPlan,
-      dailyMinutes: newMinutes,
-      updatedAt: Date.now(),
-      tasks: [...completedOrSkipped, ...additionalTasks],
-    };
-
-    saveTodayPlan(mergedPlan);
-    return { plan: mergedPlan, appliedToToday: true };
   }
 
-  // Otherwise update dailyMinutes attribute and retain preserved tasks
-  const updatedPlan: TodayStudyPlan = {
-    ...currentPlan,
+  const mergedPlan: TodayStudyPlan = {
+    schemaVersion: 1,
+    id: `plan-${localDate}-${newMinutes}`,
+    localDate,
     dailyMinutes: newMinutes,
+    planSeed: currentPlan.planSeed,
+    createdAt: currentPlan.createdAt,
     updatedAt: Date.now(),
+    state: preservedTasks.length + additionalTasks.length === 0 ? candidatePlan.state : 'scheduled',
+    tasks: [...preservedTasks, ...additionalTasks],
   };
-  saveTodayPlan(updatedPlan);
-  return { plan: updatedPlan, appliedToToday: true };
+
+  // Hard Invariant: Merged plan must pass strict validation before being returned/persisted
+  if (validateTodayStudyPlan(mergedPlan)) {
+    const saved = saveTodayPlan(mergedPlan);
+    if (saved) {
+      return { plan: mergedPlan, appliedToToday: true };
+    }
+  }
+
+  // Fallback: Retain current valid plan and inform user
+  return {
+    plan: currentPlan,
+    appliedToToday: false,
+    message: `Your ${newMinutes}-minute daily goal will apply starting tomorrow.`,
+  };
 }

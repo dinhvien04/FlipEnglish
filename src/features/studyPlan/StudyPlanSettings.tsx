@@ -15,10 +15,33 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
   onSave,
 }) => {
   const [selectedMinutes, setSelectedMinutes] = React.useState<AllowedDailyMinutes>(currentMinutes);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const firstOptionRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
     setSelectedMinutes(currentMinutes);
   }, [currentMinutes, isOpen]);
+
+  // Accessibility: Handle Escape key to close dialog & focus management
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    // Focus first button on modal open
+    setTimeout(() => {
+      firstOptionRef.current?.focus();
+    }, 50);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -27,14 +50,25 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
     onClose();
   };
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="study-plan-settings-title"
+      onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 animate-scaleUp">
+      <div
+        ref={modalRef}
+        className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 animate-scaleUp"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="space-y-1 text-center sm:text-left">
           <h2
             id="study-plan-settings-title"
@@ -47,13 +81,14 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
           </p>
         </div>
 
-        {/* Goal options selector */}
-        <div className="grid grid-cols-5 gap-2 pt-2">
-          {ALLOWED_DAILY_MINUTES.map((mins) => {
+        {/* Goal options selector: responsive 3 columns on narrow screens, 5 on sm+ */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 pt-2">
+          {ALLOWED_DAILY_MINUTES.map((mins, idx) => {
             const isSelected = selectedMinutes === mins;
             return (
               <button
                 key={mins}
+                ref={idx === 0 ? firstOptionRef : undefined}
                 type="button"
                 onClick={() => setSelectedMinutes(mins)}
                 className={`min-h-12 sm:min-h-14 rounded-2xl font-black text-sm sm:text-base border transition-all cursor-pointer flex flex-col items-center justify-center ${

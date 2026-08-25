@@ -17,6 +17,8 @@ export type AllowedDailyMinutes = 5 | 10 | 15 | 20 | 30;
 export const ALLOWED_DAILY_MINUTES: AllowedDailyMinutes[] = [5, 10, 15, 20, 30];
 export const DEFAULT_DAILY_MINUTES: AllowedDailyMinutes = 15;
 
+export type TodayPlanState = 'scheduled' | 'curriculum-complete';
+
 export interface StudyPlanTaskEvidence {
   // Review Evidence
   reviewedTodayBaseline?: number;
@@ -61,6 +63,7 @@ export interface TodayStudyPlan {
   planSeed: number;
   createdAt: number;
   updatedAt: number;
+  state?: TodayPlanState; // 'scheduled' by default
   tasks: StudyPlanTask[];
 }
 
@@ -73,7 +76,7 @@ export interface StudyPlanSettings {
 
 export interface CompactStudyPlanHistoryItem {
   date: string; // YYYY-MM-DD
-  plannedMinutes: number;
+  plannedMinutes: AllowedDailyMinutes;
   taskCount: number;
   completedCount: number;
   skippedCount: number;

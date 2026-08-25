@@ -5,6 +5,7 @@ import {
   StudyPlanSettings,
   StudyPlanTask,
   TodayStudyPlan,
+  TodayPlanState,
 } from './studyPlanTypes';
 import { LESSONS, getLessonById } from '../../data/lessons';
 import { QUICK_TEST_CONFIG } from '../../data/exams/config';
@@ -133,6 +134,22 @@ export function stringToHash(str: string): number {
     hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
   }
   return Math.abs(hash);
+}
+
+/**
+ * Generates a stable task target key for deduplication.
+ */
+export function getTaskTargetKey(task: StudyPlanTask): string {
+  switch (task.type) {
+    case 'review':
+      return 'review';
+    case 'placement':
+      return 'placement';
+    case 'quick-test':
+      return `quick-test:${task.level || 'all'}`;
+    case 'lesson':
+      return `lesson:${task.lessonId || 'unknown'}`;
+  }
 }
 
 /**
@@ -348,7 +365,7 @@ export function generateTodayStudyPlan(
         remainingMinutes >= quickTestDuration &&
         context.lessons.completedLessonIds.size >= LESSONS.length
       ) {
-        // All curriculum completed edge-case: Quick test fits alongside review
+        // All curriculum completed edge-case: Quick test fits alongside review when budget >= 10m
         const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
         tasks.push({
           id: `task-test-${localDate}-${tasks.length}`,
@@ -372,9 +389,11 @@ export function generateTodayStudyPlan(
   }
 
   // ----------------------------------------------------
-  // 5. FALLBACK / STARTER GUARD
+  // 5. FALLBACK / STARTER / CURRICULUM-COMPLETE GUARD
   // ----------------------------------------------------
-  // If no tasks were generated and curriculum has incomplete lessons, pick starter lesson
+  let planState: TodayPlanState = 'scheduled';
+
+  // If no tasks have been scheduled yet
   if (tasks.length === 0) {
     const candidate = findNextLesson();
     if (candidate) {
@@ -395,24 +414,30 @@ export function generateTodayStudyPlan(
         },
       });
     } else {
-      // All curriculum completed and no review due: offer Quick Test if time permits
-      const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
-      tasks.push({
-        id: `task-test-${localDate}-0`,
-        type: 'quick-test',
-        title: `Quick Test: ${testLevel}`,
-        description: `${quickTestQuestions}-question quick test at ${testLevel}`,
-        reason: `All curriculum completed! Practice retention with a quick test at ${testLevel}.`,
-        estimatedMinutes: Math.min(quickTestDuration, dailyMinutes),
-        status: 'pending',
-        level: testLevel,
-        createdAt: now,
-        evidence: {
-          examHistoryLatestIdAtCreation: context.latestExam?.latestId || null,
-          examLevel: testLevel,
-          examMode: 'quick',
-        },
-      });
+      // All curriculum is completed & no review due:
+      // If daily budget is at least canonical Quick Test duration (10 min), schedule real Quick Test
+      if (dailyMinutes >= quickTestDuration) {
+        const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
+        tasks.push({
+          id: `task-test-${localDate}-0`,
+          type: 'quick-test',
+          title: `Quick Test: ${testLevel}`,
+          description: `${quickTestQuestions}-question quick test at ${testLevel}`,
+          reason: `All curriculum completed! Practice retention with a quick test at ${testLevel}.`,
+          estimatedMinutes: quickTestDuration,
+          status: 'pending',
+          level: testLevel,
+          createdAt: now,
+          evidence: {
+            examHistoryLatestIdAtCreation: context.latestExam?.latestId || null,
+            examLevel: testLevel,
+            examMode: 'quick',
+          },
+        });
+      } else {
+        // Goal < 10m (e.g. 5m): No required task fits cleanly -> explicitly mark plan as 'curriculum-complete'
+        planState = 'curriculum-complete';
+      }
     }
   }
 
@@ -424,6 +449,7 @@ export function generateTodayStudyPlan(
     planSeed: seed,
     createdAt: now,
     updatedAt: now,
+    state: planState,
     tasks: tasks.slice(0, 4), // Hard ceiling of 4 tasks
   };
 }
