@@ -76,10 +76,10 @@ function sanitizeForLog(val: any): string {
 const cspDirectives = {
   defaultSrc: ["'self'"],
   scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-  styleSrc: ["'self'", "'unsafe-inline'"],
+  styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com'],
   connectSrc: isProd ? ["'self'"] : ["'self'", 'https:', 'wss:', 'ws:'],
-  fontSrc: ["'self'", 'data:'],
+  fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
   objectSrc: ["'none'"],
   baseUri: ["'self'"],
   formAction: ["'self'"],
@@ -1427,6 +1427,20 @@ async function startServer() {
         fallthrough: true,
         etag: true,
         lastModified: true,
+        setHeaders: (res, filePath) => {
+          const basename = path.basename(filePath);
+          // Service worker and manifest must never be cached indefinitely
+          if (basename === 'sw.js' || basename.startsWith('sw.') || basename === 'registerSW.js') {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+          } else if (basename.endsWith('.webmanifest') || basename === 'manifest.json') {
+            res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+          } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
+            // Vite immutable hashed assets
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
       })
     );
     app.get('*', (req, res) => {

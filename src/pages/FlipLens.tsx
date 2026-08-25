@@ -16,6 +16,7 @@ import { generateQuiz } from '../utils/quizGenerator';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface FlipLensProps {
   onBackToHome: () => void;
@@ -147,8 +148,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
     } catch (err: any) {
       console.error('Error analyzing photo with Gemini:', err);
       setErrorMessage(
-        err.message ||
+        getApiErrorMessage(
+          err,
           "We couldn't analyze this photo right now. Please try another photo or return to the regular lessons."
+        )
       );
       setStep('preview');
     }

@@ -17,6 +17,7 @@
     "validate:exams": "tsx scripts/validateExams.ts",
     "validate:placement": "tsx scripts/validatePlacement.ts",
     "validate:study-plan": "tsx scripts/validateStudyPlan.ts",
+    "validate:pwa": "tsx scripts/validatePwa.ts",
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "validate:review": "tsx scripts/validateReview.ts",
     "validate:conversation": "tsx scripts/validateConversation.ts",
@@ -44,6 +45,7 @@
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "vite-plugin-pwa": "^1.1.0"
   }
 }

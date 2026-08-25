@@ -3,6 +3,7 @@ import { ConversationScenario, ConversationTurn, UsefulExpression } from '../../
 import { CEFRLevel } from '../../types';
 import { getScenarioOpeningMessage } from '../../data/conversations/scenarios';
 import { speakWord } from '../../utils/speech';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 interface ConversationSessionProps {
   scenario: ConversationScenario;
@@ -117,7 +118,7 @@ export const ConversationSession: React.FC<ConversationSessionProps> = ({
         onFinishConversation(updatedTurns, data.interactionId || interactionId);
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || 'AI conversation is temporarily unavailable.');
+      setErrorMessage(getApiErrorMessage(err, 'AI conversation is temporarily unavailable.'));
     } finally {
       setIsLoading(false);
     }

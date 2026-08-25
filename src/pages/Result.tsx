@@ -4,6 +4,7 @@ import { saveLessonProgress } from '../utils/storage';
 import { speakWord } from '../utils/speech';
 import { SafeImage } from '../components/SafeImage';
 import { AIPracticeModal } from '../components/AIPracticeModal';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface ResultProps {
   lesson: Lesson;
@@ -71,7 +72,7 @@ export const Result: React.FC<ResultProps> = ({
       }
     } catch (err: any) {
       console.error('AI Practice generation error:', err);
-      setAiError(err.message || 'Unable to connect to AI practice generator. Please try again.');
+      setAiError(getApiErrorMessage(err, 'Unable to connect to AI practice generator. Please try again.'));
     } finally {
       setIsGeneratingAi(false);
     }

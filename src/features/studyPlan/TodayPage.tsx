@@ -13,6 +13,7 @@ import { Lesson, CEFRLevel } from '../../types';
 import { getLessonById } from '../../data/lessons';
 import { REVIEW_UPDATED_EVENT } from '../../utils/reviewStorage';
 import { PLACEMENT_UPDATED_EVENT } from '../placement/placementStorage';
+import { PWAInstallCard } from '../pwa/PWAInstallCard';
 
 interface TodayPageProps {
   onSelectLesson: (lesson: Lesson) => void;
@@ -375,6 +376,9 @@ export const TodayPage: React.FC<TodayPageProps> = ({
           </section>
         </>
       )}
+
+      {/* PWA Install Promotion Card */}
+      <PWAInstallCard />
 
       {/* Daily Goal Settings Modal */}
       <StudyPlanSettingsModal

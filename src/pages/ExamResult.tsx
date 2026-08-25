@@ -3,6 +3,7 @@ import { Lesson, VocabWord } from '../types';
 import { AIExamAnalysis, ExamResultReport } from '../types/exam';
 import { LESSONS } from '../data/lessons';
 import { EXAM_DISCLAIMER } from '../data/exams/config';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface ExamResultProps {
   report: ExamResultReport;
@@ -82,7 +83,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
       setAiAnalysis(data);
     } catch (err: any) {
       console.error('Error analyzing exam:', err);
-      setAnalysisError(err.message || 'Failed to connect to AI Tutor.');
+      setAnalysisError(getApiErrorMessage(err, 'Failed to connect to AI Tutor.'));
     } finally {
       setIsAnalyzing(false);
     }

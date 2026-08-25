@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { QuizQuestion, MistakeExplanation } from '../types';
 import { speakWord, stopSpeech } from '../utils/speech';
 import { SafeImage } from './SafeImage';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface QuizQuestionCardProps {
   question: QuizQuestion;
@@ -158,7 +159,10 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
     } catch (err: any) {
       console.error('Error fetching mistake explanation:', err);
       setExplanationError(
-        "We couldn't generate an explanation right now. You can continue with the lesson normally."
+        getApiErrorMessage(
+          err,
+          "We couldn't generate an explanation right now. You can continue with the lesson normally."
+        )
       );
     } finally {
       setIsExplaining(false);

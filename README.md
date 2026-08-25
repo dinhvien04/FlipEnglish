@@ -49,6 +49,14 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - **AI Conversation Lab**: Text-first contextual conversation scenarios (Travel, Work, Study, Everyday, Advanced) offering feedback on grammar, vocabulary precision, natural expression, and communication goals.
 - **FlipLens (Vision)**: Object recognition from uploaded images to generate personalized vocabulary study items.
 
+### PWA & Offline Learning Capabilities
+- **Progressive Web App**: Installable on Android (Chrome/Samsung Internet), Windows/macOS (Chrome/Edge), and iOS/iPadOS (Safari Add to Home Screen).
+- **Offline Core Learning**: Today's Plan, Curriculum browsing, Flashcards, Quizzes, Smart Review, Placement Check, and Exam Center scoring operate offline after your first visit.
+- **Runtime Image Caching**: Previously visited lesson photos and flashcard images are safely cached for offline access (bounded to 150 items / 30 days). Uncached remote images render a calm, professional fallback without breaking quiz layouts.
+- **Network-Only AI Guard**: Live AI features (Conversation Lab, FlipLens Vision, AI Practice, Explain My Mistake, Exam AI Analysis) strictly require an internet connection and are never faked with stale cached data.
+- **Speech Playback**: Offline availability of pronunciation audio depends on the local voices installed on your device or browser.
+- **Disruption-Free Updates**: Updates prompt with "Update Now" and "Later" options without force-reloading active learning sessions.
+
 ### Mobile & Accessibility
 - Responsive layout optimized for smartphones, tablets, and desktop displays.
 - Designed with accessibility-conscious touch targets (~44–48px minimum touch targets), keyboard navigation, focus states, and responsive layouts.
@@ -120,6 +128,12 @@ npm run validate:curriculum
 
 # Validate practice exam generation quotas and question pools
 npm run validate:exams
+
+# Validate personalized Today study plan generation, storage, and state rules
+npm run validate:study-plan
+
+# Validate Progressive Web App (PWA), manifest, icons, and service worker caching rules
+npm run validate:pwa
 
 # Validate Spaced Repetition System (SRS) intervals and storage invariants
 npm run validate:review

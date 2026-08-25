@@ -41,6 +41,8 @@ import { PlacementIntro } from './features/placement/PlacementIntro';
 import { PlacementSessionPage } from './features/placement/PlacementSession';
 import { PlacementResultPage } from './features/placement/PlacementResult';
 import { TodayPage } from './features/studyPlan/TodayPage';
+import { OfflineBanner } from './features/pwa/OfflineBanner';
+import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('today');
@@ -538,15 +540,18 @@ export default function App() {
 
       {/* Sticky Header */}
       {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && (
-        <Header
-          onNavigateToday={handleNavigateToday}
-          onNavigateHome={handleNavigateHome}
-          onNavigateReview={handleNavigateReview}
-          onNavigateConversation={handleNavigateConversation}
-          onNavigateFlipLens={handleOpenFlipLens}
-          onNavigateExamCenter={handleNavigateExamCenter}
-          currentView={currentView}
-        />
+        <>
+          <OfflineBanner />
+          <Header
+            onNavigateToday={handleNavigateToday}
+            onNavigateHome={handleNavigateHome}
+            onNavigateReview={handleNavigateReview}
+            onNavigateConversation={handleNavigateConversation}
+            onNavigateFlipLens={handleOpenFlipLens}
+            onNavigateExamCenter={handleNavigateExamCenter}
+            currentView={currentView}
+          />
+        </>
       )}
 
       {/* Main View Router */}
@@ -756,6 +761,9 @@ export default function App() {
           </div>
         </footer>
       )}
+
+      {/* PWA Update & Offline Notification Prompt */}
+      <PWAUpdatePrompt />
     </div>
   );
 }
