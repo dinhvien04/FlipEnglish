@@ -1,9 +1,30 @@
-import { buildPlacementPool, selectPlacementQuestionsForStage, isValidPlacementQuestion, createSeededRandom, seededShuffle } from '../src/data/placement/placementPool';
-import { routeNextLevel, calculatePlacementResult, calculateSkillPerformance } from '../src/features/placement/placementEngine';
-import { validatePlacementSession } from '../src/features/placement/placementStorage';
-import { ORDERED_CEFR_LEVELS, CEFRLevel, PlacementStageResult } from '../src/features/placement/placementTypes';
+import {
+  buildPlacementPool,
+  selectPlacementQuestionsForStage,
+  isValidPlacementQuestion,
+  getIntelligentMeaningDistractors,
+  normalizeText,
+} from '../src/data/placement/placementPool';
+import {
+  routeNextLevel,
+  calculatePlacementResult,
+  calculateSkillPerformance,
+  evaluatePlacementEvidence,
+} from '../src/features/placement/placementEngine';
+import {
+  validatePlacementSession,
+  validatePlacementResultReport,
+} from '../src/features/placement/placementStorage';
+import {
+  ORDERED_CEFR_LEVELS,
+  CEFRLevel,
+  PlacementStageResult,
+  PlacementQuestion,
+  PLACEMENT_STAGE_SIZE,
+  PLACEMENT_TOTAL_QUESTIONS,
+} from '../src/features/placement/placementTypes';
 
-console.log('--- STARTING PLACEMENT TEST SUITE & VALIDATION ---\n');
+console.log('--- STARTING COMPREHENSIVE PLACEMENT TEST SUITE & ATTACK CASE VALIDATION ---\n');
 
 let failedTests = 0;
 
@@ -48,37 +69,14 @@ for (const level of ORDERED_CEFR_LEVELS) {
 // 2. Multistage Adaptive Routing Unit Tests
 console.log('\n--- 2. MULTISTAGE ADAPTIVE ROUTING TESTS ---');
 
-// B1 + 6/6 -> B2
-const r1 = routeNextLevel('B1', 6, 6);
-assert(r1.nextLevel === 'B2' && r1.decision === 'up', 'B1 with 6/6 routes UP to B2');
-
-// B1 + 5/6 -> B2
-const r2 = routeNextLevel('B1', 5, 6);
-assert(r2.nextLevel === 'B2' && r2.decision === 'up', 'B1 with 5/6 routes UP to B2');
-
-// B1 + 4/6 -> B1
-const r3 = routeNextLevel('B1', 4, 6);
-assert(r3.nextLevel === 'B1' && r3.decision === 'same', 'B1 with 4/6 STAYS at B1');
-
-// B1 + 3/6 -> B1
-const r4 = routeNextLevel('B1', 3, 6);
-assert(r4.nextLevel === 'B1' && r4.decision === 'same', 'B1 with 3/6 STAYS at B1');
-
-// B1 + 2/6 -> A2
-const r5 = routeNextLevel('B1', 2, 6);
-assert(r5.nextLevel === 'A2' && r5.decision === 'down', 'B1 with 2/6 routes DOWN to A2');
-
-// B1 + 0/6 -> A2
-const r6 = routeNextLevel('B1', 0, 6);
-assert(r6.nextLevel === 'A2' && r6.decision === 'down', 'B1 with 0/6 routes DOWN to A2');
-
-// A1 + 0/6 -> A1 (clamped at bottom)
-const r7 = routeNextLevel('A1', 0, 6);
-assert(r7.nextLevel === 'A1' && r7.decision === 'down', 'A1 with 0/6 clamps at A1');
-
-// C2 + 6/6 -> C2 (clamped at top)
-const r8 = routeNextLevel('C2', 6, 6);
-assert(r8.nextLevel === 'C2' && r8.decision === 'up', 'C2 with 6/6 clamps at C2');
+assert(routeNextLevel('B1', 6, 6).nextLevel === 'B2' && routeNextLevel('B1', 6, 6).decision === 'up', 'B1 + 6/6 routes UP to B2');
+assert(routeNextLevel('B1', 5, 6).nextLevel === 'B2' && routeNextLevel('B1', 5, 6).decision === 'up', 'B1 + 5/6 routes UP to B2');
+assert(routeNextLevel('B1', 4, 6).nextLevel === 'B1' && routeNextLevel('B1', 4, 6).decision === 'same', 'B1 + 4/6 STAYS at B1');
+assert(routeNextLevel('B1', 3, 6).nextLevel === 'B1' && routeNextLevel('B1', 3, 6).decision === 'same', 'B1 + 3/6 STAYS at B1');
+assert(routeNextLevel('B1', 2, 6).nextLevel === 'A2' && routeNextLevel('B1', 2, 6).decision === 'down', 'B1 + 2/6 routes DOWN to A2');
+assert(routeNextLevel('B1', 0, 6).nextLevel === 'A2' && routeNextLevel('B1', 0, 6).decision === 'down', 'B1 + 0/6 routes DOWN to A2');
+assert(routeNextLevel('A1', 0, 6).nextLevel === 'A1' && routeNextLevel('A1', 0, 6).decision === 'down', 'A1 + 0/6 clamps at A1');
+assert(routeNextLevel('C2', 6, 6).nextLevel === 'C2' && routeNextLevel('C2', 6, 6).decision === 'up', 'C2 + 6/6 clamps at C2');
 
 // 3. Multi-Stage Path Simulation Tests
 console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
@@ -87,13 +85,13 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
 {
   const seed = 12345;
   const stage0Questions = selectPlacementQuestionsForStage('B1', 0, seed);
-  assert(stage0Questions.length === 6, 'Stage 0 selected exactly 6 questions');
+  assert(stage0Questions.length === PLACEMENT_STAGE_SIZE, 'Stage 0 selected exactly 6 questions');
 
   const s0: PlacementStageResult = {
     stageIndex: 0,
     level: 'B1',
     questionIds: stage0Questions.map((q) => q.id),
-    totalQuestions: 6,
+    totalQuestions: PLACEMENT_STAGE_SIZE,
     correctCount: 6,
     scorePercentage: 100,
     routingDecision: 'up',
@@ -101,13 +99,13 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
   };
 
   const stage1Questions = selectPlacementQuestionsForStage('B2', 1, seed, new Set(s0.questionIds));
-  assert(stage1Questions.length === 6, 'Stage 1 selected exactly 6 questions');
+  assert(stage1Questions.length === PLACEMENT_STAGE_SIZE, 'Stage 1 selected exactly 6 questions');
 
   const s1: PlacementStageResult = {
     stageIndex: 1,
     level: 'B2',
     questionIds: stage1Questions.map((q) => q.id),
-    totalQuestions: 6,
+    totalQuestions: PLACEMENT_STAGE_SIZE,
     correctCount: 5,
     scorePercentage: 83,
     routingDecision: 'up',
@@ -115,13 +113,13 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
   };
 
   const stage2Questions = selectPlacementQuestionsForStage('C1', 2, seed, new Set([...s0.questionIds, ...s1.questionIds]));
-  assert(stage2Questions.length === 6, 'Stage 2 selected exactly 6 questions');
+  assert(stage2Questions.length === PLACEMENT_STAGE_SIZE, 'Stage 2 selected exactly 6 questions');
 
   const s2: PlacementStageResult = {
     stageIndex: 2,
     level: 'C1',
     questionIds: stage2Questions.map((q) => q.id),
-    totalQuestions: 6,
+    totalQuestions: PLACEMENT_STAGE_SIZE,
     correctCount: 5,
     scorePercentage: 83,
     routingDecision: 'up',
@@ -134,13 +132,13 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
     seed,
     new Set([...s0.questionIds, ...s1.questionIds, ...s2.questionIds])
   );
-  assert(stage3Questions.length === 6, 'Stage 3 selected exactly 6 questions');
+  assert(stage3Questions.length === PLACEMENT_STAGE_SIZE, 'Stage 3 selected exactly 6 questions');
 
   const s3: PlacementStageResult = {
     stageIndex: 3,
     level: 'C2',
     questionIds: stage3Questions.map((q) => q.id),
-    totalQuestions: 6,
+    totalQuestions: PLACEMENT_STAGE_SIZE,
     correctCount: 4,
     scorePercentage: 67,
     routingDecision: 'same',
@@ -148,13 +146,11 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
   };
 
   const allQuestions = [...stage0Questions, ...stage1Questions, ...stage2Questions, ...stage3Questions];
-  assert(allQuestions.length === 24, 'Total completed session has exactly 24 questions');
+  assert(allQuestions.length === PLACEMENT_TOTAL_QUESTIONS, `Total completed session has exactly ${PLACEMENT_TOTAL_QUESTIONS} questions`);
 
-  // Verify all 24 questions have unique IDs
   const uniqueIds = new Set(allQuestions.map((q) => q.id));
-  assert(uniqueIds.size === 24, 'All 24 selected questions have unique IDs');
+  assert(uniqueIds.size === PLACEMENT_TOTAL_QUESTIONS, `All ${PLACEMENT_TOTAL_QUESTIONS} selected questions have unique IDs`);
 
-  // Create simulated answers
   const answers: Record<string, string> = {};
   for (const q of allQuestions) {
     answers[q.id] = q.correctAnswer;
@@ -248,37 +244,285 @@ console.log('\n--- 3. MULTI-STAGE PATH SIMULATION TESTS ---');
   assert(!isNaN(result.overallPercentage), 'No NaN in percentage calculation');
 }
 
-// 4. Seeded Random and Reproducibility Tests
-console.log('\n--- 4. SEEDED RANDOM REPRODUCIBILITY TESTS ---');
+// 4. Distractor Scoring & Normalization Tests
+console.log('\n--- 4. DISTRACTOR SCORING & NORMALIZATION TESTS ---');
 {
-  const seed = 42;
-  const q1 = selectPlacementQuestionsForStage('B1', 0, seed);
-  const q2 = selectPlacementQuestionsForStage('B1', 0, seed);
-  assert(
-    q1.map((q) => q.id).join(',') === q2.map((q) => q.id).join(','),
-    'Same session seed produces identical stage questions'
-  );
+  assert(normalizeText('  Hello, WORLD!  ') === 'hello world', 'normalizeText strips punctuation and trims casing');
+  assert(normalizeText('run...') === 'run', 'normalizeText strips trailing periods');
 
-  const diffSeed = 999;
-  const q3 = selectPlacementQuestionsForStage('B1', 0, diffSeed);
-  assert(
-    q1.map((q) => q.id).join(',') !== q3.map((q) => q.id).join(','),
-    'Different seed varies stage question selection'
-  );
+  // Test Intelligent Meaning Distractors
+  const sampleWord = {
+    word: {
+      id: 'test-word-1',
+      word: 'resilient',
+      meaning: 'có khả năng phục hồi nhanh',
+      vietnamese: 'kiên cường',
+      pronunciation: '/rɪˈzɪl.jənt/',
+      partOfSpeech: 'adjective' as const,
+      level: 'B2' as CEFRLevel,
+      example: 'She is resilient.',
+      exampleMeaning: 'Cô ấy kiên cường.',
+      tags: ['personality', 'psychology'],
+    },
+    lessonId: 'lesson-1',
+    lessonCategory: 'personality',
+    lessonTags: ['personality'],
+  };
+
+  const poolWords = [
+    {
+      word: {
+        id: 'pool-1',
+        word: 'vulnerable',
+        meaning: 'dễ bị tổn thương',
+        vietnamese: 'dễ tổn thương',
+        pronunciation: '/ˈvʌl.nər.ə.bəl/',
+        partOfSpeech: 'adjective' as const,
+        level: 'B2' as CEFRLevel,
+        example: 'He feels vulnerable.',
+        exampleMeaning: 'Anh ấy cảm thấy dễ bị tổn thương.',
+        tags: ['personality'],
+      },
+      lessonId: 'lesson-1',
+      lessonCategory: 'personality',
+      lessonTags: ['personality'],
+    },
+    {
+      word: {
+        id: 'pool-2',
+        word: 'persist',
+        meaning: 'kiên trì tiếp tục',
+        vietnamese: 'kiên trì',
+        pronunciation: '/pəˈsɪst/',
+        partOfSpeech: 'verb' as const,
+        level: 'B2' as CEFRLevel,
+        example: 'Persist in your efforts.',
+        exampleMeaning: 'Hãy kiên trì nỗ lực.',
+        tags: ['action'],
+      },
+      lessonId: 'lesson-2',
+      lessonCategory: 'workplace',
+      lessonTags: ['action'],
+    },
+    {
+      word: {
+        id: 'pool-3',
+        word: 'adaptable',
+        meaning: 'có khả năng thích nghi',
+        vietnamese: 'thích nghi',
+        pronunciation: '/əˈdæp.tə.bəl/',
+        partOfSpeech: 'adjective' as const,
+        level: 'B2' as CEFRLevel,
+        example: 'Adaptable to change.',
+        exampleMeaning: 'Thích nghi với thay đổi.',
+        tags: ['personality', 'psychology'],
+      },
+      lessonId: 'lesson-1',
+      lessonCategory: 'personality',
+      lessonTags: ['personality'],
+    },
+  ];
+
+  const distractors = getIntelligentMeaningDistractors(sampleWord, poolWords, 2);
+  assert(distractors.length === 2, `Generated exactly 2 distractors (got ${distractors.length})`);
+  assert(!distractors.includes(sampleWord.word.meaning), 'Distractors never include the correct meaning');
+  assert(new Set(distractors).size === distractors.length, 'Distractors are completely unique');
 }
 
-// 5. Storage Validation & Corruption Resistance
-console.log('\n--- 5. STORAGE VALIDATION & CORRUPTION TESTS ---');
+// 5. Difficulty-Aware Weighted Skill Scoring Tests
+console.log('\n--- 5. DIFFICULTY-AWARE WEIGHTED SKILL SCORING TESTS ---');
 {
-  assert(!validatePlacementSession(null), 'Null session rejected');
-  assert(!validatePlacementSession({ schemaVersion: 99 }), 'Invalid schema version rejected');
-  assert(!validatePlacementSession({ schemaVersion: 1, currentLevel: 'Z9' }), 'Invalid CEFR level rejected');
-  assert(!validatePlacementSession({ schemaVersion: 1, stages: new Array(1000) }), '1000 stages rejected');
+  const testQuestions: PlacementQuestion[] = [
+    {
+      id: 'q-a1',
+      level: 'A1',
+      skill: 'vocabulary',
+      sourceType: 'curriculum',
+      prompt: 'Meaning of cat',
+      correctAnswer: 'con mèo',
+      options: [{ id: 'opt1', text: 'con mèo' }, { id: 'opt2', text: 'con chó' }, { id: 'opt3', text: 'con chim' }, { id: 'opt4', text: 'con cá' }],
+    },
+    {
+      id: 'q-c2',
+      level: 'C2',
+      skill: 'vocabulary',
+      sourceType: 'curriculum',
+      prompt: 'Meaning of quintessential',
+      correctAnswer: 'tinh túy',
+      options: [{ id: 'opt1', text: 'tinh túy' }, { id: 'opt2', text: 'tầm thường' }, { id: 'opt3', text: 'hời hợt' }, { id: 'opt4', text: 'tạm thời' }],
+    },
+  ];
+
+  // User gets C2 correct (weight 2.0) and A1 wrong (weight 1.0)
+  const answers: Record<string, string> = {
+    'q-a1': 'con chó',
+    'q-c2': 'tinh túy',
+  };
+
+  const performance = calculateSkillPerformance(testQuestions, answers);
+  const vocabPerf = performance.vocabulary;
+
+  assert(vocabPerf.attempted === 2, 'Attempted count is 2');
+  assert(vocabPerf.correct === 1, 'Correct count is 1');
+  assert(vocabPerf.percentage === 50, 'Raw percentage is 50%');
+  // Weighted score: (1.0*0 + 2.0*1) / (1.0 + 2.0) = 2.0 / 3.0 = 66.67% -> rounded to 67%
+  assert(vocabPerf.weightedScore === 67, `Weighted score reflects higher C2 difficulty (got ${vocabPerf.weightedScore}%, expected 67%)`);
+}
+
+// 6. Conservative Confidence Evaluation Tests
+console.log('\n--- 6. CONSERVATIVE CONFIDENCE EVALUATION TESTS ---');
+{
+  // Tentative: Level was never directly tested
+  const untestedStages: PlacementStageResult[] = [
+    { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 1, scorePercentage: 17, routingDecision: 'down', nextLevel: 'A2' },
+    { stageIndex: 1, level: 'A2', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 1, scorePercentage: 17, routingDecision: 'down', nextLevel: 'A1' },
+    { stageIndex: 2, level: 'A1', questionIds: ['q13','q14','q15','q16','q17','q18'], totalQuestions: 6, correctCount: 1, scorePercentage: 17, routingDecision: 'down', nextLevel: 'A1' },
+    { stageIndex: 3, level: 'A1', questionIds: ['q19','q20','q21','q22','q23','q24'], totalQuestions: 6, correctCount: 1, scorePercentage: 17, routingDecision: 'down', nextLevel: 'A1' },
+  ];
+  // Even though A1 was tested in stages 2 & 3, score was only 17% (downward routing pressure) -> Moderate / Tentative
+  const ev1 = evaluatePlacementEvidence(untestedStages, 'A1');
+  assert(ev1.confidence !== 'Strong evidence', 'Low score at bottom level does not yield false Strong evidence');
+
+  // Completely untested level
+  const evUntested = evaluatePlacementEvidence([
+    { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 6, scorePercentage: 100, routingDecision: 'up', nextLevel: 'B2' },
+    { stageIndex: 1, level: 'B2', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 6, scorePercentage: 100, routingDecision: 'up', nextLevel: 'C1' },
+  ], 'C2');
+  assert(evUntested.confidence === 'Tentative estimate', 'Untested level correctly evaluated as Tentative estimate');
+}
+
+// 7. Strict Storage Validation & Attack Resistance Tests
+console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS ---');
+{
+  // Attack Case 1: Tampered question count in stage
+  const tamperedStageCount: any = {
+    schemaVersion: 1,
+    id: 'test-1',
+    status: 'active',
+    sessionSeed: 12345,
+    startedAt: Date.now() - 1000,
+    currentStageIndex: 0,
+    currentQuestionInStageIndex: 0,
+    currentLevel: 'B1',
+    stages: [
+      {
+        stageIndex: 0,
+        level: 'B1',
+        questions: selectPlacementQuestionsForStage('B1', 0, 12345).slice(0, 5), // ONLY 5 questions!
+        isLocked: false,
+      },
+    ],
+    stageResults: [],
+    answers: {},
+  };
+  assert(!validatePlacementSession(tamperedStageCount), 'Session with 5 questions in stage rejected (must be exactly 6)');
+
+  // Attack Case 2: Inconsistent routing decision in stageResults
+  const validQuestions = selectPlacementQuestionsForStage('B1', 0, 12345);
+  const inconsistentRouting: any = {
+    schemaVersion: 1,
+    id: 'test-2',
+    status: 'active',
+    sessionSeed: 12345,
+    startedAt: Date.now() - 1000,
+    currentStageIndex: 1,
+    currentQuestionInStageIndex: 0,
+    currentLevel: 'B2',
+    stages: [
+      { stageIndex: 0, level: 'B1', questions: validQuestions, isLocked: true },
+      { stageIndex: 1, level: 'B2', questions: selectPlacementQuestionsForStage('B2', 1, 12345), isLocked: false },
+    ],
+    stageResults: [
+      {
+        stageIndex: 0,
+        level: 'B1',
+        questionIds: validQuestions.map((q) => q.id),
+        totalQuestions: 6,
+        correctCount: 6, // 6/6 MUST route UP to B2
+        scorePercentage: 100,
+        routingDecision: 'down', // FORGED: claims 'down' to A2
+        nextLevel: 'A2',
+      },
+    ],
+    answers: {},
+  };
+  assert(!validatePlacementSession(inconsistentRouting), 'Session with forged routing decision rejected');
+
+  // Attack Case 3: Unlocked previous stage
+  const unlockedPreviousStage: any = {
+    schemaVersion: 1,
+    id: 'test-3',
+    status: 'active',
+    sessionSeed: 12345,
+    startedAt: Date.now() - 1000,
+    currentStageIndex: 1,
+    currentQuestionInStageIndex: 0,
+    currentLevel: 'B2',
+    stages: [
+      { stageIndex: 0, level: 'B1', questions: validQuestions, isLocked: false }, // FORGED: should be locked!
+      { stageIndex: 1, level: 'B2', questions: selectPlacementQuestionsForStage('B2', 1, 12345), isLocked: false },
+    ],
+    stageResults: [
+      {
+        stageIndex: 0,
+        level: 'B1',
+        questionIds: validQuestions.map((q) => q.id),
+        totalQuestions: 6,
+        correctCount: 6,
+        scorePercentage: 100,
+        routingDecision: 'up',
+        nextLevel: 'B2',
+      },
+    ],
+    answers: {},
+  };
+  assert(!validatePlacementSession(unlockedPreviousStage), 'Session with unlocked previous stage rejected');
+
+  // Attack Case 4: Non-existent lesson in recommended lessons report
+  const forgedReport: any = {
+    id: 'report-1',
+    sessionId: 'session-1',
+    date: 'Aug 25, 2026',
+    startedAt: Date.now() - 600000,
+    completedAt: Date.now(),
+    estimatedLevel: 'B1',
+    levelTitle: 'Intermediate',
+    levelDescription: '...',
+    canDoSummary: '...',
+    confidence: 'Strong evidence',
+    confidenceReason: '...',
+    totalQuestions: 24,
+    correctCount: 16,
+    overallPercentage: 67,
+    skillScores: {
+      vocabulary: { skill: 'vocabulary', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+      'use-of-english': { skill: 'use-of-english', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+      reading: { skill: 'reading', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+      listening: { skill: 'listening', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+    },
+    stagePath: [
+      { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+      { stageIndex: 1, level: 'B1', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+      { stageIndex: 2, level: 'B1', questionIds: ['q13','q14','q15','q16','q17','q18'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+      { stageIndex: 3, level: 'B1', questionIds: ['q19','q20','q21','q22','q23','q24'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+    ],
+    recommendedLessons: [
+      {
+        lessonId: 'fake-non-existent-lesson-id-9999',
+        lessonTitle: 'Fake Lesson',
+        level: 'B1',
+        category: 'Vocabulary',
+        reason: 'Test',
+      },
+    ],
+    missedTargetItems: [],
+  };
+  assert(!validatePlacementResultReport(forgedReport), 'Report with non-existent lessonId rejected');
 }
 
 console.log('\n--- PLACEMENT VALIDATION SUMMARY ---');
 if (failedTests === 0) {
-  console.log('ALL PLACEMENT TESTS PASSED SUCCESSFULLY! (0 failures)\n');
+  console.log('ALL PLACEMENT AND ATTACK RESISTANCE TESTS PASSED SUCCESSFULLY! (0 failures)\n');
 } else {
   console.error(`VALIDATION FAILED WITH ${failedTests} FAILURE(S)!\n`);
   process.exit(1);

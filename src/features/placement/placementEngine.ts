@@ -3,6 +3,10 @@ import { LESSONS } from '../../data/lessons';
 import { resolveCurriculumItem, resolveCurriculumItemByText } from '../../utils/curriculumIndex';
 import {
   ORDERED_CEFR_LEVELS,
+  PLACEMENT_STAGE_COUNT,
+  PLACEMENT_STAGE_SIZE,
+  PLACEMENT_TOTAL_QUESTIONS,
+  LEVEL_WEIGHTS,
   PlacementConfidence,
   PlacementQuestion,
   PlacementResultReport,
@@ -23,7 +27,7 @@ import {
 export function routeNextLevel(
   currentLevel: CEFRLevel,
   correctCount: number,
-  totalQuestions = 6
+  totalQuestions = PLACEMENT_STAGE_SIZE
 ): { nextLevel: CEFRLevel; decision: 'up' | 'same' | 'down' } {
   const currentIndex = ORDERED_CEFR_LEVELS.indexOf(currentLevel);
   if (currentIndex === -1) {
@@ -54,7 +58,7 @@ export function routeNextLevel(
 
 /**
  * Level Title & Paraphrased Broad CEFR Descriptor Metadata
- * Modest, non-copyrighted, pedagogical descriptions.
+ * Original FlipEnglish pedagogical descriptions (non-copyrighted).
  */
 export const PLACEMENT_LEVEL_METADATA: Record<
   CEFRLevel,
@@ -68,42 +72,43 @@ export const PLACEMENT_LEVEL_METADATA: Record<
     title: 'Beginner Starting Point',
     description: 'Foundation English focusing on high-frequency everyday words and basic expressions.',
     canDoSummary:
-      'Can understand and use familiar everyday expressions and very basic phrases aimed at satisfying concrete needs. Can introduce themselves and answer simple personal questions.',
+      'Can manage very simple familiar exchanges and recognise common words and short expressions.',
   },
   A2: {
     title: 'Elementary Starting Point',
     description: 'Essential communicative English for routine situations and familiar topics.',
     canDoSummary:
-      'Can understand sentences and frequently used expressions related to areas of most immediate relevance (e.g. basic personal and family information, shopping, local geography, employment).',
+      'Can handle routine everyday situations and understand common language about familiar topics.',
   },
   B1: {
     title: 'Intermediate Starting Point',
     description: 'Practical independent English for work, travel, and personal interests.',
     canDoSummary:
-      'Can understand the main points of clear standard input on familiar matters regularly encountered in work, school, and leisure. Can deal with most situations likely to arise while travelling.',
+      'Can follow the main ideas of clear everyday English and handle many familiar situations independently.',
   },
   B2: {
     title: 'Upper Intermediate Starting Point',
     description: 'Confident English for complex ideas, professional discussions, and spontaneous interaction.',
     canDoSummary:
-      'Can understand the main ideas of complex text on both concrete and abstract topics. Can interact with a degree of fluency and spontaneity that makes regular interaction with native speakers quite possible without strain.',
+      'Can understand more complex ideas and participate in detailed conversation with reasonable fluency.',
   },
   C1: {
     title: 'Advanced Starting Point',
     description: 'Nuanced English for demanding academic, professional, and social environments.',
     canDoSummary:
-      'Can understand a wide range of demanding, longer texts, and recognise implicit meaning. Can express ideas fluently and spontaneously without much obvious searching for expressions.',
+      'Can understand demanding language and communicate flexibly in professional, academic and social contexts.',
   },
   C2: {
     title: 'Proficient Starting Point',
     description: 'Mastery of subtle connotations, idioms, precise collocations, and complex arguments.',
     canDoSummary:
-      'Can understand with ease virtually everything heard or read. Can summarise information from different spoken and written sources, reconstructing arguments and accounts in a coherent presentation.',
+      'Can handle highly complex language and communicate with precision, nuance and strong control.',
   },
 };
 
 /**
  * Calculates Per-Skill Performance across all answered placement questions.
+ * Produces both raw percentage (for UI) and internal difficulty-aware weightedScore (for recommendations).
  * Deterministic and zero NaN.
  */
 export function calculateSkillPerformance(
@@ -112,18 +117,29 @@ export function calculateSkillPerformance(
 ): Record<PlacementSkill, SkillScoreSummary> {
   const skills: PlacementSkill[] = ['vocabulary', 'use-of-english', 'reading', 'listening'];
   const summary: Record<PlacementSkill, SkillScoreSummary> = {
-    vocabulary: { skill: 'vocabulary', attempted: 0, correct: 0, percentage: 0 },
-    'use-of-english': { skill: 'use-of-english', attempted: 0, correct: 0, percentage: 0 },
-    reading: { skill: 'reading', attempted: 0, correct: 0, percentage: 0 },
-    listening: { skill: 'listening', attempted: 0, correct: 0, percentage: 0 },
+    vocabulary: { skill: 'vocabulary', attempted: 0, correct: 0, percentage: 0, weightedScore: 0 },
+    'use-of-english': { skill: 'use-of-english', attempted: 0, correct: 0, percentage: 0, weightedScore: 0 },
+    reading: { skill: 'reading', attempted: 0, correct: 0, percentage: 0, weightedScore: 0 },
+    listening: { skill: 'listening', attempted: 0, correct: 0, percentage: 0, weightedScore: 0 },
+  };
+
+  const skillWeighted: Record<PlacementSkill, { correct: number; possible: number }> = {
+    vocabulary: { correct: 0, possible: 0 },
+    'use-of-english': { correct: 0, possible: 0 },
+    reading: { correct: 0, possible: 0 },
+    listening: { correct: 0, possible: 0 },
   };
 
   for (const q of questions) {
     const userAns = answers[q.id];
     if (userAns !== undefined) {
+      const weight = LEVEL_WEIGHTS[q.level] || 1.0;
       summary[q.skill].attempted += 1;
+      skillWeighted[q.skill].possible += weight;
+
       if (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
         summary[q.skill].correct += 1;
+        skillWeighted[q.skill].correct += weight;
       }
     }
   }
@@ -131,54 +147,94 @@ export function calculateSkillPerformance(
   for (const s of skills) {
     const item = summary[s];
     item.percentage = item.attempted > 0 ? Math.round((item.correct / item.attempted) * 100) : 0;
+    const w = skillWeighted[s];
+    item.weightedScore = w.possible > 0 ? Math.round((w.correct / w.possible) * 100) : 0;
   }
 
   return summary;
 }
 
 /**
- * Calculates Result Confidence based on stage path and testing history:
- * - Strong evidence: Final estimated level was directly tested and score was consistent.
- * - Moderate evidence: Solid evidence across 4 stages with moderate boundary change.
- * - Tentative estimate: Final estimate is an adjacent level not directly tested (e.g. final stage was B2 with 6/6 routing to C1 without testing C1).
+ * Pure helper to evaluate placement evidence confidence based on completed stage results:
+ * - Tentative estimate: Final estimated level was not directly tested (e.g. projected by routing).
+ * - Strong evidence:
+ *     1. estimatedLevel directly tested
+ *     2. roughly >=67% evidence (>= 66.6%) at estimated level
+ *     3. all 4 stages completed
+ *     4. routing near final level is reasonably stable
+ *     5. no strong contradictory neighboring evidence
+ * - Moderate evidence: Other valid completed sessions.
  */
-export function calculateResultConfidence(
+export function evaluatePlacementEvidence(
   stageResults: PlacementStageResult[],
   estimatedLevel: CEFRLevel
 ): { confidence: PlacementConfidence; reason: string } {
-  const testedLevels = new Set(stageResults.map((r) => r.level));
-  const finalStage = stageResults[stageResults.length - 1];
-
-  if (!testedLevels.has(estimatedLevel)) {
+  if (!stageResults || stageResults.length === 0) {
     return {
       confidence: 'Tentative estimate',
-      reason: `Estimated starting level ${estimatedLevel} was projected from high performance in stage ${stageResults.length} (${finalStage?.level || 'B2'}), but ${estimatedLevel} was not directly tested in this session.`,
+      reason: 'No completed stages recorded to evaluate placement evidence.',
     };
   }
 
-  const finalStageResult = stageResults.filter((r) => r.level === estimatedLevel);
-  const totalCorrectAtLevel = finalStageResult.reduce((sum, r) => sum + r.correctCount, 0);
-  const totalQuestionsAtLevel = finalStageResult.reduce((sum, r) => sum + r.totalQuestions, 0);
+  const testedLevels = new Set(stageResults.map((r) => r.level));
+  const finalStage = stageResults[stageResults.length - 1];
+
+  // 1. If estimatedLevel was not directly tested in any stage -> Tentative
+  if (!testedLevels.has(estimatedLevel)) {
+    return {
+      confidence: 'Tentative estimate',
+      reason: `Estimated starting level ${estimatedLevel} was projected from performance in stage ${stageResults.length} (${finalStage?.level || 'B2'}), but ${estimatedLevel} was not directly tested in this session.`,
+    };
+  }
+
+  // 2. Aggregate evidence specifically at the estimated level
+  const stagesAtEstimatedLevel = stageResults.filter((r) => r.level === estimatedLevel);
+  const totalCorrectAtLevel = stagesAtEstimatedLevel.reduce((sum, r) => sum + r.correctCount, 0);
+  const totalQuestionsAtLevel = stagesAtEstimatedLevel.reduce((sum, r) => sum + r.totalQuestions, 0);
   const levelPercentage = totalQuestionsAtLevel > 0 ? (totalCorrectAtLevel / totalQuestionsAtLevel) * 100 : 0;
 
-  if (levelPercentage >= 50 && stageResults.length >= 4) {
+  // Check stability conditions
+  const allStagesCompleted = stageResults.length === PLACEMENT_STAGE_COUNT;
+  const hasStrongScoreAtLevel = levelPercentage >= 66.6; // e.g. 4/6 (66.67%) or 5/6 (83%) or 6/6 (100%)
+  const isFinalStageAtLevel = finalStage.level === estimatedLevel;
+
+  // Check for contradictory evidence: e.g. if an earlier stage at the same level was failed badly (<=2/6)
+  // or routing bounced erratically
+  const hasContradictoryEvidence = stagesAtEstimatedLevel.some((s) => s.correctCount <= 2);
+
+  if (
+    allStagesCompleted &&
+    hasStrongScoreAtLevel &&
+    isFinalStageAtLevel &&
+    !hasContradictoryEvidence
+  ) {
     return {
       confidence: 'Strong evidence',
-      reason: `Direct evidence gathered across 4 stages with consistent performance around the ${estimatedLevel} level boundary.`,
+      reason: `Direct evidence gathered across all 4 stages with consistent performance (>=67%) at the ${estimatedLevel} level boundary.`,
     };
   }
 
   return {
     confidence: 'Moderate evidence',
-    reason: `Multi-stage adaptive performance indicates ${estimatedLevel} as the most suitable starting foundation.`,
+    reason: `Multi-stage adaptive performance across ${stageResults.length} stages indicates ${estimatedLevel} as the most suitable starting foundation.`,
   };
 }
 
 /**
+ * Calculates Result Confidence (alias to evaluatePlacementEvidence)
+ */
+export function calculateResultConfidence(
+  stageResults: PlacementStageResult[],
+  estimatedLevel: CEFRLevel
+): { confidence: PlacementConfidence; reason: string } {
+  return evaluatePlacementEvidence(stageResults, estimatedLevel);
+}
+
+/**
  * Builds Deterministic Recommended Lessons based on:
- * 1. Estimated Level lessons targeting weak skill topics
- * 2. Another useful lesson at the estimated level
- * 3. One foundational review lesson if a lower level or core skill had errors
+ * 1. Lessons directly tied to missed placement items
+ * 2. Starting module at estimated level
+ * 3. Foundational review lesson at lower level ONLY if meaningful match exists
  */
 export function buildRecommendedLessons(
   estimatedLevel: CEFRLevel,
@@ -188,12 +244,10 @@ export function buildRecommendedLessons(
   const recommendations: RecommendedLessonItem[] = [];
   const addedLessonIds = new Set<string>();
 
-  // 1. Lessons directly tied to missed placement questions at the estimated level
-  const estimatedLevelLessons = LESSONS.filter((l) => l.level === estimatedLevel);
-
+  // 1. Lessons directly tied to missed placement questions
   for (const lessonId of missedSuggestedLessonIds) {
     if (recommendations.length >= 2) break;
-    const lesson = LESSONS.find((l) => l.id === lessonId && l.level === estimatedLevel);
+    const lesson = LESSONS.find((l) => l.id === lessonId);
     if (lesson && !addedLessonIds.has(lesson.id)) {
       addedLessonIds.add(lesson.id);
       recommendations.push({
@@ -201,17 +255,22 @@ export function buildRecommendedLessons(
         lessonTitle: lesson.title,
         level: lesson.level,
         category: lesson.category || 'Targeted Vocabulary',
-        reason: `Targeted reinforcement for vocabulary and expressions missed during placement check.`,
+        reason: `Review this module because related vocabulary was missed during your Placement Check.`,
       });
     }
   }
 
-  // 2. Identify weakest skill to recommend corresponding category
-  const sortedSkills = (Object.keys(skillScores) as PlacementSkill[]).sort(
-    (a, b) => skillScores[a].percentage - skillScores[b].percentage
-  );
+  // 2. Identify weakest skill by weightedScore (or raw percentage if tied)
+  const skillsList = Object.keys(skillScores) as PlacementSkill[];
+  const sortedSkills = skillsList.sort((a, b) => {
+    const scoreA = skillScores[a].weightedScore ?? skillScores[a].percentage;
+    const scoreB = skillScores[b].weightedScore ?? skillScores[b].percentage;
+    return scoreA - scoreB;
+  });
   const weakestSkill = sortedSkills[0];
 
+  // Starting lessons at the estimated level
+  const estimatedLevelLessons = LESSONS.filter((l) => l.level === estimatedLevel);
   for (const lesson of estimatedLevelLessons) {
     if (recommendations.length >= 3) break;
     if (!addedLessonIds.has(lesson.id)) {
@@ -221,35 +280,41 @@ export function buildRecommendedLessons(
         lessonTitle: lesson.title,
         level: lesson.level,
         category: lesson.category || 'Core Curriculum',
-        reason: `Recommended starting module at your estimated ${estimatedLevel} level to strengthen ${weakestSkill.replace(
-          '-',
-          ' '
-        )}.`,
+        reason: `Recommended starting module at ${estimatedLevel}.`,
       });
     }
   }
 
-  // 3. If there is a lower CEFR level available and weakest skill < 60%, recommend 1 foundational review lesson
+  // 3. Lower Level Review: only if weakest skill weighted score < 60% and lower level exists
   const currentIdx = ORDERED_CEFR_LEVELS.indexOf(estimatedLevel);
-  if (currentIdx > 0 && skillScores[weakestSkill].percentage < 60) {
+  const weakestMetric = skillScores[weakestSkill].weightedScore ?? skillScores[weakestSkill].percentage;
+
+  if (currentIdx > 0 && weakestMetric < 60) {
     const lowerLevel = ORDERED_CEFR_LEVELS[currentIdx - 1];
     const lowerLevelLessons = LESSONS.filter((l) => l.level === lowerLevel);
-    if (lowerLevelLessons.length > 0) {
-      const reviewLesson = lowerLevelLessons[0];
-      if (!addedLessonIds.has(reviewLesson.id)) {
-        addedLessonIds.add(reviewLesson.id);
-        recommendations.push({
-          lessonId: reviewLesson.id,
-          lessonTitle: reviewLesson.title,
-          level: reviewLesson.level,
-          category: reviewLesson.category || 'Foundational Review',
-          reason: `Foundational review from ${lowerLevel} to consolidate core ${weakestSkill.replace('-', ' ')} concepts.`,
-        });
-      }
+
+    // Prefer lower level lesson tied to missed items or shared category
+    let bestReviewLesson = lowerLevelLessons.find(
+      (l) => missedSuggestedLessonIds.includes(l.id) && !addedLessonIds.has(l.id)
+    );
+
+    if (!bestReviewLesson) {
+      bestReviewLesson = lowerLevelLessons.find((l) => !addedLessonIds.has(l.id));
+    }
+
+    if (bestReviewLesson && !addedLessonIds.has(bestReviewLesson.id)) {
+      addedLessonIds.add(bestReviewLesson.id);
+      recommendations.push({
+        lessonId: bestReviewLesson.id,
+        lessonTitle: bestReviewLesson.title,
+        level: bestReviewLesson.level,
+        category: bestReviewLesson.category || 'Foundational Review',
+        reason: `Consolidate foundational concepts from ${lowerLevel} before advancing.`,
+      });
     }
   }
 
-  // Bound recommendations to 3-5 items
+  // Bound recommendations to 1-4 items
   return recommendations.slice(0, 4);
 }
 
@@ -273,7 +338,6 @@ export function calculatePlacementResult(
   const finalStage = stageResults[stageResults.length - 1];
   let candidateLevel: CEFRLevel = finalStage.level;
 
-  // If the last stage was 5-6/6 and routed up, or 0-2/6 and routed down
   if (finalStage.routingDecision === 'up' && finalStage.nextLevel) {
     candidateLevel = finalStage.nextLevel;
   } else if (finalStage.routingDecision === 'down' && finalStage.nextLevel) {
@@ -314,14 +378,14 @@ export function calculatePlacementResult(
     }
   }
 
-  const totalQuestions = allQuestions.length > 0 ? allQuestions.length : 24;
+  const totalQuestions = allQuestions.length > 0 ? allQuestions.length : PLACEMENT_TOTAL_QUESTIONS;
   const overallPercentage = Math.round((totalCorrect / totalQuestions) * 100);
 
-  // 3. Skill Scores
+  // 3. Skill Scores (raw percentage + weighted score)
   const skillScores = calculateSkillPerformance(allQuestions, answers);
 
-  // 4. Confidence
-  const { confidence, reason: confidenceReason } = calculateResultConfidence(stageResults, estimatedLevel);
+  // 4. Confidence via evaluatePlacementEvidence
+  const { confidence, reason: confidenceReason } = evaluatePlacementEvidence(stageResults, estimatedLevel);
 
   // 5. Recommendations
   const recommendedLessons = buildRecommendedLessons(estimatedLevel, skillScores, missedLessonIds);
@@ -350,3 +414,4 @@ export function calculatePlacementResult(
     missedTargetItems,
   };
 }
+

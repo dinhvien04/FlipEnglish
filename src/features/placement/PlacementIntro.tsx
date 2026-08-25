@@ -1,5 +1,10 @@
 import React from 'react';
-import { CompactPlacementHistoryItem } from './placementTypes';
+import {
+  CompactPlacementHistoryItem,
+  PLACEMENT_STAGE_COUNT,
+  PLACEMENT_STAGE_SIZE,
+  PLACEMENT_TOTAL_QUESTIONS,
+} from './placementTypes';
 
 interface PlacementIntroProps {
   onStartPlacement: () => void;
@@ -117,7 +122,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-2 text-xs sm:text-sm text-slate-700">
           <div className="flex items-start gap-2">
             <span className="font-bold text-indigo-600">•</span>
-            <span><strong>Adaptive structure:</strong> 4 stages of 6 questions each (maximum 24 questions total).</span>
+            <span><strong>Adaptive structure:</strong> {PLACEMENT_STAGE_COUNT} stages of {PLACEMENT_STAGE_SIZE} questions each ({PLACEMENT_TOTAL_QUESTIONS} questions total).</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="font-bold text-indigo-600">•</span>
@@ -129,7 +134,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           </div>
           <div className="flex items-start gap-2">
             <span className="font-bold text-indigo-600">•</span>
-            <span><strong>Assessment mode:</strong> Correct answers and explanations are revealed after completing all 4 stages.</span>
+            <span><strong>Assessment feedback:</strong> Your estimated starting level, skill performance and study recommendations are shown after completing all four stages.</span>
           </div>
         </div>
 

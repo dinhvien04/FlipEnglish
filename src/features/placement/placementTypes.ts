@@ -4,6 +4,19 @@ export type PlacementSkill = 'vocabulary' | 'use-of-english' | 'reading' | 'list
 
 export const ORDERED_CEFR_LEVELS: readonly CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
+export const PLACEMENT_STAGE_COUNT = 4;
+export const PLACEMENT_STAGE_SIZE = 6;
+export const PLACEMENT_TOTAL_QUESTIONS = 24;
+
+export const LEVEL_WEIGHTS: Record<CEFRLevel, number> = {
+  A1: 1.0,
+  A2: 1.2,
+  B1: 1.4,
+  B2: 1.6,
+  C1: 1.8,
+  C2: 2.0,
+};
+
 export interface PlacementQuestionOption {
   id: string;
   text: string;

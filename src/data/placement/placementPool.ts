@@ -6,6 +6,7 @@ import {
   PlacementQuestion,
   PlacementSkill,
   ORDERED_CEFR_LEVELS,
+  PLACEMENT_STAGE_SIZE,
 } from '../../features/placement/placementTypes';
 
 /**
@@ -38,42 +39,185 @@ export function seededShuffle<T>(array: readonly T[], randomFn: () => number): T
 }
 
 /**
+ * Normalizes text for comparison: trim, lowercase, collapse whitespace, strip punctuation.
+ */
+export function normalizeText(text: string | undefined | null): string {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'’]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Word with lesson metadata for intelligent distractor scoring
+ */
+export interface ScoredVocabWord {
+  word: VocabWord;
+  lessonId: string;
+  lessonCategory?: string;
+  lessonTags?: string[];
+}
+
+/**
+ * Deterministic Distractor Scoring:
+ * Computes a similarity/suitability score between candidate and target word:
+ * +5 same part of speech
+ * +4 same lesson category
+ * +3 shared tags
+ * +2 same learning item type
+ * +1 same register
+ */
+export function scoreDistractorCandidate(target: ScoredVocabWord, candidate: ScoredVocabWord): number {
+  let score = 0;
+
+  // 1. Same Part of Speech (+5)
+  if (
+    target.word.partOfSpeech &&
+    candidate.word.partOfSpeech &&
+    target.word.partOfSpeech === candidate.word.partOfSpeech
+  ) {
+    score += 5;
+  }
+
+  // 2. Same Lesson Category (+4)
+  if (
+    target.lessonCategory &&
+    candidate.lessonCategory &&
+    target.lessonCategory.toLowerCase() === candidate.lessonCategory.toLowerCase()
+  ) {
+    score += 4;
+  }
+
+  // 3. Shared Tags (+3)
+  const targetTags = new Set((target.word.tags || target.lessonTags || []).map((t) => t.toLowerCase()));
+  const candidateTags = (candidate.word.tags || candidate.lessonTags || []).map((t) => t.toLowerCase());
+  const sharedTagCount = candidateTags.filter((t) => targetTags.has(t)).length;
+  if (sharedTagCount > 0) {
+    score += Math.min(sharedTagCount * 3, 6);
+  }
+
+  // 4. Same learning item type (+2)
+  if (target.word.type && candidate.word.type && target.word.type === candidate.word.type) {
+    score += 2;
+  }
+
+  // 5. Same Register (+1)
+  if (target.word.register && candidate.word.register && target.word.register === candidate.word.register) {
+    score += 1;
+  }
+
+  return score;
+}
+
+/**
+ * Deterministic Meaning Distractors:
+ * Selects candidate Vietnamese meanings ranked by structural relevance,
+ * filtered to reject duplicates, case-only duplicates, and whitespace/punctuation variations.
+ */
+export function getIntelligentMeaningDistractors(
+  target: ScoredVocabWord,
+  allScoredWords: ScoredVocabWord[],
+  count = 3
+): string[] {
+  const normTargetMeaning = normalizeText(target.word.meaning);
+
+  // Filter out exact/normalized matches and duplicates
+  const candidateList = allScoredWords.filter((candidate) => {
+    if (candidate.word.id === target.word.id) return false;
+    const normCandMeaning = normalizeText(candidate.word.meaning);
+    if (!normCandMeaning || normCandMeaning === normTargetMeaning) return false;
+    return true;
+  });
+
+  // Score each candidate
+  const scored = candidateList.map((cand) => ({
+    meaning: cand.word.meaning.trim(),
+    normMeaning: normalizeText(cand.word.meaning),
+    score: scoreDistractorCandidate(target, cand),
+    id: cand.word.id,
+  }));
+
+  // Sort deterministically by: score descending, then stable canonical id
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.id.localeCompare(b.id);
+  });
+
+  // Pick unique normalized meanings
+  const result: string[] = [];
+  const seenNorm = new Set<string>([normTargetMeaning]);
+
+  for (const item of scored) {
+    if (!seenNorm.has(item.normMeaning)) {
+      seenNorm.add(item.normMeaning);
+      result.push(item.meaning);
+      if (result.length >= count) break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Deterministic English Word Distractors:
+ * Selects candidate English words ranked by structural relevance,
+ * filtered to reject duplicates, case-only duplicates, and whitespace/punctuation variations.
+ */
+function getIntelligentWordDistractors(
+  target: ScoredVocabWord,
+  allScoredWords: ScoredVocabWord[],
+  count = 3
+): string[] {
+  const normTargetWord = normalizeText(target.word.word);
+
+  // Filter out exact/normalized matches
+  const candidateList = allScoredWords.filter((candidate) => {
+    if (candidate.word.id === target.word.id) return false;
+    const normCandWord = normalizeText(candidate.word.word);
+    if (!normCandWord || normCandWord === normTargetWord) return false;
+    return true;
+  });
+
+  // Score each candidate
+  const scored = candidateList.map((cand) => ({
+    wordText: cand.word.word.trim(),
+    normWord: normalizeText(cand.word.word),
+    score: scoreDistractorCandidate(target, cand),
+    id: cand.word.id,
+  }));
+
+  // Sort deterministically by: score descending, then stable canonical id
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.id.localeCompare(b.id);
+  });
+
+  // Pick unique normalized words
+  const result: string[] = [];
+  const seenNorm = new Set<string>([normTargetWord]);
+
+  for (const item of scored) {
+    if (!seenNorm.has(item.normWord)) {
+      seenNorm.add(item.normWord);
+      result.push(item.wordText);
+      if (result.length >= count) break;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Internal Cache for Placement Question Pool by CEFR level
  */
 let cachedPlacementPool: Record<CEFRLevel, PlacementQuestion[]> | null = null;
 
-// Helper: Extract distractor English meanings
-function getMeaningDistractors(
-  correctWord: VocabWord,
-  allWords: VocabWord[],
-  count = 3
-): string[] {
-  const correctMeaning = correctWord.meaning.trim().toLowerCase();
-  const filtered = allWords
-    .map((w) => w.meaning.trim())
-    .filter((m) => m && m.toLowerCase() !== correctMeaning);
-  const unique = Array.from(new Set(filtered));
-  return unique.slice(0, count);
-}
-
-// Helper: Extract distractor English words
-function getWordDistractors(
-  correctWord: VocabWord,
-  allWords: VocabWord[],
-  count = 3
-): string[] {
-  const correctWordText = correctWord.word.trim().toLowerCase();
-  const filtered = allWords
-    .map((w) => w.word.trim())
-    .filter((w) => w && w.toLowerCase() !== correctWordText);
-  const unique = Array.from(new Set(filtered));
-  return unique.slice(0, count);
-}
-
 /**
  * Validates whether a candidate question satisfies strict placement quality criteria:
  * - exactly 4 options
- * - 4 unique options case-insensitively
+ * - 4 unique options case-insensitively & normalized
  * - exactly one correct answer matching one of the options
  * - non-empty prompt and valid skill
  * - reading questions have passage
@@ -88,13 +232,14 @@ export function isValidPlacementQuestion(q: PlacementQuestion): boolean {
   const optionTexts = q.options.map((o) => o.text.trim());
   if (optionTexts.some((t) => !t)) return false;
 
-  // Unique options case-insensitively
-  const lowerTexts = optionTexts.map((t) => t.toLowerCase());
-  const uniqueTexts = new Set(lowerTexts);
-  if (uniqueTexts.size !== 4) return false;
+  // Unique options case-insensitively and whitespace/punctuation normalized
+  const normTexts = optionTexts.map(normalizeText);
+  const uniqueNorm = new Set(normTexts);
+  if (uniqueNorm.size !== 4) return false;
 
   // Correct answer must exist in options
-  const hasMatch = optionTexts.some((t) => t.toLowerCase() === q.correctAnswer.trim().toLowerCase());
+  const normCorrect = normalizeText(q.correctAnswer);
+  const hasMatch = optionTexts.some((t) => normalizeText(t) === normCorrect);
   if (!hasMatch) return false;
 
   if (q.skill === 'reading') {
@@ -129,13 +274,16 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
 
   for (const level of ORDERED_CEFR_LEVELS) {
     const levelLessons = LESSONS.filter((l) => l.level === level);
-    const levelWords: VocabWord[] = [];
-    const wordToLessonMap = new Map<string, string>();
+    const scoredWords: ScoredVocabWord[] = [];
 
     for (const lesson of levelLessons) {
       for (const word of lesson.words) {
-        levelWords.push(word);
-        wordToLessonMap.set(word.id, lesson.id);
+        scoredWords.push({
+          word,
+          lessonId: lesson.id,
+          lessonCategory: lesson.category,
+          lessonTags: lesson.tags,
+        });
       }
     }
 
@@ -152,12 +300,13 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
     };
 
     // 1. Convert Curriculum Words into Vocabulary Questions (En -> Vi & Vi -> En)
-    for (let i = 0; i < levelWords.length; i++) {
-      const word = levelWords[i];
-      const lessonId = wordToLessonMap.get(word.id);
+    for (let i = 0; i < scoredWords.length; i++) {
+      const item = scoredWords[i];
+      const word = item.word;
+      const lessonId = item.lessonId;
 
-      // 1A. En -> Vi meaning multiple choice
-      const meaningDistractors = getMeaningDistractors(word, levelWords, 6);
+      // 1A. En -> Vi meaning multiple choice with intelligent distractors
+      const meaningDistractors = getIntelligentMeaningDistractors(item, scoredWords, 3);
       if (meaningDistractors.length >= 3) {
         const opts = [word.meaning, meaningDistractors[0], meaningDistractors[1], meaningDistractors[2]];
         pushQuestion({
@@ -175,8 +324,8 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
         });
       }
 
-      // 1B. Vi -> En word selection
-      const wordDistractors = getWordDistractors(word, levelWords, 6);
+      // 1B. Vi -> En word selection with intelligent distractors
+      const wordDistractors = getIntelligentWordDistractors(item, scoredWords, 3);
       if (wordDistractors.length >= 3) {
         const opts = [word.word, wordDistractors[0], wordDistractors[1], wordDistractors[2]];
         pushQuestion({
@@ -201,7 +350,7 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
           id: `pq-listen-${level.toLowerCase()}-${word.id}`,
           level,
           skill: 'listening',
-          prompt: `Listen to the audio recording #${i + 1} and choose the matching Vietnamese meaning:`,
+          prompt: `Listen to the audio recording and choose the matching Vietnamese meaning:`,
           audioPromptText: word.word,
           options: opts.map((text, idx) => ({ id: `opt-${idx}`, text })),
           correctAnswer: word.meaning,
@@ -236,20 +385,20 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
 
     // 3. Convert Reading Passages Bank into Reading Placement Questions
     const readingItems = READING_PASSAGES_BANK[level] || [];
-    for (const item of readingItems) {
-      for (const q of item.questions) {
+    for (const rItem of readingItems) {
+      for (const q of rItem.questions) {
         if (q.options && q.options.length === 4) {
           pushQuestion({
             id: `pq-read-${level.toLowerCase()}-${q.id}`,
             level,
             skill: 'reading',
             prompt: q.prompt,
-            passage: item.passage.passage,
-            passageTitle: item.passage.title,
+            passage: rItem.passage.passage,
+            passageTitle: rItem.passage.title,
             options: q.options.map((text, idx) => ({ id: `opt-${idx}`, text })),
             correctAnswer: q.correctAnswer,
             explanation: q.explanation,
-            targetItem: item.passage.title,
+            targetItem: rItem.passage.title,
             suggestedLessonId: q.suggestedLessonId,
             sourceType: 'reading',
           });
@@ -263,13 +412,13 @@ export function buildPlacementPool(): Record<CEFRLevel, PlacementQuestion[]> {
 }
 
 /**
- * Selects 6 placement questions for a given stage and level using seeded deterministic selection.
+ * Selects exactly 6 placement questions for a given stage and level using seeded deterministic selection.
  * Target composition:
  * - 2 Vocabulary questions
  * - 2 Use of English questions
  * - 1 Reading question
  * - 1 Listening question
- * Total: 6 questions
+ * Total: exactly 6 questions
  *
  * Ensures no duplicate IDs and no repeated normalized prompts across previous stages.
  */
@@ -374,16 +523,17 @@ export function selectPlacementQuestionsForStage(
   }
 
   // Fallback: If any skill bank was thin, supplement with any unused valid question from levelPool
-  if (selected.length < 6) {
+  if (selected.length < PLACEMENT_STAGE_SIZE) {
     const fallbackPool = seededShuffle(
       levelPool.filter((q) => !stageQuestionIds.has(q.id) && !excludeQuestionIds.has(q.id)),
       randomFn
     );
     for (const q of fallbackPool) {
-      if (selected.length >= 6) break;
+      if (selected.length >= PLACEMENT_STAGE_SIZE) break;
       tryAdd(q);
     }
   }
 
-  return selected.slice(0, 6);
+  return selected.slice(0, PLACEMENT_STAGE_SIZE);
 }
+

@@ -5,11 +5,13 @@ import { ConversationScenario, ConversationTurn, ConversationEvaluation } from '
 import {
   PlacementSession,
   PlacementResultReport,
+  PLACEMENT_STAGE_SIZE,
 } from './features/placement/placementTypes';
 import {
   loadActivePlacement,
   clearActivePlacement,
   getLatestPlacementResult,
+  loadLatestPlacementReport,
 } from './features/placement/placementStorage';
 import { selectPlacementQuestionsForStage } from './data/placement/placementPool';
 import { LESSONS, getLessonById } from './data/lessons';
@@ -64,6 +66,9 @@ export default function App() {
   const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
   const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
 
+  // Curriculum Filter State
+  const [homeLevelFilter, setHomeLevelFilter] = useState<CEFRLevel | 'ALL'>('ALL');
+
   // Conversation States
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
   const [conversationLevel, setConversationLevel] = useState<CEFRLevel>('A1');
@@ -96,6 +101,7 @@ export default function App() {
 
   // Curriculum Handlers
   const handleNavigateHome = () => {
+    setHomeLevelFilter('ALL');
     setCurrentView('home');
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
@@ -313,6 +319,11 @@ export default function App() {
     const seed = Date.now() ^ Math.floor(Math.random() * 1000000);
     const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
 
+    // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
+    if (initialStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
+      return;
+    }
+
     const initialSession: PlacementSession = {
       schemaVersion: 1,
       id: `placement-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -360,19 +371,29 @@ export default function App() {
   };
 
   const handleStartCurriculumAtLevel = (level: CEFRLevel) => {
+    setHomeLevelFilter(level);
     setCurrentView('home');
-    window.scrollTo({ top: 400, behavior: 'smooth' });
   };
 
   const handleViewPlacementResult = () => {
+    // 1. Use in-memory result report if present
     if (placementResultReport) {
       setCurrentView('placement-result');
-    } else {
-      const latest = getLatestPlacementResult();
-      if (latest) {
-        // Navigate to intro which displays summary or start
-        setCurrentView('placement-intro');
-      }
+      return;
+    }
+
+    // 2. Otherwise load validated saved report from localStorage
+    const savedReport = loadLatestPlacementReport();
+    if (savedReport) {
+      setPlacementResultReport(savedReport);
+      setCurrentView('placement-result');
+      return;
+    }
+
+    // 3. Fallback: if only compact history exists without full report, navigate to intro summary
+    const latest = getLatestPlacementResult();
+    if (latest) {
+      setCurrentView('placement-intro');
     }
   };
 
@@ -517,6 +538,7 @@ export default function App() {
             onNavigateReview={handleNavigateReview}
             onStartPlacement={handleStartPlacementIntro}
             onViewPlacementResult={handleViewPlacementResult}
+            initialLevelTab={homeLevelFilter || 'ALL'}
           />
         )}
 

@@ -82,7 +82,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
         {/* Can-Do Descriptor Statement */}
         <div className="bg-slate-800/90 rounded-2xl p-5 border border-slate-700 space-y-1.5 text-xs sm:text-sm text-slate-300">
           <span className="text-2xs font-extrabold uppercase tracking-wider text-indigo-400 block">
-            CEFR Can-Do Profile
+            FlipEnglish Level Profile
           </span>
           <p className="leading-relaxed">{report.canDoSummary}</p>
         </div>

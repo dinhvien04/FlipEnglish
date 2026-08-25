@@ -5,6 +5,9 @@ import {
   PlacementStage,
   PlacementStageResult,
   PlacementQuestion,
+  PLACEMENT_STAGE_COUNT,
+  PLACEMENT_STAGE_SIZE,
+  PLACEMENT_TOTAL_QUESTIONS,
 } from './placementTypes';
 import { selectPlacementQuestionsForStage } from '../../data/placement/placementPool';
 import { routeNextLevel, calculatePlacementResult } from './placementEngine';
@@ -28,6 +31,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
 }) => {
   const [session, setSession] = useState<PlacementSession>(initialSession);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // Save session state to localStorage on every update
@@ -41,8 +45,8 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
 
   // Overall question numbering (1 to 24)
   const currentGlobalQuestionNumber =
-    session.currentStageIndex * 6 + session.currentQuestionInStageIndex + 1;
-  const totalGlobalQuestions = 24;
+    session.currentStageIndex * PLACEMENT_STAGE_SIZE + session.currentQuestionInStageIndex + 1;
+  const totalGlobalQuestions = PLACEMENT_TOTAL_QUESTIONS;
 
   const currentSelectedAnswer = currentQuestion ? session.answers[currentQuestion.id] || '' : '';
 
@@ -84,7 +88,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
     if (!currentQuestion) return;
 
     // Check if we are still within the current stage (questions 0 to 4)
-    if (session.currentQuestionInStageIndex < 5) {
+    if (session.currentQuestionInStageIndex < PLACEMENT_STAGE_SIZE - 1) {
       setSession((prev) => ({
         ...prev,
         currentQuestionInStageIndex: prev.currentQuestionInStageIndex + 1,
@@ -103,23 +107,23 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       }
     }
 
-    const { nextLevel, decision } = routeNextLevel(currentStage.level, correctCount, 6);
+    const { nextLevel, decision } = routeNextLevel(currentStage.level, correctCount, PLACEMENT_STAGE_SIZE);
 
     const stageResult: PlacementStageResult = {
       stageIndex: session.currentStageIndex,
       level: currentStage.level,
       questionIds: stageQuestions.map((q) => q.id),
-      totalQuestions: 6,
+      totalQuestions: PLACEMENT_STAGE_SIZE,
       correctCount,
-      scorePercentage: Math.round((correctCount / 6) * 100),
+      scorePercentage: Math.round((correctCount / PLACEMENT_STAGE_SIZE) * 100),
       routingDecision: decision,
       nextLevel,
     };
 
     const updatedStageResults = [...session.stageResults, stageResult];
 
-    // Check if this was the final stage (Stage 4, index 3)
-    if (session.currentStageIndex >= 3) {
+    // Check if this was the final stage (Stage 4, index PLACEMENT_STAGE_COUNT - 1)
+    if (session.currentStageIndex >= PLACEMENT_STAGE_COUNT - 1) {
       // Gather all 24 questions across all 4 stages
       const allQuestions = session.stages.flatMap((s) => s.questions);
       const completedAt = Date.now();
@@ -160,6 +164,12 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       existingTargets
     );
 
+    // Requirement 8: Next stage guard (must have exactly 6 valid questions)
+    if (nextStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
+      setGenerationError('Placement Check could not prepare enough valid questions for this level.');
+      return;
+    }
+
     const nextStage: PlacementStage = {
       stageIndex: nextStageIndex,
       level: nextLevel,
@@ -188,6 +198,43 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
     currentStage,
     onFinishPlacement,
   ]);
+
+  if (generationError) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-6 animate-fadeIn">
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-4">
+          <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+            Stage Generation Issue
+          </span>
+          <h3 className="text-xl font-black text-slate-900">
+            {generationError}
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-600">
+            We could not assemble the required questions for the next stage. You can restart or return to the main dashboard.
+          </p>
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                clearActivePlacement();
+                onExitPlacement();
+              }}
+              className="min-h-12 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+            >
+              Restart Check
+            </button>
+            <button
+              type="button"
+              onClick={onExitPlacement}
+              className="min-h-12 px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+            >
+              Return Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentQuestion) {
     return (
@@ -218,7 +265,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               Placement Check
             </span>
             <span className="text-xs sm:text-sm text-slate-300 font-semibold hidden xs:inline">
-              Stage {session.currentStageIndex + 1} of 4
+              Stage {session.currentStageIndex + 1} of {PLACEMENT_STAGE_COUNT}
             </span>
           </div>
 
@@ -376,9 +423,9 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               id="placement-continue-btn"
               onClick={handleNextOrSubmitStage}
               disabled={!isAnswerSelected}
-              className="min-h-12 sm:min-h-14 px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center"
+              className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center"
             >
-              {session.currentStageIndex === 3 && session.currentQuestionInStageIndex === 5
+              {session.currentStageIndex === PLACEMENT_STAGE_COUNT - 1 && session.currentQuestionInStageIndex === PLACEMENT_STAGE_SIZE - 1
                 ? 'Finish Placement Check'
                 : 'Continue'}
             </button>
