@@ -118,8 +118,19 @@ export default function App() {
 
   const handleNavigateDictionary = (searchWord?: string) => {
     setDictionarySearchWord(searchWord || '');
-    setDictionaryReturnView(currentView !== 'dictionary' ? currentView : null);
+    if (currentView !== 'dictionary') {
+      setDictionaryReturnView(currentView);
+    }
     setCurrentView('dictionary');
+  };
+
+  const handleReturnFromDictionary = () => {
+    if (dictionaryReturnView) {
+      setCurrentView(dictionaryReturnView);
+      setDictionaryReturnView(null);
+    } else {
+      setCurrentView('home');
+    }
   };
 
   const handleNavigateHome = () => {
@@ -591,6 +602,8 @@ export default function App() {
         {currentView === 'dictionary' && (
           <DictionaryPage
             initialWord={dictionarySearchWord}
+            returnView={dictionaryReturnView}
+            onReturn={handleReturnFromDictionary}
             onNavigateLesson={handleSelectLessonById}
             onNavigateReview={handleNavigateReview}
           />

@@ -30,6 +30,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [addedReviewWordId, setAddedReviewWordId] = useState<string | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
   // Check saved state in IndexedDB on entry change
   useEffect(() => {
@@ -39,6 +40,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
     });
     setAudioError(null);
     setAddedReviewWordId(null);
+    setSaveFeedback(null);
 
     return () => {
       isMounted = false;
@@ -78,13 +80,18 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
   };
 
   const handleToggleSave = async () => {
+    setSaveFeedback(null);
     if (isSaved) {
-      await removeSavedWordFromDb(entry.normalizedWord);
-      setIsSaved(false);
+      const ok = await removeSavedWordFromDb(entry.normalizedWord);
+      if (ok) {
+        setIsSaved(false);
+      } else {
+        setSaveFeedback('Unable to remove word offline. Local storage may be restricted.');
+      }
     } else {
       const primaryMatch = entry.curriculumMatches?.[0];
       const snapshot = createEntrySnapshot(entry);
-      await saveWordToDb({
+      const ok = await saveWordToDb({
         schemaVersion: 1,
         id: `saved_${entry.normalizedWord.replace(/[^a-z0-9]/g, '_')}`,
         normalizedWord: entry.normalizedWord,
@@ -95,7 +102,11 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
         lessonId: primaryMatch?.lessonId,
         snapshot,
       });
-      setIsSaved(true);
+      if (ok) {
+        setIsSaved(true);
+      } else {
+        setSaveFeedback('Unable to save word offline. Local storage quota exceeded or disabled.');
+      }
     }
   };
 
@@ -144,7 +155,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <button
               type="button"
               onClick={handleToggleSave}
@@ -156,6 +167,10 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
             >
               {isSaved ? 'Saved to Vocabulary' : 'Save Word'}
             </button>
+
+            {saveFeedback && (
+              <span className="text-xs text-rose-600 font-medium">{saveFeedback}</span>
+            )}
           </div>
         </div>
 
@@ -169,7 +184,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
             type="button"
             onClick={() => handlePlayAudio(0.9)}
             disabled={isPlayingAudio}
-            className="min-h-10 px-3.5 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer border border-slate-200"
+            className="min-h-11 px-4 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-slate-200"
           >
             Play Normal (0.9x)
           </button>
@@ -178,7 +193,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
             type="button"
             onClick={() => handlePlayAudio(0.65)}
             disabled={isPlayingAudio}
-            className="min-h-10 px-3.5 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer border border-slate-200"
+            className="min-h-11 px-4 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-800 text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-slate-200"
           >
             Play Slow (0.65x)
           </button>
@@ -219,7 +234,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onNavigateLesson(match.lessonId)}
-                        className="min-h-9 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                        className="min-h-11 px-3.5 py-2 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors cursor-pointer"
                       >
                         Open Lesson
                       </button>
@@ -228,7 +243,7 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleAddToReview(match)}
-                      className={`min-h-9 px-3 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer ${
+                      className={`min-h-11 px-3.5 py-2 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
                         addedReviewWordId === match.wordId
                           ? 'bg-emerald-600 text-white border-emerald-600'
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600'

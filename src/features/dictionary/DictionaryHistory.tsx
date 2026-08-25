@@ -34,7 +34,7 @@ export const DictionaryHistory: React.FC<DictionaryHistoryProps> = ({
         <button
           type="button"
           onClick={onClearHistory}
-          className="min-h-9 px-3 py-1.5 text-xs font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer border border-rose-200"
+          className="min-h-11 px-4 py-2 text-xs sm:text-sm font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-rose-200"
         >
           Clear History
         </button>
@@ -46,7 +46,7 @@ export const DictionaryHistory: React.FC<DictionaryHistoryProps> = ({
             key={`${item.word}-${index}`}
             type="button"
             onClick={() => onSelectWord(item.word)}
-            className="min-h-12 p-3.5 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between group shadow-2xs"
+            className="w-full min-h-12 p-3.5 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between group shadow-2xs"
           >
             <span className="font-bold text-sm text-slate-800 group-hover:text-indigo-700">
               {item.word}

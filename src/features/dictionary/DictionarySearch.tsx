@@ -25,6 +25,8 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const requestTokenRef = useRef<number>(0);
 
   // Sync initial query if passed externally
   useEffect(() => {
@@ -33,7 +35,7 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     }
   }, [initialQuery]);
 
-  // Debounced autocomplete suggestions (only in 'dictionary' mode)
+  // Debounced autocomplete suggestions with AbortController and monotonic token guard
   useEffect(() => {
     if (searchMode !== 'dictionary') {
       setSuggestions([]);
@@ -45,6 +47,9 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     if (trimmed.length < 2) {
       setSuggestions([]);
       setIsOpen(false);
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+      }
       return;
     }
 
@@ -53,16 +58,31 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
     }
 
     debounceTimerRef.current = setTimeout(async () => {
-      try {
-        const results = await getDictionarySuggestions(trimmed);
-        setSuggestions(results);
-        setIsOpen(results.length > 0);
-        setHighlightedIndex(-1);
-      } catch {
-        setSuggestions([]);
-        setIsOpen(false);
+      // Increment token for this specific request
+      const currentToken = ++requestTokenRef.current;
+
+      // Abort prior inflight request
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
       }
-    }, 250);
+      const controller = new AbortController();
+      activeAbortControllerRef.current = controller;
+
+      try {
+        const results = await getDictionarySuggestions(trimmed, controller.signal);
+        // Only apply if this response corresponds to the newest request token
+        if (currentToken === requestTokenRef.current) {
+          setSuggestions(results);
+          setIsOpen(results.length > 0);
+          setHighlightedIndex(-1);
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError' && currentToken === requestTokenRef.current) {
+          setSuggestions([]);
+          setIsOpen(false);
+        }
+      }
+    }, 200);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -85,6 +105,9 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsOpen(false);
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+    }
     const trimmed = query.trim();
     if (trimmed) {
       onSearch(trimmed);
@@ -94,6 +117,9 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
   const handleSelectSuggestion = (word: string) => {
     setQuery(word);
     setIsOpen(false);
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+    }
     onSearch(word);
     inputRef.current?.focus();
   };
@@ -134,9 +160,9 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
             setSuggestions([]);
             setIsOpen(false);
           }}
-          className={`min-h-11 px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+          className={`min-h-11 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             searchMode === 'dictionary'
-              ? 'bg-indigo-600 text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -150,9 +176,9 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
             setSuggestions([]);
             setIsOpen(false);
           }}
-          className={`min-h-11 px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+          className={`min-h-11 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             searchMode === 'reverse'
-              ? 'bg-indigo-600 text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -208,7 +234,7 @@ export const DictionarySearch: React.FC<DictionarySearchProps> = ({
                   setIsOpen(false);
                   inputRef.current?.focus();
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 min-h-9 min-w-9 p-1 text-slate-400 hover:text-slate-600 rounded-md focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer flex items-center justify-center text-sm font-bold"
+                className="absolute right-2 top-1/2 -translate-y-1/2 min-h-11 min-w-11 p-2 text-slate-400 hover:text-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer flex items-center justify-center text-xs font-bold"
                 aria-label="Clear search input"
               >
                 Clear

@@ -13,12 +13,17 @@ const MAX_ANTONYMS = 30;
 const MAX_PRONUNCIATIONS = 8;
 const MAX_STRING_LENGTH = 1000;
 
+const ALLOWED_AUDIO_HOSTNAMES = new Set<string>([
+  'api.dictionaryapi.dev',
+  'ssl.gstatic.com',
+]);
+
 function truncateStr(str: any, maxLen = MAX_STRING_LENGTH): string {
   if (typeof str !== 'string') return '';
   return str.trim().slice(0, maxLen);
 }
 
-function sanitizeAudioUrl(url: any): string | undefined {
+export function sanitizeAudioUrl(url: any): string | undefined {
   if (typeof url !== 'string') return undefined;
   let trimmed = url.trim();
   if (!trimmed) return undefined;
@@ -29,14 +34,17 @@ function sanitizeAudioUrl(url: any): string | undefined {
   }
 
   // Must be https and not contain javascript/data/blob
-  if (!trimmed.startsWith('https://')) {
+  if (!trimmed.startsWith('https://') || trimmed.length > 500) {
     return undefined;
   }
 
-  // Validate URL structure
+  // Validate URL structure & hostname allowlist
   try {
     const parsed = new URL(trimmed);
     if (parsed.protocol !== 'https:') return undefined;
+    if (!ALLOWED_AUDIO_HOSTNAMES.has(parsed.hostname.toLowerCase())) {
+      return undefined;
+    }
     return parsed.href;
   } catch {
     return undefined;
@@ -44,7 +52,8 @@ function sanitizeAudioUrl(url: any): string | undefined {
 }
 
 /**
- * Normalizes Free Dictionary API JSON into internal DictionaryEntry
+ * Normalizes Free Dictionary API JSON into internal DictionaryEntry.
+ * Merges multiple top-level provider entries safely within global bounds.
  */
 export function normalizeFreeDictionaryResponse(word: string, rawData: any): DictionaryEntry | null {
   if (!Array.isArray(rawData) || rawData.length === 0) {
@@ -59,101 +68,115 @@ export function normalizeFreeDictionaryResponse(word: string, rawData: any): Dic
   const displayWord = truncateStr(primary.word || word, 100);
   const normalizedWord = displayWord.toLowerCase().replace(/\s+/g, ' ').trim();
 
-  // Phonetic
-  const phonetic = truncateStr(primary.phonetic, 100) || undefined;
+  let phonetic = truncateStr(primary.phonetic, 100) || undefined;
 
-  // Pronunciations
   const pronunciations: DictionaryPronunciation[] = [];
-  if (Array.isArray(primary.phonetics)) {
-    for (const p of primary.phonetics) {
-      if (pronunciations.length >= MAX_PRONUNCIATIONS) break;
-      if (typeof p === 'object' && p !== null) {
-        const text = truncateStr(p.text, 100) || undefined;
-        const audioUrl = sanitizeAudioUrl(p.audio);
-        if (text || audioUrl) {
-          pronunciations.push({
-            text,
-            audioUrl,
-          });
-        }
-      }
-    }
-  }
+  const seenPronKeys = new Set<string>();
 
-  // Meanings & Definitions
   const meanings: DictionaryMeaning[] = [];
   const allSynonymsSet = new Set<string>();
   const allAntonymsSet = new Set<string>();
 
-  if (Array.isArray(primary.meanings)) {
-    for (const m of primary.meanings) {
-      if (meanings.length >= MAX_MEANINGS) break;
-      if (typeof m !== 'object' || m === null) continue;
+  // Iterate across all top-level entries returned by the provider (up to 3)
+  const entriesToScan = rawData.slice(0, 3);
 
-      const partOfSpeech = truncateStr(m.partOfSpeech, 50) || 'unknown';
-      const definitions: DictionaryDefinition[] = [];
+  for (const rawEntry of entriesToScan) {
+    if (!rawEntry || typeof rawEntry !== 'object') continue;
 
-      if (Array.isArray(m.definitions)) {
-        for (const d of m.definitions) {
-          if (definitions.length >= MAX_DEFINITIONS_PER_MEANING) break;
-          if (typeof d !== 'object' || d === null) continue;
+    if (!phonetic && rawEntry.phonetic) {
+      phonetic = truncateStr(rawEntry.phonetic, 100) || undefined;
+    }
 
-          const defText = truncateStr(d.definition, 800);
-          if (!defText) continue;
+    // Pronunciations
+    if (Array.isArray(rawEntry.phonetics)) {
+      for (const p of rawEntry.phonetics) {
+        if (pronunciations.length >= MAX_PRONUNCIATIONS) break;
+        if (typeof p === 'object' && p !== null) {
+          const text = truncateStr(p.text, 100) || undefined;
+          const audioUrl = sanitizeAudioUrl(p.audio);
+          const key = `${text || ''}|${audioUrl || ''}`;
+          if ((text || audioUrl) && !seenPronKeys.has(key)) {
+            seenPronKeys.add(key);
+            pronunciations.push({
+              text,
+              audioUrl,
+            });
+          }
+        }
+      }
+    }
 
-          const example = truncateStr(d.example, 800) || undefined;
-          const defSyns: string[] = [];
-          const defAnts: string[] = [];
+    // Meanings & Definitions
+    if (Array.isArray(rawEntry.meanings)) {
+      for (const m of rawEntry.meanings) {
+        if (meanings.length >= MAX_MEANINGS) break;
+        if (typeof m !== 'object' || m === null) continue;
 
-          if (Array.isArray(d.synonyms)) {
-            for (const s of d.synonyms) {
-              const cleaned = truncateStr(s, 60).toLowerCase();
-              if (cleaned && !defSyns.includes(cleaned) && defSyns.length < 10) {
-                defSyns.push(cleaned);
-                if (allSynonymsSet.size < MAX_SYNONYMS) allSynonymsSet.add(cleaned);
+        const partOfSpeech = truncateStr(m.partOfSpeech, 50) || 'unknown';
+        const definitions: DictionaryDefinition[] = [];
+
+        if (Array.isArray(m.definitions)) {
+          for (const d of m.definitions) {
+            if (definitions.length >= MAX_DEFINITIONS_PER_MEANING) break;
+            if (typeof d !== 'object' || d === null) continue;
+
+            const defText = truncateStr(d.definition, 800);
+            if (!defText) continue;
+
+            const example = truncateStr(d.example, 800) || undefined;
+            const defSyns: string[] = [];
+            const defAnts: string[] = [];
+
+            if (Array.isArray(d.synonyms)) {
+              for (const s of d.synonyms) {
+                const cleaned = truncateStr(s, 60).toLowerCase();
+                if (cleaned && !defSyns.includes(cleaned) && defSyns.length < 10) {
+                  defSyns.push(cleaned);
+                  if (allSynonymsSet.size < MAX_SYNONYMS) allSynonymsSet.add(cleaned);
+                }
               }
             }
-          }
 
-          if (Array.isArray(d.antonyms)) {
-            for (const a of d.antonyms) {
-              const cleaned = truncateStr(a, 60).toLowerCase();
-              if (cleaned && !defAnts.includes(cleaned) && defAnts.length < 10) {
-                defAnts.push(cleaned);
-                if (allAntonymsSet.size < MAX_ANTONYMS) allAntonymsSet.add(cleaned);
+            if (Array.isArray(d.antonyms)) {
+              for (const a of d.antonyms) {
+                const cleaned = truncateStr(a, 60).toLowerCase();
+                if (cleaned && !defAnts.includes(cleaned) && defAnts.length < 10) {
+                  defAnts.push(cleaned);
+                  if (allAntonymsSet.size < MAX_ANTONYMS) allAntonymsSet.add(cleaned);
+                }
               }
             }
-          }
 
-          definitions.push({
-            definition: defText,
-            example,
-            synonyms: defSyns.length > 0 ? defSyns : undefined,
-            antonyms: defAnts.length > 0 ? defAnts : undefined,
+            definitions.push({
+              definition: defText,
+              example,
+              synonyms: defSyns.length > 0 ? defSyns : undefined,
+              antonyms: defAnts.length > 0 ? defAnts : undefined,
+            });
+          }
+        }
+
+        // Collect top-level meaning synonyms/antonyms
+        if (Array.isArray(m.synonyms)) {
+          for (const s of m.synonyms) {
+            const cleaned = truncateStr(s, 60).toLowerCase();
+            if (cleaned && allSynonymsSet.size < MAX_SYNONYMS) allSynonymsSet.add(cleaned);
+          }
+        }
+
+        if (Array.isArray(m.antonyms)) {
+          for (const a of m.antonyms) {
+            const cleaned = truncateStr(a, 60).toLowerCase();
+            if (cleaned && allAntonymsSet.size < MAX_ANTONYMS) allAntonymsSet.add(cleaned);
+          }
+        }
+
+        if (definitions.length > 0) {
+          meanings.push({
+            partOfSpeech,
+            definitions,
           });
         }
-      }
-
-      // Collect top-level meaning synonyms/antonyms if present
-      if (Array.isArray(m.synonyms)) {
-        for (const s of m.synonyms) {
-          const cleaned = truncateStr(s, 60).toLowerCase();
-          if (cleaned && allSynonymsSet.size < MAX_SYNONYMS) allSynonymsSet.add(cleaned);
-        }
-      }
-
-      if (Array.isArray(m.antonyms)) {
-        for (const a of m.antonyms) {
-          const cleaned = truncateStr(a, 60).toLowerCase();
-          if (cleaned && allAntonymsSet.size < MAX_ANTONYMS) allAntonymsSet.add(cleaned);
-        }
-      }
-
-      if (definitions.length > 0) {
-        meanings.push({
-          partOfSpeech,
-          definitions,
-        });
       }
     }
   }

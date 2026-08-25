@@ -104,13 +104,13 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        {/* Desktop Navigation (lg and up: >= 1024px) */}
-        <nav className="hidden lg:flex items-center gap-2 lg:gap-2.5" aria-label="Main Navigation">
+        {/* Desktop Navigation (xl and up: >= 1280px) */}
+        <nav className="hidden xl:flex items-center gap-2 xl:gap-2.5" aria-label="Main Navigation">
           {onNavigateToday && (
             <button
               id="header-nav-today"
               onClick={onNavigateToday}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'today'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-dictionary"
               onClick={onNavigateDictionary}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'dictionary'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -137,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-nav-learning-path"
             onClick={onNavigateHome}
-            className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+            className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
               currentView === 'home' || currentView === 'lesson-intro'
                 ? 'bg-slate-100 text-slate-900'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -150,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-review"
               onClick={onNavigateReview}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'review'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-conversation"
               onClick={onNavigateConversation}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('conversation')
                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -189,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-exam-center"
               onClick={onNavigateExamCenter}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView.startsWith('exam-')
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-nav-fliplens"
               onClick={onNavigateFlipLens}
-              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
                 currentView === 'flip-lens'
                   ? 'bg-slate-900 text-white'
                   : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/50'
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Progress Indicator - Pure text */}
           <div
             id="header-progress-indicator"
-            className="flex items-center min-h-11 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs lg:text-sm font-bold ml-1"
+            className="flex items-center min-h-11 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs xl:text-sm font-bold ml-1"
             title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
           >
             <span>
@@ -225,8 +225,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </nav>
 
-        {/* Compact Navigation Controls for Phone & Tablet (< lg) */}
-        <div className="flex lg:hidden items-center gap-2">
+        {/* Compact Navigation Controls for Phone & Tablet (< xl) */}
+        <div className="flex xl:hidden items-center gap-2">
           <div
             className="flex items-center px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold shrink-0"
             title={`${stats.completedCount} of ${stats.totalLessonsCount} lessons completed`}
@@ -252,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
       {isMobileMenuOpen && (
         <div
           id="mobile-navigation-drawer"
-          className="lg:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
+          className="xl:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
           onClick={() => {
             setIsMobileMenuOpen(false);
             menuButtonRef.current?.focus();
@@ -401,5 +401,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-

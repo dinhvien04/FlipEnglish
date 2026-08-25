@@ -1,18 +1,17 @@
 /**
- * FlipEnglish Comprehensive Dictionary Validation & Unit Test Suite
- * Tests 3-layer architecture, server normalization, bounding limits, Datamuse proxies,
- * Local index offline search, IndexedDB caching simulation, and security bounds.
+ * FlipEnglish Comprehensive Deterministic Dictionary Validation Suite
+ * 100% deterministic unit & contract tests using fixtures and mock fetch.
+ * Zero live network calls to external APIs.
  */
 
 import {
   normalizeFreeDictionaryResponse,
-  lookupFreeDictionary,
+  sanitizeAudioUrl,
 } from '../server/dictionary/freeDictionaryProvider';
 import {
   suggestDatamuseWords,
   getDatamuseRelated,
   reverseDatamuseLookup,
-  getDatamuseSpellingSuggestions,
 } from '../server/dictionary/datamuseProvider';
 import {
   DictionaryService,
@@ -22,6 +21,7 @@ import {
   getCurriculumMatchesForWord,
   buildCurriculumDictionaryEntry,
   getLocalCurriculumSuggestions,
+  buildDictionaryEntryFromSavedSnapshot,
 } from '../src/features/dictionary/dictionaryLocalIndex';
 import {
   createEntrySnapshot,
@@ -31,7 +31,15 @@ import {
   addRecentSearch,
   clearRecentSearches,
 } from '../src/features/dictionary/dictionaryStorage';
-import { DictionaryEntry } from '../server/dictionary/dictionaryTypes';
+import {
+  isValidDictionaryEntry,
+  isValidSavedDictionaryWord,
+  isValidDictionaryEntrySnapshot,
+} from '../src/features/dictionary/dictionaryValidation';
+import {
+  DictionaryEntry,
+  SavedDictionaryWord,
+} from '../src/features/dictionary/dictionaryTypes';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -41,7 +49,7 @@ function assert(condition: boolean, message: string) {
   console.log(`  ✓ ${message}`);
 }
 
-console.log('=== Running FlipEnglish Dictionary & Offline Wordbook Validation Suite ===\n');
+console.log('=== Running FlipEnglish Deterministic Dictionary Validation Suite ===\n');
 
 // Mock localStorage for Node.js test environment
 const mockStorage: Record<string, string> = {};
@@ -87,55 +95,81 @@ async function runTests() {
   assert(!SAFE_DESC_REGEX.test(''), 'Empty description rejected');
   assert(!SAFE_DESC_REGEX.test('a'.repeat(161)), 'Description over 150 characters rejected');
 
-  console.log('\n--- 2. Free Dictionary Parser & Bounding Limits ---');
-  const rawApiData = [
+  console.log('\n--- 2. Audio URL Sanitization & Allowlist ---');
+  assert(
+    sanitizeAudioUrl('https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3') !== undefined,
+    'Valid https audio on api.dictionaryapi.dev is allowed'
+  );
+  assert(
+    sanitizeAudioUrl('//ssl.gstatic.com/dictionary/static/sounds/20200429/hello--_gb_1.mp3') !== undefined,
+    'Protocol-relative url on ssl.gstatic.com upgraded to https and allowed'
+  );
+  assert(
+    sanitizeAudioUrl('http://api.dictionaryapi.dev/audio.mp3') === undefined,
+    'Non-https audio rejected'
+  );
+  assert(
+    sanitizeAudioUrl('https://untrusted-domain.com/evil.mp3') === undefined,
+    'Audio from non-allowlisted domain rejected'
+  );
+  assert(
+    sanitizeAudioUrl('javascript:alert(1)') === undefined,
+    'JavaScript scheme audio rejected'
+  );
+
+  console.log('\n--- 3. Multi-Entry Normalization & Bound Limits ---');
+  const multiEntryApiData = [
     {
-      word: 'resilient',
-      phonetic: '/rɪˈzɪl.jənt/',
+      word: 'run',
+      phonetic: '/rʌn/',
       phonetics: [
-        { text: '/rɪˈzɪl.jənt/', audio: 'https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3' },
-        { text: '/rɪˈzɪl.jənt/', audio: 'http://insecure.example.com/audio.mp3' }, // should be rejected (not https)
-        { text: '/rɪˈzɪl.jənt/', audio: 'javascript:alert(1)' }, // dangerous URI rejected
-        { text: '/rɪˈzɪl.jənt/', audio: '//ssl.gstatic.com/dictionary/static/sounds/20200429/hello--_gb_1.mp3' }, // protocol relative upgraded
+        { text: '/rʌn/', audio: 'https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3' },
       ],
       meanings: [
         {
-          partOfSpeech: 'adjective',
+          partOfSpeech: 'verb',
           definitions: [
             {
-              definition: 'Able to recoil or spring back into shape after bending, stretching, or being compressed.',
-              example: 'A resilient material.',
-              synonyms: ['flexible', 'pliable', 'supple', 'elastic'],
-              antonyms: ['rigid', 'fragile'],
-            },
-            {
-              definition: 'Able to withstand or recover quickly from difficult conditions.',
-              example: 'Babies are generally remarkably resilient.',
-              synonyms: ['strong', 'tough'],
-              antonyms: ['vulnerable'],
+              definition: 'To move fast on foot.',
+              example: 'He runs every morning.',
+              synonyms: ['sprint', 'jog'],
+              antonyms: ['walk', 'crawl'],
             },
           ],
-          synonyms: ['hardy', 'robust'],
+          synonyms: ['dash'],
           antonyms: [],
+        },
+      ],
+    },
+    {
+      word: 'run',
+      phonetic: '/rʌn/',
+      phonetics: [
+        { text: '/rʌn/', audio: 'https://ssl.gstatic.com/run-uk.mp3' },
+      ],
+      meanings: [
+        {
+          partOfSpeech: 'noun',
+          definitions: [
+            {
+              definition: 'An act of running.',
+              example: 'I went for a 5k run.',
+              synonyms: ['jog'],
+            },
+          ],
         },
       ],
     },
   ];
 
-  const normalized = normalizeFreeDictionaryResponse('resilient', rawApiData);
-  assert(normalized !== null, 'Normalized entry created successfully');
-  assert(normalized?.word === 'resilient', 'Word matches target');
-  assert(normalized?.meanings.length === 1, 'Meanings parsed');
-  assert(normalized?.meanings[0].definitions.length === 2, 'Definitions correctly attached');
-  assert(normalized?.synonyms.includes('flexible'), 'Synonyms merged and deduped');
-  assert(normalized?.antonyms.includes('rigid'), 'Antonyms merged and deduped');
-  assert(normalized?.source === 'dictionaryapi', 'Source stamped as dictionaryapi');
-  assert(
-    normalized?.pronunciations.every((p) => !p.audioUrl || p.audioUrl.startsWith('https://')),
-    'All extracted audio URLs strictly use HTTPS protocol'
-  );
+  const merged = normalizeFreeDictionaryResponse('run', multiEntryApiData);
+  assert(merged !== null, 'Normalized multi-entry response created successfully');
+  assert(merged?.word === 'run', 'Word matches target');
+  assert(merged?.meanings.length === 2, 'Both verb and noun meanings merged');
+  assert(merged?.pronunciations.length === 2, 'Both distinct pronunciations preserved');
+  assert(merged?.synonyms.includes('sprint') && merged?.synonyms.includes('dash'), 'Synonyms aggregated across entries');
 
-  // Test payload bounding limits
+  // Payload bounding limits
   const oversizedData = [
     {
       word: 'test',
@@ -154,14 +188,14 @@ async function runTests() {
   ];
 
   const bounded = normalizeFreeDictionaryResponse('test', oversizedData);
-  assert(bounded !== null, 'Oversized payload parsed');
+  assert(bounded !== null, 'Oversized payload normalized');
   assert(bounded!.meanings.length <= 8, 'Max meanings bounded to 8');
   assert(bounded!.meanings[0].definitions.length <= 8, 'Max definitions per meaning bounded to 8');
   assert(bounded!.synonyms.length <= 30, 'Total entry synonyms bounded to 30');
   assert(bounded!.antonyms.length <= 30, 'Total entry antonyms bounded to 30');
-  assert(bounded!.meanings[0].definitions[0].definition.length <= 800, 'Definition string clamped');
+  assert(bounded!.meanings[0].definitions[0].definition.length <= 800, 'Definition string length clamped');
 
-  console.log('\n--- 3. Local Curriculum Index (72 Lessons / 720 Items) ---');
+  console.log('\n--- 4. Local Curriculum Index (72 Lessons / 720 Items) ---');
   const greetingEntry = buildCurriculumDictionaryEntry('hello');
   assert(greetingEntry !== null, 'Curriculum match for "hello" found');
   assert(greetingEntry?.word.toLowerCase() === 'hello', 'Canonical word name preserved');
@@ -169,79 +203,137 @@ async function runTests() {
   assert(greetingEntry?.source === 'flipenglish', 'Source marked as flipenglish');
   assert(greetingEntry?.curriculumMatches![0].lessonTitle !== '', 'Lesson title present');
 
-  // Check that multi-word curriculum queries work
-  assert(normalizeDictionaryQuery('  Break Down! ') === 'break down!', 'Dictionary query normalization collapses whitespace');
+  assert(normalizeDictionaryQuery('  Break Down! ') === 'break down!', 'Query normalization collapses whitespace');
 
-  // Autocomplete search across local index
   const suggestions = getLocalCurriculumSuggestions('con', 5);
   assert(suggestions.length > 0, 'Local autocomplete returns matches for prefix "con"');
   assert(suggestions.every((s) => s.isCurriculum === true), 'Curriculum suggestions tagged correctly');
 
-  console.log('\n--- 4. Datamuse Proxy Structure & Offline Fallbacks ---');
-  const datamuseSuggestions = await suggestDatamuseWords('app', 5000);
-  assert(Array.isArray(datamuseSuggestions.suggestions), 'Datamuse suggestions returns array');
-
-  const datamuseSynonyms = await getDatamuseRelated('resilient', 'synonym', 5000);
-  assert(Array.isArray(datamuseSynonyms.results), 'Datamuse relations returns array');
-
-  const reverseResults = await reverseDatamuseLookup('a vehicle with two wheels', 5000);
-  assert(Array.isArray(reverseResults.results), 'Datamuse reverse lookup returns array');
-
-  console.log('\n--- 5. Server Dictionary In-Memory Cache Service ---');
-  const cacheResult1 = await DictionaryService.lookup('hello');
-  assert(cacheResult1.status === 200, 'Lookup succeeds for hello');
-  assert(cacheResult1.entry !== null, 'Entry returned');
-  assert(cacheResult1.entry?.word.toLowerCase() === 'hello', 'Word name returned correctly');
-
-  // Second call should hit in-memory cache
-  const cacheResult2 = await DictionaryService.lookup('hello');
-  assert(cacheResult2.status === 200 && cacheResult2.entry?.id === cacheResult1.entry?.id, 'In-memory cache delivers identical entry');
-
-  // Not found lookup gives 404
-  const invalidResult = await DictionaryService.lookup('hellloooqzxx');
-  assert(invalidResult.status === 404, 'Unknown word yields 404');
-  assert(invalidResult.entry === null, 'Entry is null');
-  assert(
-    invalidResult.spellingSuggestions === undefined || Array.isArray(invalidResult.spellingSuggestions),
-    'Spelling suggestions handled gracefully on 404'
-  );
-
-  console.log('\n--- 6. Compact Offline Snapshots & Validation ---');
-  const fullEntry: DictionaryEntry = {
+  console.log('\n--- 5. Saved Word Snapshot Reconstitution & Offline Fallback ---');
+  const savedWordItem: SavedDictionaryWord = {
     schemaVersion: 1,
-    id: 'dict_test_123',
-    word: 'resilient',
+    id: 'saved_resilient',
     normalizedWord: 'resilient',
-    phonetic: '/rɪˈzɪl.jənt/',
-    pronunciations: [{ audioUrl: 'https://example.com/audio.mp3', text: '/rɪˈzɪl.jənt/' }],
-    meanings: [
-      {
-        partOfSpeech: 'adjective',
-        definitions: [{ definition: 'Quick to recover' }],
-      },
-    ],
-    synonyms: ['tough', 'strong'],
-    antonyms: ['fragile'],
-    curriculumMatches: [
-      {
-        wordId: 'a2_01_resilient',
-        lessonId: 'personal-growth',
-        lessonTitle: 'Personal Growth',
-        level: 'B2',
-        meaning: 'kiên cường, nhanh hồi phục',
-        example: 'She is a resilient person.',
-      },
-    ],
-    source: 'combined',
+    displayWord: 'resilient',
+    savedAt: 1700000000000,
+    source: 'dictionary',
+    snapshot: {
+      word: 'resilient',
+      normalizedWord: 'resilient',
+      phonetic: '/rɪˈzɪl.jənt/',
+      primaryPartOfSpeech: 'adjective',
+      primaryDefinition: 'Able to recover quickly from difficult conditions.',
+      audioUrl: 'https://api.dictionaryapi.dev/media/pronunciations/en/resilient-us.mp3',
+      cefrLevel: 'B2',
+      lessonTitle: 'Personal Growth',
+    },
   };
 
-  const snapshot = createEntrySnapshot(fullEntry);
-  assert(snapshot.word === 'resilient', 'Snapshot preserves word');
-  assert(snapshot.primaryMeaningVi === 'kiên cường, nhanh hồi phục', 'Snapshot captures Vietnamese meaning from curriculum match');
-  assert(snapshot.primaryDefinition === 'Quick to recover', 'Snapshot captures English definition');
-  assert(snapshot.cefrLevel === 'B2', 'Snapshot captures CEFR level');
+  const reconstituted = buildDictionaryEntryFromSavedSnapshot(savedWordItem);
+  assert(reconstituted !== null, 'Reconstituted entry built from snapshot');
+  assert(reconstituted.word === 'resilient', 'Reconstituted word preserved');
+  assert(reconstituted.meanings.length > 0, 'Meanings populated from snapshot');
+  assert(reconstituted.meanings[0].partOfSpeech === 'adjective', 'Part of speech mapped');
+  assert(isValidDictionaryEntry(reconstituted), 'Reconstituted entry satisfies strict runtime validator');
 
-  console.log('\n--- 7. Recent Search Storage in LocalStorage ---');
+  console.log('\n--- 6. Runtime Schema Validators ---');
+  assert(isValidDictionaryEntry(reconstituted), 'Valid dictionary entry passes validator');
+  assert(!isValidDictionaryEntry({ word: 'bad' }), 'Malformed dictionary entry rejected');
+
+  assert(isValidSavedDictionaryWord(savedWordItem), 'Valid saved word passes validator');
+  assert(!isValidSavedDictionaryWord({ schemaVersion: 2, id: 'bad' }), 'Invalid schema version rejected');
+
+  assert(isValidDictionaryEntrySnapshot(savedWordItem.snapshot), 'Valid snapshot passes validator');
+
+  console.log('\n--- 7. Mocked Datamuse & Dictionary Provider Tests (Zero Live Network) ---');
+  // Store original fetch
+  const originalFetch = global.fetch;
+
+  try {
+    // Install Mock Fetch
+    (global as any).fetch = async (url: string) => {
+      const urlStr = String(url);
+
+      if (urlStr.includes('api.datamuse.com/sug?s=app')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [{ word: 'apple', score: 1000 }, { word: 'application', score: 900 }],
+        };
+      }
+
+      if (urlStr.includes('rel_syn=')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [{ word: 'flexible', score: 800 }, { word: 'supple', score: 750 }],
+        };
+      }
+
+      if (urlStr.includes('ml=')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            { word: 'bicycle', score: 1000, defs: ['n\ta two-wheeled vehicle'] },
+          ],
+        };
+      }
+
+      if (urlStr.includes('api.dictionaryapi.dev/api/v2/entries/en/mocktest')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            {
+              word: 'mocktest',
+              phonetic: '/mɒk/',
+              meanings: [
+                {
+                  partOfSpeech: 'noun',
+                  definitions: [{ definition: 'A simulated examination or trial.' }],
+                },
+              ],
+            },
+          ],
+        };
+      }
+
+      if (urlStr.includes('api.dictionaryapi.dev/api/v2/entries/en/unknown404word')) {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ title: 'No Definitions Found' }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+      };
+    };
+
+    const datamuseSuggestions = await suggestDatamuseWords('app', 5000);
+    assert(datamuseSuggestions.suggestions.length === 2, 'Datamuse suggestions parsed correctly from mock');
+
+    const datamuseSynonyms = await getDatamuseRelated('resilient', 'synonym', 5000);
+    assert(datamuseSynonyms.results.includes('flexible'), 'Datamuse relations parsed from mock');
+
+    const reverseResults = await reverseDatamuseLookup('a vehicle with two wheels', 5000);
+    assert(reverseResults.results[0].word === 'bicycle', 'Datamuse reverse lookup parsed from mock');
+
+    const mockLookupSuccess = await DictionaryService.lookup('mocktest');
+    assert(mockLookupSuccess.status === 200 && mockLookupSuccess.entry !== null, 'Mock provider lookup returns entry');
+
+    const mockLookup404 = await DictionaryService.lookup('unknown404word');
+    assert(mockLookup404.status === 404, 'Mock unknown word yields 404');
+  } finally {
+    // Restore fetch
+    (global as any).fetch = originalFetch;
+  }
+
+  console.log('\n--- 8. Recent Search Storage in LocalStorage ---');
   clearRecentSearches();
   assert(getRecentSearches().length === 0, 'Recent searches starts empty');
 

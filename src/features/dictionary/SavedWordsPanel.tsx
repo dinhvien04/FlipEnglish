@@ -71,7 +71,7 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
           <select
             value={filterSource}
             onChange={(e) => setFilterSource(e.target.value as any)}
-            className="min-h-10 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="min-h-11 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           >
             <option value="all">All Sources</option>
             <option value="curriculum">Curriculum Only</option>
@@ -81,7 +81,7 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="min-h-10 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="min-h-11 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           >
             <option value="recent">Recently Saved</option>
             <option value="alphabetical">A–Z</option>
@@ -96,7 +96,7 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Filter saved words or meanings..."
-          className="w-full min-h-11 px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          className="w-full min-h-12 px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
@@ -105,10 +105,11 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
         {filteredWords.map((item) => {
           const snap = item.snapshot;
           return (
-            <div
+            <button
               key={item.id}
+              type="button"
               onClick={() => onSelectWord(item.displayWord)}
-              className="p-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-2xl transition-all cursor-pointer shadow-2xs space-y-2 group"
+              className="w-full p-4 sm:p-5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all cursor-pointer shadow-2xs space-y-2 group focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5">
@@ -117,7 +118,7 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
                       {item.displayWord}
                     </h3>
                     {snap?.cefrLevel && (
-                      <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span className="px-2 py-0.5 rounded-md text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                         {snap.cefrLevel}
                       </span>
                     )}
@@ -136,8 +137,9 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleRemove(e, item.normalizedWord)}
-                  className="min-h-8 min-w-8 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-xs font-bold flex items-center justify-center"
+                  className="min-h-11 px-3 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center justify-center border border-transparent hover:border-rose-200 shrink-0"
                   title="Remove from saved words"
+                  aria-label={`Remove ${item.displayWord} from saved words`}
                 >
                   Remove
                 </button>
@@ -157,7 +159,7 @@ export const SavedWordsPanel: React.FC<SavedWordsPanelProps> = ({
                 <span>{item.source === 'curriculum' ? 'FlipEnglish Curriculum' : 'Dictionary Entry'}</span>
                 <span>{new Date(item.savedAt).toLocaleDateString()}</span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -32,14 +32,14 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - *Disclaimer: This short placement check recommends a starting level inside FlipEnglish. It is not an official CEFR certification.*
 
 ### FlipEnglish Dictionary & Offline Wordbook
-- **Cambridge/Oxford-style Learner Dictionary**: Comprehensive definitions grouped by part of speech, IPA phonetic transcriptions, authentic audio pronunciation playback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
+- **Comprehensive Learner Lexicon**: Structured definitions grouped by part of speech, IPA phonetic transcriptions, authentic audio pronunciation playback (Normal 0.9x and Slow 0.65x), usage examples, and interactive synonym/antonym chips.
 - **3-Layer Architecture**:
   - *Layer 1 (Local Curriculum Index)*: Instant offline lookup across all 72 lessons (720 vocabulary items) with CEFR level tags and "Open Lesson" navigation.
   - *Layer 2 (External Dictionary Provider)*: Proxy integration with the Free Dictionary API for full English definitions, bounded payloads, and sanitized HTTPS audio pronunciations.
   - *Layer 3 (Word Discovery & Relations)*: Synonyms, antonyms, similar concepts, sounds-like relations, and reverse dictionary (means-like search) powered by Datamuse.
 - **IndexedDB Offline Cache**: Native browser database (`flipenglish_dictionary_v1`) caching looked-up entries with LRU eviction (bounded to 250 entries / 30-day TTL) and compact snapshots.
-- **My Vocabulary (Personal Wordbook)**: Save and organize words with tags, filter by source (All/Curriculum/Dictionary), sort (Recent/A-Z), and review offline without needing an active connection.
-- **Cross-Feature Integration**: Deep link to dictionary lookup directly from Flashcards and Smart Review cards.
+- **My Vocabulary (Personal Wordbook)**: Save words and curriculum items to your offline wordbook, filter by source (All/Curriculum/Dictionary), sort (Recent/A-Z), and open entries offline directly from local snapshots.
+- **Cross-Feature Integration**: Deep link to dictionary lookup directly from Flashcards and Smart Review cards with contextual "Back to Lesson" and "Back to Smart Review" return navigation.
 
 ### Smart Review (Spaced Repetition System)
 - Interval-based recall scheduling with four self-assessment ratings: `Again` (10 minutes), `Hard` (1 day), `Good` (3 days), `Easy` (7 days).
@@ -64,7 +64,7 @@ FlipEnglish uses CEFR levels as a framework for learning and self-assessment. It
 - **Offline Core Learning**: Today's Plan, Curriculum browsing, Flashcards, Quizzes, Smart Review, Placement Check, and Exam Center scoring operate offline after your first visit.
 - **Runtime Image Caching**: Previously visited lesson photos and flashcard images are safely cached for offline access (bounded to 150 items / 30 days). Uncached remote images render a calm, professional fallback without breaking quiz layouts.
 - **Network-Only AI Guard**: Live AI features (Conversation Lab, FlipLens Vision, AI Practice, Explain My Mistake, Exam AI Analysis) strictly require an internet connection and are never faked with stale cached data.
-- **Speech Playback**: Offline availability of pronunciation audio depends on the local voices installed on your device or browser.
+- **Speech Playback**: Offline availability of pronunciation audio depends on provider audio URLs cached in your browser or local voices installed on your device.
 - **Disruption-Free Updates**: Updates prompt with "Update Now" and "Later" options without force-reloading active learning sessions.
 
 ### Mobile & Accessibility
@@ -103,7 +103,7 @@ Create a `.env` file in the project root:
 PORT=5173
 GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
-*(Note: Core features, including Curriculum, Flashcards, Exams, Smart Review, and the Placement Check, operate entirely without a Gemini API key).*
+*(Note: Core features, including Curriculum, Flashcards, Exams, Smart Review, Dictionary, and the Placement Check, operate entirely without a Gemini API key).*
 
 ### 4. Run Development Server
 ```bash

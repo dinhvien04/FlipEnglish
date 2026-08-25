@@ -3,6 +3,10 @@ import {
   SavedDictionaryWord,
   DictionaryEntrySnapshot,
 } from './dictionaryTypes';
+import {
+  isValidDictionaryEntry,
+  isValidSavedDictionaryWord,
+} from './dictionaryValidation';
 
 const DB_NAME = 'flipenglish_dictionary_v1';
 const DB_VERSION = 1;
@@ -12,9 +16,9 @@ const STORE_SAVED = 'savedWords';
 const STORE_META = 'metadata';
 
 const MAX_CACHED_ENTRIES = 250;
-const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+export const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-interface CachedEntryRecord {
+export interface CachedEntryRecord {
   normalizedWord: string;
   entry: DictionaryEntry;
   fetchedAt: number;
@@ -68,6 +72,7 @@ function getDb(): Promise<IDBDatabase | null> {
 
 /**
  * Retrieves a cached dictionary entry from IndexedDB.
+ * Validates schema integrity and updates lastAccessedAt timestamp.
  */
 export async function getCachedDictionaryEntry(normalizedWord: string): Promise<DictionaryEntry | null> {
   const db = await getDb();
@@ -81,15 +86,9 @@ export async function getCachedDictionaryEntry(normalizedWord: string): Promise<
 
       req.onsuccess = () => {
         const record = req.result as CachedEntryRecord | undefined;
-        if (!record || !record.entry) {
+        if (!record || !record.entry || !isValidDictionaryEntry(record.entry)) {
           resolve(null);
           return;
-        }
-
-        // Check TTL
-        const isStale = Date.now() - record.fetchedAt > CACHE_TTL_MS;
-        if (isStale) {
-          // Keep entry for offline, but indicate staleness if needed
         }
 
         // Update lastAccessedAt in background
@@ -109,9 +108,10 @@ export async function getCachedDictionaryEntry(normalizedWord: string): Promise<
  * Stores or updates a normalized dictionary entry in IndexedDB cache,
  * enforcing LRU eviction when max capacity is reached.
  */
-export async function setCachedDictionaryEntry(entry: DictionaryEntry): Promise<void> {
+export async function setCachedDictionaryEntry(entry: DictionaryEntry): Promise<boolean> {
+  if (!isValidDictionaryEntry(entry)) return false;
   const db = await getDb();
-  if (!db) return;
+  if (!db) return false;
 
   const normalizedWord = entry.normalizedWord;
   const record: CachedEntryRecord = {
@@ -126,30 +126,40 @@ export async function setCachedDictionaryEntry(entry: DictionaryEntry): Promise<
       const tx = db.transaction(STORE_ENTRIES, 'readwrite');
       const store = tx.objectStore(STORE_ENTRIES);
 
-      // Check count and evict oldest if needed
-      const countReq = store.count();
-      countReq.onsuccess = () => {
-        if (countReq.result >= MAX_CACHED_ENTRIES) {
-          // Evict oldest ~20 items using lastAccessedAt index
-          const index = store.index('lastAccessedAt');
-          const cursorReq = index.openCursor();
-          let deleted = 0;
-          cursorReq.onsuccess = (e) => {
-            const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-            if (cursor && deleted < 20) {
-              store.delete(cursor.primaryKey);
-              deleted++;
-              cursor.continue();
+      // Check if entry already exists to avoid unnecessary eviction
+      const existReq = store.get(normalizedWord);
+      existReq.onsuccess = () => {
+        const exists = Boolean(existReq.result);
+
+        if (!exists) {
+          const countReq = store.count();
+          countReq.onsuccess = () => {
+            if (countReq.result >= MAX_CACHED_ENTRIES) {
+              // Evict oldest ~20 items using lastAccessedAt index
+              const index = store.index('lastAccessedAt');
+              const cursorReq = index.openCursor();
+              let deleted = 0;
+              cursorReq.onsuccess = (e) => {
+                const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+                if (cursor && deleted < 20) {
+                  store.delete(cursor.primaryKey);
+                  deleted++;
+                  cursor.continue();
+                }
+              };
             }
+            store.put(record);
           };
+        } else {
+          store.put(record);
         }
-        store.put(record);
       };
 
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
     } catch {
-      resolve();
+      resolve(false);
     }
   });
 }
@@ -179,6 +189,7 @@ export function createEntrySnapshot(entry: DictionaryEntry): DictionaryEntrySnap
 
 /**
  * Loads all saved vocabulary items from IndexedDB.
+ * Filters and ensures only valid records are returned.
  */
 export async function getSavedWordsFromDb(): Promise<SavedDictionaryWord[]> {
   const db = await getDb();
@@ -191,10 +202,11 @@ export async function getSavedWordsFromDb(): Promise<SavedDictionaryWord[]> {
       const req = store.getAll();
 
       req.onsuccess = () => {
-        const results = (req.result as SavedDictionaryWord[]) || [];
+        const rawResults = (req.result as SavedDictionaryWord[]) || [];
+        const validResults = rawResults.filter(isValidSavedDictionaryWord);
         // Sort descending by savedAt
-        results.sort((a, b) => b.savedAt - a.savedAt);
-        resolve(results);
+        validResults.sort((a, b) => b.savedAt - a.savedAt);
+        resolve(validResults);
       };
 
       req.onerror = () => resolve([]);
@@ -205,41 +217,75 @@ export async function getSavedWordsFromDb(): Promise<SavedDictionaryWord[]> {
 }
 
 /**
- * Saves a word in IndexedDB.
+ * Retrieves a single saved word by normalized word key.
  */
-export async function saveWordToDb(item: SavedDictionaryWord): Promise<void> {
+export async function getSavedWordFromDb(normalizedWord: string): Promise<SavedDictionaryWord | null> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return null;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_SAVED, 'readonly');
+      const store = tx.objectStore(STORE_SAVED);
+      const req = store.get(normalizedWord);
+
+      req.onsuccess = () => {
+        const item = req.result as SavedDictionaryWord | undefined;
+        if (!item || !isValidSavedDictionaryWord(item)) {
+          resolve(null);
+          return;
+        }
+        resolve(item);
+      };
+
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Saves a word in IndexedDB.
+ * Returns true on success, false on error.
+ */
+export async function saveWordToDb(item: SavedDictionaryWord): Promise<boolean> {
+  if (!isValidSavedDictionaryWord(item)) return false;
+  const db = await getDb();
+  if (!db) return false;
 
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE_SAVED, 'readwrite');
       const store = tx.objectStore(STORE_SAVED);
       store.put(item);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
     } catch {
-      resolve();
+      resolve(false);
     }
   });
 }
 
 /**
  * Removes a saved word from IndexedDB.
+ * Returns true on success, false on error.
  */
-export async function removeSavedWordFromDb(normalizedWord: string): Promise<void> {
+export async function removeSavedWordFromDb(normalizedWord: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return false;
 
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE_SAVED, 'readwrite');
       const store = tx.objectStore(STORE_SAVED);
       store.delete(normalizedWord);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
     } catch {
-      resolve();
+      resolve(false);
     }
   });
 }
@@ -256,7 +302,7 @@ export async function isWordSavedInDb(normalizedWord: string): Promise<boolean> 
       const tx = db.transaction(STORE_SAVED, 'readonly');
       const store = tx.objectStore(STORE_SAVED);
       const req = store.get(normalizedWord);
-      req.onsuccess = () => resolve(!!req.result);
+      req.onsuccess = () => resolve(Boolean(req.result));
       req.onerror = () => resolve(false);
     } catch {
       resolve(false);

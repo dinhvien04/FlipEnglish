@@ -5,6 +5,7 @@ import {
   DictionaryEntry,
   DictionaryMeaning,
   DictionarySuggestion,
+  SavedDictionaryWord,
 } from './dictionaryTypes';
 
 /**
@@ -202,3 +203,75 @@ export function getLocalCurriculumSuggestions(query: string, maxResults = 6): Di
 
   return [...prefixMatches, ...containsMatches].slice(0, maxResults);
 }
+
+/**
+ * Builds a valid DictionaryEntry from a saved word snapshot or minimal saved word record.
+ * Used for offline opening when full dictionary cache entry was evicted.
+ */
+export function buildDictionaryEntryFromSavedSnapshot(savedWord: SavedDictionaryWord): DictionaryEntry {
+  const snapshot = savedWord.snapshot;
+  const word = snapshot?.word || savedWord.displayWord;
+  const normalizedWord = savedWord.normalizedWord;
+
+  const meanings: DictionaryMeaning[] = [];
+  const primaryDefinition = snapshot?.primaryDefinition || (snapshot?.primaryMeaningVi ? `Meaning: ${snapshot.primaryMeaningVi}` : undefined);
+
+  if (primaryDefinition || snapshot?.primaryPartOfSpeech) {
+    meanings.push({
+      partOfSpeech: snapshot?.primaryPartOfSpeech || 'word',
+      definitions: [
+        {
+          definition: primaryDefinition || 'Saved vocabulary item',
+          synonyms: [],
+          antonyms: [],
+        },
+      ],
+    });
+  } else {
+    meanings.push({
+      partOfSpeech: 'word',
+      definitions: [
+        {
+          definition: 'Saved vocabulary item',
+          synonyms: [],
+          antonyms: [],
+        },
+      ],
+    });
+  }
+
+  const pronunciations = [];
+  if (snapshot?.phonetic) {
+    pronunciations.push({ text: snapshot.phonetic, audioUrl: snapshot.audioUrl });
+  } else if (snapshot?.audioUrl) {
+    pronunciations.push({ audioUrl: snapshot.audioUrl });
+  }
+
+  const curriculumMatches: CurriculumDictionaryMatch[] = [];
+  if (savedWord.curriculumWordId && savedWord.lessonId) {
+    curriculumMatches.push({
+      wordId: savedWord.curriculumWordId,
+      lessonId: savedWord.lessonId,
+      lessonTitle: snapshot?.lessonTitle || 'FlipEnglish Curriculum',
+      level: snapshot?.cefrLevel || 'B1',
+      meaning: snapshot?.primaryMeaningVi,
+      partOfSpeech: snapshot?.primaryPartOfSpeech,
+    });
+  }
+
+  return {
+    schemaVersion: 1,
+    id: `saved_entry_${normalizedWord.replace(/[^a-z0-9]/g, '_')}`,
+    word,
+    normalizedWord,
+    phonetic: snapshot?.phonetic,
+    pronunciations,
+    meanings,
+    synonyms: [],
+    antonyms: [],
+    curriculumMatches: curriculumMatches.length > 0 ? curriculumMatches : undefined,
+    source: savedWord.source === 'curriculum' ? 'flipenglish' : 'dictionaryapi',
+    fetchedAt: savedWord.savedAt,
+  };
+}
+

@@ -84,6 +84,7 @@ const cspDirectives = {
   scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
   styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com'],
+  mediaSrc: ["'self'", 'https://api.dictionaryapi.dev', 'https://ssl.gstatic.com'],
   connectSrc: isProd ? ["'self'"] : ["'self'", 'https:', 'wss:', 'ws:'],
   fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
   objectSrc: ["'none'"],

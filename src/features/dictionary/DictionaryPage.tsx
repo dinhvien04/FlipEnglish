@@ -22,12 +22,16 @@ import { SavedWordsPanel } from './SavedWordsPanel';
 
 interface DictionaryPageProps {
   initialWord?: string;
+  returnView?: string | null;
+  onReturn?: () => void;
   onNavigateLesson?: (lessonId: string) => void;
   onNavigateReview?: () => void;
 }
 
 export const DictionaryPage: React.FC<DictionaryPageProps> = ({
   initialWord = '',
+  returnView = null,
+  onReturn,
   onNavigateLesson,
   onNavigateReview,
 }) => {
@@ -83,8 +87,8 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
         } else {
           setReverseResults(results);
         }
-      } catch (err: any) {
-        setErrorMessage('Reverse dictionary lookup failed. Please check your connection.');
+      } catch {
+        setErrorMessage('Reverse dictionary lookup requires an internet connection.');
       } finally {
         setIsLoading(false);
       }
@@ -97,7 +101,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
       if (result.entry) {
         setEntry(result.entry);
-        setIsOfflineCached(!!result.isOfflineCached);
+        setIsOfflineCached(Boolean(result.isOfflineCached));
         addRecentSearch(result.entry.word);
         setRecentSearches(getRecentSearches());
       } else {
@@ -106,7 +110,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setSpellingSuggestions(result.spellingSuggestions);
         }
       }
-    } catch (err: any) {
+    } catch {
       setErrorMessage('An unexpected error occurred during dictionary lookup.');
     } finally {
       setIsLoading(false);
@@ -123,10 +127,31 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
     handleSearch(word);
   };
 
+  const returnLabel = returnView === 'learn' || returnView === 'exercise'
+    ? 'Back to Lesson'
+    : returnView === 'review'
+    ? 'Back to Smart Review'
+    : returnView === 'today'
+    ? 'Back to Today'
+    : 'Back';
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Page Header */}
-      <header className="space-y-2">
+      <header className="space-y-3">
+        {onReturn && returnView && (
+          <div>
+            <button
+              type="button"
+              onClick={onReturn}
+              className="min-h-11 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <span>←</span>
+              <span>{returnLabel}</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             FlipEnglish Dictionary
@@ -235,7 +260,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                         key={idx}
                         type="button"
                         onClick={() => handleSearch(sug)}
-                        className="min-h-9 px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm rounded-lg transition-colors cursor-pointer border border-indigo-200"
+                        className="min-h-11 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer border border-indigo-200"
                       >
                         {sug}
                       </button>
@@ -262,17 +287,12 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     key={`${item.word}-${idx}`}
                     type="button"
                     onClick={() => handleSelectReverseWord(item.word)}
-                    className="min-h-14 p-4 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all cursor-pointer shadow-2xs space-y-1 group"
+                    className="w-full min-h-14 p-4 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-2xl text-left transition-all cursor-pointer shadow-2xs space-y-1 group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-base font-black text-slate-900 group-hover:text-indigo-600">
                         {item.word}
                       </span>
-                      {item.score && (
-                        <span className="text-2xs font-mono text-slate-400">
-                          score {item.score}
-                        </span>
-                      )}
                     </div>
                     {item.definitionPreview && (
                       <p className="text-xs text-slate-600 line-clamp-2">
@@ -320,7 +340,7 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
                         key={idx}
                         type="button"
                         onClick={() => handleSearch(item.word)}
-                        className="min-h-9 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                        className="min-h-11 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer"
                       >
                         {item.word}
                       </button>
