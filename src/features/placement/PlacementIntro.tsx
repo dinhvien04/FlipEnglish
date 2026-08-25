@@ -11,6 +11,7 @@ interface PlacementIntroProps {
   onBack: () => void;
   latestHistoryItem?: CompactPlacementHistoryItem | null;
   onViewPreviousResult?: () => void;
+  startError?: string | null;
 }
 
 export const PlacementIntro: React.FC<PlacementIntroProps> = ({
@@ -18,6 +19,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
   onBack,
   latestHistoryItem,
   onViewPreviousResult,
+  startError,
 }) => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
@@ -31,6 +33,39 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           Back
         </button>
       </div>
+
+      {/* Start Generation Error Notification if any */}
+      {startError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center space-y-4 animate-fadeIn">
+          <div className="space-y-1">
+            <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+              Placement Preparation Issue
+            </span>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 pt-1">
+              Placement Check could not prepare enough valid questions.
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
+              {startError}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <button
+              type="button"
+              onClick={onStartPlacement}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Placement Intro Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs space-y-8">

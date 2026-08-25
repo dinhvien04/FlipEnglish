@@ -14,6 +14,8 @@ import {
 import {
   validatePlacementSession,
   validatePlacementResultReport,
+  isPlacementResultExportedToReview,
+  markPlacementResultExportedToReview,
 } from '../src/features/placement/placementStorage';
 import {
   ORDERED_CEFR_LEVELS,
@@ -23,6 +25,39 @@ import {
   PLACEMENT_STAGE_SIZE,
   PLACEMENT_TOTAL_QUESTIONS,
 } from '../src/features/placement/placementTypes';
+import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
+import { recordQuizMistake } from '../src/utils/reviewStorage';
+
+// Mock localStorage and window for Node.js test runner
+const mockStorage: Record<string, string> = {};
+if (typeof (global as any).localStorage === 'undefined') {
+  (global as any).localStorage = {
+    getItem: (k: string) => mockStorage[k] || null,
+    setItem: (k: string, v: string) => {
+      mockStorage[k] = String(v);
+    },
+    removeItem: (k: string) => {
+      delete mockStorage[k];
+    },
+    clear: () => {
+      for (const k in mockStorage) delete mockStorage[k];
+    },
+  };
+}
+
+if (typeof (global as any).window === 'undefined') {
+  (global as any).window = {
+    dispatchEvent: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+  (global as any).Event = class {
+    type: string;
+    constructor(type: string) {
+      this.type = type;
+    }
+  };
+}
 
 console.log('--- STARTING COMPREHENSIVE PLACEMENT TEST SUITE & ATTACK CASE VALIDATION ---\n');
 
@@ -391,97 +426,144 @@ console.log('\n--- 6. CONSERVATIVE CONFIDENCE EVALUATION TESTS ---');
   assert(evUntested.confidence === 'Tentative estimate', 'Untested level correctly evaluated as Tentative estimate');
 }
 
-// 7. Strict Storage Validation & Attack Resistance Tests
-console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS ---');
+// 7. Strict Storage Validation & Comprehensive Attack Tests (Cases A through J)
+console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
 {
-  // Attack Case 1: Tampered question count in stage
-  const tamperedStageCount: any = {
+  const validQuestions = selectPlacementQuestionsForStage('B1', 0, 12345);
+  const validStage0 = {
+    stageIndex: 0,
+    level: 'B1' as CEFRLevel,
+    questions: validQuestions,
+    isLocked: false,
+  };
+
+  // Base Valid Active Session at Stage 0
+  const baseValidSession = {
     schemaVersion: 1,
-    id: 'test-1',
-    status: 'active',
+    id: 'valid-session-1',
+    status: 'active' as const,
     sessionSeed: 12345,
     startedAt: Date.now() - 1000,
     currentStageIndex: 0,
     currentQuestionInStageIndex: 0,
-    currentLevel: 'B1',
-    stages: [
-      {
-        stageIndex: 0,
-        level: 'B1',
-        questions: selectPlacementQuestionsForStage('B1', 0, 12345).slice(0, 5), // ONLY 5 questions!
-        isLocked: false,
-      },
-    ],
+    currentLevel: 'B1' as CEFRLevel,
+    stages: [validStage0],
     stageResults: [],
-    answers: {},
+    answers: {
+      [validQuestions[0].id]: validQuestions[0].options[0].text,
+    },
   };
-  assert(!validatePlacementSession(tamperedStageCount), 'Session with 5 questions in stage rejected (must be exactly 6)');
+  assert(validatePlacementSession(baseValidSession), 'Base active session passes validation');
 
-  // Attack Case 2: Inconsistent routing decision in stageResults
-  const validQuestions = selectPlacementQuestionsForStage('B1', 0, 12345);
-  const inconsistentRouting: any = {
-    schemaVersion: 1,
-    id: 'test-2',
-    status: 'active',
-    sessionSeed: 12345,
-    startedAt: Date.now() - 1000,
-    currentStageIndex: 1,
-    currentQuestionInStageIndex: 0,
-    currentLevel: 'B2',
+  // Attack Case A: Future unreached stage included in active session (stages.length > currentStageIndex + 1)
+  const attackCaseA = {
+    ...baseValidSession,
+    currentStageIndex: 0,
     stages: [
-      { stageIndex: 0, level: 'B1', questions: validQuestions, isLocked: true },
-      { stageIndex: 1, level: 'B2', questions: selectPlacementQuestionsForStage('B2', 1, 12345), isLocked: false },
+      validStage0,
+      { stageIndex: 1, level: 'B2' as CEFRLevel, questions: selectPlacementQuestionsForStage('B2', 1, 12345), isLocked: false },
     ],
-    stageResults: [
-      {
-        stageIndex: 0,
-        level: 'B1',
-        questionIds: validQuestions.map((q) => q.id),
-        totalQuestions: 6,
-        correctCount: 6, // 6/6 MUST route UP to B2
-        scorePercentage: 100,
-        routingDecision: 'down', // FORGED: claims 'down' to A2
-        nextLevel: 'A2',
-      },
-    ],
-    answers: {},
   };
-  assert(!validatePlacementSession(inconsistentRouting), 'Session with forged routing decision rejected');
+  assert(!validatePlacementSession(attackCaseA), 'Attack Case A: Future unreached stage in active session rejected');
 
-  // Attack Case 3: Unlocked previous stage
-  const unlockedPreviousStage: any = {
-    schemaVersion: 1,
-    id: 'test-3',
-    status: 'active',
-    sessionSeed: 12345,
-    startedAt: Date.now() - 1000,
+  // Attack Case B: currentLevel mismatch with current stage's level
+  const attackCaseB = {
+    ...baseValidSession,
+    currentLevel: 'C1' as CEFRLevel, // Stage 0 is B1, currentLevel is forged to C1
+  };
+  assert(!validatePlacementSession(attackCaseB), 'Attack Case B: currentLevel mismatch with current stage rejected');
+
+  // Attack Case C: Unlocked past stage (sIdx < currentStageIndex && !stage.isLocked)
+  const validStage1Questions = selectPlacementQuestionsForStage('B2', 1, 12345, new Set(validQuestions.map((q) => q.id)));
+  const validStage0Result: PlacementStageResult = {
+    stageIndex: 0,
+    level: 'B1',
+    questionIds: validQuestions.map((q) => q.id),
+    totalQuestions: 6,
+    correctCount: 6,
+    scorePercentage: 100,
+    routingDecision: 'up',
+    nextLevel: 'B2',
+  };
+
+  const attackCaseC = {
+    ...baseValidSession,
     currentStageIndex: 1,
-    currentQuestionInStageIndex: 0,
-    currentLevel: 'B2',
+    currentLevel: 'B2' as CEFRLevel,
     stages: [
-      { stageIndex: 0, level: 'B1', questions: validQuestions, isLocked: false }, // FORGED: should be locked!
-      { stageIndex: 1, level: 'B2', questions: selectPlacementQuestionsForStage('B2', 1, 12345), isLocked: false },
+      { ...validStage0, isLocked: false }, // Past stage MUST be locked!
+      { stageIndex: 1, level: 'B2' as CEFRLevel, questions: validStage1Questions, isLocked: false },
     ],
-    stageResults: [
-      {
-        stageIndex: 0,
-        level: 'B1',
-        questionIds: validQuestions.map((q) => q.id),
-        totalQuestions: 6,
-        correctCount: 6,
-        scorePercentage: 100,
-        routingDecision: 'up',
-        nextLevel: 'B2',
-      },
-    ],
-    answers: {},
+    stageResults: [validStage0Result],
   };
-  assert(!validatePlacementSession(unlockedPreviousStage), 'Session with unlocked previous stage rejected');
+  assert(!validatePlacementSession(attackCaseC), 'Attack Case C: Unlocked past stage rejected');
 
-  // Attack Case 4: Non-existent lesson in recommended lessons report
-  const forgedReport: any = {
-    id: 'report-1',
-    sessionId: 'session-1',
+  // Attack Case D: Locked current stage (sIdx === currentStageIndex && stage.isLocked)
+  const attackCaseD = {
+    ...baseValidSession,
+    currentStageIndex: 0,
+    stages: [
+      { ...validStage0, isLocked: true }, // Current active stage MUST NOT be locked!
+    ],
+  };
+  assert(!validatePlacementSession(attackCaseD), 'Attack Case D: Locked current stage rejected');
+
+  // Attack Case E: Answer text not present in question.options (arbitrary string injection)
+  const attackCaseE = {
+    ...baseValidSession,
+    answers: {
+      [validQuestions[0].id]: '<script>alert("injected")</script> forged random answer text',
+    },
+  };
+  assert(!validatePlacementSession(attackCaseE), 'Attack Case E: Answer not belonging to question options rejected');
+
+  // Attack Case F: Stage result score percentage not matching Math.round((correctCount/totalQuestions)*100)
+  const forgedPercentageResult: PlacementStageResult = {
+    ...validStage0Result,
+    correctCount: 4, // 4/6 is 67%
+    scorePercentage: 99, // Forged!
+  };
+  const attackCaseF = {
+    ...baseValidSession,
+    currentStageIndex: 1,
+    currentLevel: 'B2' as CEFRLevel,
+    stages: [
+      { ...validStage0, isLocked: true },
+      { stageIndex: 1, level: 'B2' as CEFRLevel, questions: validStage1Questions, isLocked: false },
+    ],
+    stageResults: [forgedPercentageResult],
+  };
+  assert(!validatePlacementSession(attackCaseF), 'Attack Case F: Forged stage score percentage formula rejected');
+
+  // Attack Case G: Stage result questionIds not matching stage questions
+  const forgedQuestionIdsResult: PlacementStageResult = {
+    ...validStage0Result,
+    questionIds: ['fake-q1', 'fake-q2', 'fake-q3', 'fake-q4', 'fake-q5', 'fake-q6'],
+  };
+  const attackCaseG = {
+    ...baseValidSession,
+    currentStageIndex: 1,
+    currentLevel: 'B2' as CEFRLevel,
+    stages: [
+      { ...validStage0, isLocked: true },
+      { stageIndex: 1, level: 'B2' as CEFRLevel, questions: validStage1Questions, isLocked: false },
+    ],
+    stageResults: [forgedQuestionIdsResult],
+  };
+  assert(!validatePlacementSession(attackCaseG), 'Attack Case G: Cross-linked question IDs mismatch rejected');
+
+  // Attack Case H: Stage results count not matching currentStageIndex
+  const attackCaseH = {
+    ...baseValidSession,
+    currentStageIndex: 0,
+    stageResults: [validStage0Result], // Stage 0 should have 0 stage results!
+  };
+  assert(!validatePlacementSession(attackCaseH), 'Attack Case H: Stage results count not matching currentStageIndex rejected');
+
+  // Attack Case I: Tampered report with non-existent lessonId
+  const attackCaseI: any = {
+    id: 'report-attack-i',
+    sessionId: 'session-i',
     date: 'Aug 25, 2026',
     startedAt: Date.now() - 600000,
     completedAt: Date.now(),
@@ -517,7 +599,25 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS ---');
     ],
     missedTargetItems: [],
   };
-  assert(!validatePlacementResultReport(forgedReport), 'Report with non-existent lessonId rejected');
+  assert(!validatePlacementResultReport(attackCaseI), 'Attack Case I: Report with non-existent lessonId rejected');
+
+  // Attack Case J: Smart Review Export Idempotency & Canonical Items Verification
+  console.log('\n--- 8. SMART REVIEW EXPORT IDEMPOTENCY & CANONICAL RESOLUTION TESTS ---');
+  const reportId = 'placement-report-idempotency-test-1';
+  assert(!isPlacementResultExportedToReview(reportId), 'Report ID is initially not exported');
+
+  markPlacementResultExportedToReview(reportId);
+  assert(isPlacementResultExportedToReview(reportId), 'Report ID is marked as exported');
+
+  // Second call must be idempotent
+  markPlacementResultExportedToReview(reportId);
+  assert(isPlacementResultExportedToReview(reportId), 'Subsequent export calls remain idempotent');
+
+  // Test canonical word resolution against real curriculum
+  const realLessonWordId = 'device'; // Known curriculum word ID from B1 Technology lesson
+  const fakeWordId = 'fake-word-id-9999';
+  assert(Boolean(resolveCurriculumItem(realLessonWordId)), 'Real curriculum word resolves properly');
+  assert(!resolveCurriculumItem(fakeWordId), 'Fake word ID does not resolve in curriculum index');
 }
 
 console.log('\n--- PLACEMENT VALIDATION SUMMARY ---');

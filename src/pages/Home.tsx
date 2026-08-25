@@ -55,10 +55,8 @@ export const Home: React.FC<HomeProps> = ({
 
   // Update selectedLevelTab if initialLevelTab prop changes
   useEffect(() => {
-    if (initialLevelTab !== 'ALL') {
-      setSelectedLevelTab(initialLevelTab);
-      setViewAllLevel(initialLevelTab);
-    }
+    setSelectedLevelTab(initialLevelTab);
+    setViewAllLevel(initialLevelTab === 'ALL' ? null : initialLevelTab);
   }, [initialLevelTab]);
 
   // Listen to storage events to keep progress in sync
@@ -174,7 +172,7 @@ export const Home: React.FC<HomeProps> = ({
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-              From beginner essentials to executive precision and native eloquence. Flip through realistic photographic cards, hear native pronunciations, take listening challenges, and learn from mistakes with Gemini AI.
+              From beginner essentials to advanced vocabulary precision. Learn with realistic photographic cards, English pronunciation playback, listening challenges, and targeted AI feedback.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-slate-300">

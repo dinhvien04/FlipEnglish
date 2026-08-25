@@ -22,12 +22,14 @@ interface PlacementSessionProps {
   initialSession: PlacementSession;
   onFinishPlacement: (report: PlacementResultReport) => void;
   onExitPlacement: () => void;
+  onRestartPlacement?: () => void;
 }
 
 export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
   initialSession,
   onFinishPlacement,
   onExitPlacement,
+  onRestartPlacement,
 }) => {
   const [session, setSession] = useState<PlacementSession>(initialSession);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -217,7 +219,11 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               type="button"
               onClick={() => {
                 clearActivePlacement();
-                onExitPlacement();
+                if (onRestartPlacement) {
+                  onRestartPlacement();
+                } else {
+                  onExitPlacement();
+                }
               }}
               className="min-h-12 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
             >

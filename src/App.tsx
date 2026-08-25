@@ -65,6 +65,7 @@ export default function App() {
   const [activePlacementSession, setActivePlacementSession] = useState<PlacementSession | null>(null);
   const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
   const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
+  const [placementStartError, setPlacementStartError] = useState<string | null>(null);
 
   // Curriculum Filter State
   const [homeLevelFilter, setHomeLevelFilter] = useState<CEFRLevel | 'ALL'>('ALL');
@@ -312,15 +313,19 @@ export default function App() {
   const handleStartPlacementIntro = () => {
     setSelectedLessonId(null);
     setIsReviewMistakesMode(false);
+    setPlacementStartError(null);
     setCurrentView('placement-intro');
   };
 
   const handleStartPlacementSession = () => {
+    setPlacementStartError(null);
     const seed = Date.now() ^ Math.floor(Math.random() * 1000000);
     const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
 
     // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
     if (initialStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
+      setPlacementStartError('Placement Check could not prepare enough valid questions for the initial stage.');
+      setCurrentView('placement-intro');
       return;
     }
 
@@ -549,6 +554,7 @@ export default function App() {
             onBack={handleNavigateHome}
             latestHistoryItem={getLatestPlacementResult()}
             onViewPreviousResult={handleViewPlacementResult}
+            startError={placementStartError}
           />
         )}
 
@@ -557,6 +563,7 @@ export default function App() {
             initialSession={activePlacementSession}
             onFinishPlacement={handleFinishPlacementSession}
             onExitPlacement={handleNavigateHome}
+            onRestartPlacement={handleStartPlacementSession}
           />
         )}
 

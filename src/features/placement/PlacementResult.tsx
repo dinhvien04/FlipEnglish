@@ -3,6 +3,11 @@ import { PlacementResultReport, RecommendedLessonItem } from './placementTypes';
 import { CEFRLevel, Lesson } from '../../types';
 import { recordQuizMistake } from '../../utils/reviewStorage';
 import { LESSONS } from '../../data/lessons';
+import { resolveCurriculumItem } from '../../utils/curriculumIndex';
+import {
+  isPlacementResultExportedToReview,
+  markPlacementResultExportedToReview,
+} from './placementStorage';
 
 interface PlacementResultProps {
   report: PlacementResultReport;
@@ -19,7 +24,10 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   onSelectLesson,
   onNavigateReview,
 }) => {
-  const [addedWordsCount, setAddedWordsCount] = useState<number | null>(null);
+  const isAlreadyExported = isPlacementResultExportedToReview(report.id);
+  const [addedWordsCount, setAddedWordsCount] = useState<number | null>(
+    isAlreadyExported ? -1 : null
+  );
 
   const levelBadgeClass: Record<CEFRLevel, { bg: string; text: string; border: string }> = {
     A1: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
@@ -32,17 +40,28 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
 
   const levelStyle = levelBadgeClass[report.estimatedLevel] || levelBadgeClass.B1;
 
-  // Add missed canonical items to Smart Review
-  const handleAddMissedToReview = () => {
-    const validWordIds = report.missedTargetItems
-      .map((m) => m.wordId)
-      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  // Resolve canonical curriculum item IDs for missed placement questions
+  const canonicalWeakIds: string[] = Array.from(
+    new Set(
+      report.missedTargetItems
+        .map((m) => m.wordId)
+        .filter((id): id is string => typeof id === 'string' && Boolean(id.trim()))
+        .filter((id: string) => Boolean(resolveCurriculumItem(id)))
+    )
+  );
 
-    const uniqueIds = Array.from(new Set<string>(validWordIds));
-    for (const wordId of uniqueIds) {
+  // Add missed canonical items to Smart Review idempotently
+  const handleAddMissedToReview = () => {
+    if (isPlacementResultExportedToReview(report.id)) {
+      setAddedWordsCount(-1);
+      return;
+    }
+
+    for (const wordId of canonicalWeakIds) {
       recordQuizMistake(wordId);
     }
-    setAddedWordsCount(uniqueIds.length);
+    markPlacementResultExportedToReview(report.id);
+    setAddedWordsCount(canonicalWeakIds.length);
   };
 
   return (
@@ -192,14 +211,14 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
       </section>
 
       {/* Missed Vocabulary -> Smart Review CTA (Optional) */}
-      {report.missedTargetItems.length > 0 && (
+      {canonicalWeakIds.length > 0 && (
         <section className="bg-indigo-50/80 rounded-3xl p-6 sm:p-7 border border-indigo-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-base font-extrabold text-indigo-950">
               Missed Vocabulary & Expressions
             </h3>
             <p className="text-xs text-indigo-800 leading-relaxed max-w-xl">
-              You answered {report.missedTargetItems.length} questions incorrectly. Add them directly to your Smart Review queue for spaced repetition practice.
+              You answered {report.missedTargetItems.length} questions incorrectly ({canonicalWeakIds.length} curriculum items eligible for spaced repetition). Add them directly to your Smart Review queue for practice.
             </p>
           </div>
 
@@ -207,7 +226,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
             {addedWordsCount !== null ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3.5 py-2 rounded-xl">
-                  {addedWordsCount} items added to Review
+                  {addedWordsCount === -1 ? 'Items already added to Review' : `${addedWordsCount} items added to Review`}
                 </span>
                 {onNavigateReview && (
                   <button
@@ -226,7 +245,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                 onClick={handleAddMissedToReview}
                 className="min-h-12 px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
               >
-                Add {report.missedTargetItems.length} items to Review
+                Add {canonicalWeakIds.length} items to Review
               </button>
             )}
           </div>

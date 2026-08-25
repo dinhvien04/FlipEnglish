@@ -17,7 +17,9 @@ import { LESSONS } from '../../data/lessons';
 const ACTIVE_PLACEMENT_KEY = 'flipenglish_placement_active_v1';
 const PLACEMENT_HISTORY_KEY = 'flipenglish_placement_history_v1';
 export const PLACEMENT_LATEST_REPORT_KEY = 'flipenglish_placement_latest_report_v1';
+export const PLACEMENT_REVIEW_EXPORTS_KEY = 'flipenglish_placement_review_exports_v1';
 const MAX_HISTORY_ITEMS = 5;
+const MAX_EXPORTED_REPORTS = 20;
 
 export const PLACEMENT_UPDATED_EVENT = 'flipenglish_placement_updated';
 
@@ -46,7 +48,13 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
   // Stages array validation
   if (!Array.isArray(data.stages) || data.stages.length < 1 || data.stages.length > PLACEMENT_STAGE_COUNT) return false;
+  // currentStageIndex must be within existing stages and currentLevel must match current stage's level
+  if (data.currentStageIndex >= data.stages.length) return false;
+  if (data.stages.length > data.currentStageIndex + 1) return false; // no future unreached stages in active session
+  if (data.currentLevel !== data.stages[data.currentStageIndex]?.level) return false;
+
   const allQuestionIds = new Set<string>();
+  const questionById = new Map<string, any>();
 
   for (let sIdx = 0; sIdx < data.stages.length; sIdx++) {
     const stage = data.stages[sIdx];
@@ -57,6 +65,8 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
     // Previous stages must be locked
     if (sIdx < data.currentStageIndex && !stage.isLocked) return false;
+    // Current stage must be unlocked
+    if (sIdx === data.currentStageIndex && stage.isLocked) return false;
 
     // Each stage must have EXACTLY PLACEMENT_STAGE_SIZE (6) valid questions
     if (!Array.isArray(stage.questions) || stage.questions.length !== PLACEMENT_STAGE_SIZE) return false;
@@ -66,26 +76,45 @@ export function validatePlacementSession(data: any): data is PlacementSession {
       if (q.level !== stage.level) return false; // question level must match stage level
       if (allQuestionIds.has(q.id)) return false; // unique question IDs across stages
       allQuestionIds.add(q.id);
+      questionById.set(q.id, q);
     }
   }
 
   // Stage Results validation & consistency
   if (!Array.isArray(data.stageResults) || data.stageResults.length > PLACEMENT_STAGE_COUNT) return false;
+  // Number of stage results must match completed stages (which is data.currentStageIndex)
+  if (data.stageResults.length !== data.currentStageIndex) return false;
+
   for (let srIdx = 0; srIdx < data.stageResults.length; srIdx++) {
     const sr = data.stageResults[srIdx];
+    const correspondingStage = data.stages[srIdx];
     if (!sr || typeof sr !== 'object') return false;
     if (sr.stageIndex !== srIdx) return false;
     if (!ORDERED_CEFR_LEVELS.includes(sr.level)) return false;
+    if (!correspondingStage || sr.level !== correspondingStage.level) return false;
     if (sr.totalQuestions !== PLACEMENT_STAGE_SIZE) return false;
     if (typeof sr.correctCount !== 'number' || sr.correctCount < 0 || sr.correctCount > PLACEMENT_STAGE_SIZE) return false;
     if (typeof sr.scorePercentage !== 'number' || sr.scorePercentage < 0 || sr.scorePercentage > 100) return false;
+    // Strict score percentage formula consistency
+    const expectedPercentage = Math.round((sr.correctCount / PLACEMENT_STAGE_SIZE) * 100);
+    if (sr.scorePercentage !== expectedPercentage) return false;
+
     if (!Array.isArray(sr.questionIds) || sr.questionIds.length !== PLACEMENT_STAGE_SIZE) return false;
+    // Cross-link questionIds to corresponding stage's question IDs
+    if (correspondingStage) {
+      const stageQIds = correspondingStage.questions.map((q: any) => q.id);
+      if (sr.questionIds.some((qid: string, idx: number) => qid !== stageQIds[idx])) return false;
+    }
+
     if (!['up', 'same', 'down'].includes(sr.routingDecision)) return false;
 
     // Strict routing consistency check
     const expected = routeNextLevel(sr.level, sr.correctCount, PLACEMENT_STAGE_SIZE);
     if (sr.routingDecision !== expected.decision) return false;
     if (sr.nextLevel !== expected.nextLevel) return false;
+
+    // Next stage level if it exists must match nextLevel
+    if (data.stages[srIdx + 1] && data.stages[srIdx + 1].level !== expected.nextLevel) return false;
   }
 
   // Answers validation
@@ -97,6 +126,12 @@ export function validatePlacementSession(data: any): data is PlacementSession {
     if (!allQuestionIds.has(qId)) return false; // answer key must match a generated question
     const ansVal = data.answers[qId];
     if (typeof ansVal !== 'string' || ansVal.length > 500) return false;
+
+    // Strict membership check: answer must match one of the question's valid option texts
+    const question = questionById.get(qId);
+    if (!question) return false;
+    const optionTexts = question.options.map((opt: any) => opt.text);
+    if (!optionTexts.includes(ansVal)) return false;
   }
 
   return true;
@@ -267,15 +302,73 @@ export function loadLatestPlacementReport(): PlacementResultReport | null {
  * Validates untrusted placement history items
  */
 function validateHistoryItem(item: any): item is CompactPlacementHistoryItem {
-  if (!item || typeof item !== 'object') return false;
-  if (typeof item.id !== 'string' || typeof item.date !== 'string') return false;
-  if (typeof item.completedAt !== 'number' || !Number.isFinite(item.completedAt)) return false;
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  if (typeof item.id !== 'string' || !item.id.trim() || item.id.length > 150) return false;
+  if (typeof item.date !== 'string' || !item.date.trim() || item.date.length > 100) return false;
+  if (typeof item.completedAt !== 'number' || !Number.isFinite(item.completedAt) || item.completedAt <= 0 || item.completedAt > Date.now() + 86400000) return false;
   if (!ORDERED_CEFR_LEVELS.includes(item.estimatedLevel)) return false;
   if (typeof item.overallPercentage !== 'number' || item.overallPercentage < 0 || item.overallPercentage > 100) return false;
-  if (!Array.isArray(item.stagePathLevels) || item.stagePathLevels.length > PLACEMENT_STAGE_COUNT) return false;
-  if (!Array.isArray(item.recommendedLessonIds)) return false;
-  if (!Array.isArray(item.matchedWeakWordIds)) return false;
+  const validConfidences: PlacementConfidence[] = ['Strong evidence', 'Moderate evidence', 'Tentative estimate'];
+  if (!validConfidences.includes(item.confidence)) return false;
+
+  if (!Array.isArray(item.stagePathLevels) || item.stagePathLevels.length < 1 || item.stagePathLevels.length > PLACEMENT_STAGE_COUNT) return false;
+  for (const lvl of item.stagePathLevels) {
+    if (!ORDERED_CEFR_LEVELS.includes(lvl)) return false;
+  }
+
+  if (!Array.isArray(item.recommendedLessonIds) || item.recommendedLessonIds.length > 5) return false;
+  for (const lId of item.recommendedLessonIds) {
+    if (typeof lId !== 'string' || !lId.trim()) return false;
+    const exists = LESSONS.some((l) => l.id === lId);
+    if (!exists) return false;
+  }
+
+  if (!Array.isArray(item.matchedWeakWordIds) || item.matchedWeakWordIds.length > PLACEMENT_TOTAL_QUESTIONS) return false;
+  for (const wId of item.matchedWeakWordIds) {
+    if (typeof wId !== 'string' || !wId.trim() || wId.length > 100) return false;
+  }
+
   return true;
+}
+
+/**
+ * Checks whether a given placement report ID was already exported to Smart Review
+ */
+export function isPlacementResultExportedToReview(reportId: string): boolean {
+  if (typeof window === 'undefined' || !reportId) return false;
+  try {
+    const raw = localStorage.getItem(PLACEMENT_REVIEW_EXPORTS_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return false;
+    return parsed.includes(reportId);
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Marks a placement report ID as exported to Smart Review (max 20 stored)
+ */
+export function markPlacementResultExportedToReview(reportId: string): void {
+  if (typeof window === 'undefined' || !reportId) return;
+  try {
+    const raw = localStorage.getItem(PLACEMENT_REVIEW_EXPORTS_KEY);
+    let list: string[] = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        list = parsed.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
+      }
+    }
+    if (!list.includes(reportId)) {
+      list.unshift(reportId);
+      list = list.slice(0, MAX_EXPORTED_REPORTS);
+      localStorage.setItem(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
+    }
+  } catch (err) {
+    // ignore
+  }
 }
 
 /**
