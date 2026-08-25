@@ -29,11 +29,10 @@ export const TodayPage: React.FC<TodayPageProps> = ({
   onNavigatePlacement,
   onNavigateQuickTest,
   onNavigateCurriculum,
-  onNavigateConversation,
-  onNavigateFlipLens,
 }) => {
   const [plan, setPlan] = useState<TodayStudyPlan>(() => getOrGenerateTodayPlan());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [goalFeedbackMessage, setGoalFeedbackMessage] = useState<string | null>(null);
 
   // Refresh and reconcile plan
   const refreshPlan = useCallback(() => {
@@ -91,15 +90,23 @@ export const TodayPage: React.FC<TodayPageProps> = ({
 
   // Handle saving new daily time goal
   const handleSaveGoal = (newMinutes: AllowedDailyMinutes) => {
-    const updated = updateDailyGoalAndRegeneratePlan(newMinutes);
-    setPlan(updated);
+    const result = updateDailyGoalAndRegeneratePlan(newMinutes);
+    setPlan(result.plan);
+    if (result.message) {
+      setGoalFeedbackMessage(result.message);
+    } else {
+      setGoalFeedbackMessage(null);
+    }
   };
 
   // Calculate task counts
   const totalTasks = plan.tasks.length;
   const completedTasks = plan.tasks.filter((t) => t.status === 'completed').length;
   const skippedTasks = plan.tasks.filter((t) => t.status === 'skipped').length;
-  const isPlanFinished = completedTasks + skippedTasks === totalTasks && totalTasks > 0;
+  const resolvedTasks = completedTasks + skippedTasks;
+  const isPlanFinished = resolvedTasks === totalTasks && totalTasks > 0;
+  const allTasksSkipped = skippedTasks === totalTasks && totalTasks > 0;
+  const allTasksCompleted = completedTasks === totalTasks && totalTasks > 0;
 
   // Format today's date nicely: e.g. "Tuesday, August 25"
   const todayFormatted = new Intl.DateTimeFormat('en-US', {
@@ -133,6 +140,21 @@ export const TodayPage: React.FC<TodayPageProps> = ({
           </button>
         </div>
 
+        {/* Goal Feedback Notice (e.g. goal downgrade applied for tomorrow) */}
+        {goalFeedbackMessage && (
+          <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 flex items-start justify-between gap-3 animate-fadeIn">
+            <p className="leading-relaxed font-medium">{goalFeedbackMessage}</p>
+            <button
+              type="button"
+              onClick={() => setGoalFeedbackMessage(null)}
+              className="text-indigo-400 hover:text-indigo-700 font-bold text-xs shrink-0 cursor-pointer p-1"
+              aria-label="Dismiss message"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Progress Tracker Bar */}
         <div className="space-y-2 pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700">
@@ -147,31 +169,56 @@ export const TodayPage: React.FC<TodayPageProps> = ({
 
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div
-              className="bg-indigo-600 h-full rounded-full transition-all duration-300 ease-out"
+              className={`h-full rounded-full transition-all duration-300 ease-out ${
+                allTasksSkipped ? 'bg-slate-400' : 'bg-indigo-600'
+              }`}
               style={{
-                width: `${totalTasks > 0 ? Math.round(((completedTasks + skippedTasks) / totalTasks) * 100) : 0}%`,
+                width: `${totalTasks > 0 ? Math.round((resolvedTasks / totalTasks) * 100) : 0}%`,
               }}
               role="progressbar"
-              aria-valuenow={completedTasks}
+              aria-valuenow={resolvedTasks}
               aria-valuemin={0}
               aria-valuemax={totalTasks}
+              aria-valuetext={`${completedTasks} completed, ${skippedTasks} skipped of ${totalTasks} total tasks`}
             />
           </div>
         </div>
       </section>
 
-      {/* Plan Completion State Notice */}
+      {/* Plan Completion / Resolution State Notice */}
       {isPlanFinished && (
-        <section className="bg-emerald-50/80 rounded-3xl p-6 sm:p-8 border border-emerald-200 text-center space-y-4 animate-fadeIn">
+        <section
+          className={`rounded-3xl p-6 sm:p-8 border text-center space-y-4 animate-fadeIn ${
+            allTasksSkipped
+              ? 'bg-slate-50 border-slate-200'
+              : 'bg-emerald-50/80 border-emerald-200'
+          }`}
+        >
           <div className="space-y-1">
-            <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Daily Target Reached
+            <span
+              className={`text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full border ${
+                allTasksSkipped
+                  ? 'bg-slate-200/80 text-slate-700 border-slate-300'
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+              }`}
+            >
+              {allTasksSkipped
+                ? 'All Tasks Skipped'
+                : allTasksCompleted
+                ? 'Daily Target Reached'
+                : 'Plan Resolved'}
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">
-              Today's study plan finished
+              {allTasksSkipped
+                ? "Today's plan is finished (all tasks skipped)"
+                : allTasksCompleted
+                ? "Today's study plan finished"
+                : "Today's study plan finished"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              You completed your planned learning blocks for today. Feel free to explore additional curriculum lessons or practice freely.
+              {allTasksSkipped
+                ? 'You skipped all scheduled activities for today. You can still practice freely or explore any curriculum lesson.'
+                : 'You finished your planned learning blocks for today. Feel free to explore additional curriculum lessons or practice freely.'}
             </p>
           </div>
 
@@ -179,14 +226,22 @@ export const TodayPage: React.FC<TodayPageProps> = ({
             <button
               type="button"
               onClick={onNavigateCurriculum}
-              className="min-h-12 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+              className={`min-h-12 px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center ${
+                allTasksSkipped
+                  ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
             >
               Continue Learning Curriculum
             </button>
             <button
               type="button"
               onClick={onNavigateReview}
-              className="min-h-12 px-6 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+              className={`min-h-12 px-6 py-2.5 rounded-xl border font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center ${
+                allTasksSkipped
+                  ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  : 'bg-white hover:bg-emerald-50 text-emerald-900 border-emerald-200'
+              }`}
             >
               Open Smart Review
             </button>
@@ -200,7 +255,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
           Planned Activities
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {plan.tasks.map((task, idx) => (
             <StudyPlanTaskCard
               key={task.id}
@@ -213,65 +268,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
         </div>
       </section>
 
-      {/* Optional Independent Practice Section (AI & Lens) */}
-      {(onNavigateConversation || onNavigateFlipLens) && (
-        <section className="bg-slate-50 rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-4">
-          <div className="space-y-1">
-            <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400">
-              Optional Practice
-            </span>
-            <h3 className="text-base font-bold text-slate-900">
-              Explore freely outside your daily plan
-            </h3>
-            <p className="text-xs text-slate-500">
-              Additional speaking and visual exploration modules (optional, not counted toward planned time).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            {onNavigateConversation && (
-              <button
-                type="button"
-                onClick={onNavigateConversation}
-                className="p-4 rounded-2xl bg-white hover:bg-slate-100/80 border border-slate-200 text-left space-y-1.5 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-900">AI Conversation Lab</span>
-                  <span className="text-2xs font-bold text-indigo-600">Open →</span>
-                </div>
-                <p className="text-2xs text-slate-500 leading-relaxed">
-                  Interactive dialogue practice across 20 realistic English scenarios.
-                </p>
-              </button>
-            )}
-
-            {onNavigateFlipLens && (
-              <button
-                type="button"
-                onClick={onNavigateFlipLens}
-                className="p-4 rounded-2xl bg-white hover:bg-slate-100/80 border border-slate-200 text-left space-y-1.5 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-900">FlipLens Visual Scanner</span>
-                  <span className="text-2xs font-bold text-indigo-600">Open →</span>
-                </div>
-                <p className="text-2xs text-slate-500 leading-relaxed">
-                  Scan objects in your environment to discover English vocabulary.
-                </p>
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Honest Methodology Note */}
-      <footer className="text-center pt-2">
-        <p className="text-2xs text-slate-400 max-w-xl mx-auto leading-relaxed">
-          Today's plan is built deterministically from your spaced repetition schedule, active curriculum progress, and latest placement results.
-        </p>
-      </footer>
-
-      {/* Goal Settings Modal */}
+      {/* Daily Goal Settings Modal */}
       <StudyPlanSettingsModal
         currentMinutes={plan.dailyMinutes}
         isOpen={isSettingsOpen}

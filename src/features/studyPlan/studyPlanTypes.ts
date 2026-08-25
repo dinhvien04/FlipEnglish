@@ -1,4 +1,5 @@
 import { CEFRLevel } from '../../types';
+import { ExamMode } from '../../types/exam';
 
 export type StudyPlanTaskType =
   | 'placement'
@@ -31,6 +32,7 @@ export interface StudyPlanTaskEvidence {
   // Quick Test Evidence
   examHistoryLatestIdAtCreation?: string | null;
   examLevel?: CEFRLevel;
+  examMode?: ExamMode;
 }
 
 export interface StudyPlanTask {
@@ -56,6 +58,7 @@ export interface TodayStudyPlan {
   id: string;
   localDate: string; // YYYY-MM-DD in local time
   dailyMinutes: AllowedDailyMinutes;
+  planSeed: number;
   createdAt: number;
   updatedAt: number;
   tasks: StudyPlanTask[];
@@ -77,6 +80,12 @@ export interface CompactStudyPlanHistoryItem {
   completedAt: number;
 }
 
+export interface StudyPlanGoalUpdateResult {
+  plan: TodayStudyPlan;
+  appliedToToday: boolean;
+  message?: string;
+}
+
 export interface StudyPlanContext {
   placement?: {
     estimatedLevel: CEFRLevel;
@@ -93,6 +102,7 @@ export interface StudyPlanContext {
   };
   latestExam?: {
     level: CEFRLevel;
+    mode?: ExamMode;
     latestId?: string | null;
   };
 }

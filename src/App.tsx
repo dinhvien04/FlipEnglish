@@ -417,9 +417,9 @@ export default function App() {
   };
 
   const handleStartQuickTestFromPlan = (level: CEFRLevel) => {
-    setExamMode('level');
+    setExamMode('quick');
     setExamLevel(level);
-    const session = generateExamSession('level', level);
+    const session = generateExamSession('quick', level);
     setActiveExamSession(session);
     setCurrentView('exam-session');
   };

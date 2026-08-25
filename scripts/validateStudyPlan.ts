@@ -1,14 +1,17 @@
 /**
- * Validation and test suite for FlipEnglish Today / Smart Study Plan.
+ * Comprehensive Validation and Test Suite for FlipEnglish Today / Smart Study Plan.
  * Validates deterministic plan generation, time budgeting, review chunk limits,
- * curriculum selection priorities, storage schemas, tamper-resistance, and evidence-based reconciliation.
+ * curriculum selection priorities, storage schemas, tamper-resistance, evidence-based reconciliation,
+ * exam mode routing, goal downgrade invariants, and edge cases.
  */
 
 import {
   generateTodayStudyPlan,
   getLocalDateKey,
+  isValidLocalDateKey,
   getReviewChunkLimit,
   estimateReviewMinutes,
+  allocateReviewBlock,
 } from '../src/features/studyPlan/studyPlanEngine';
 import {
   validateStudyPlanSettings,
@@ -16,6 +19,10 @@ import {
   validateTodayStudyPlan,
   validateHistoryItem,
   reconcilePlanTaskStatuses,
+  updateDailyGoalAndRegeneratePlan,
+  saveTodayPlan,
+  saveStudyPlanSettings,
+  loadStudyPlanSettings,
 } from '../src/features/studyPlan/studyPlanStorage';
 import {
   StudyPlanContext,
@@ -24,6 +31,7 @@ import {
   ALLOWED_DAILY_MINUTES,
 } from '../src/features/studyPlan/studyPlanTypes';
 import { LESSONS, getLessonById } from '../src/data/lessons';
+import { QUICK_TEST_CONFIG } from '../src/data/exams/config';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -58,16 +66,32 @@ assert(estimateReviewMinutes(4) === 2, '4 items takes ~2 minutes');
 assert(estimateReviewMinutes(10) === 4, '10 items takes ~4 minutes');
 assert(estimateReviewMinutes(20) === 8, '20 items takes ~8 minutes');
 
+const alloc1 = allocateReviewBlock(12, 15, 15);
+assert(alloc1.targetCount === 10, 'allocateReviewBlock limits to chunk size (10 for 15m)');
+assert(alloc1.estimatedMinutes === 4, 'allocateReviewBlock computes 4 min estimate for 10 items');
+
+const alloc2 = allocateReviewBlock(30, 5, 5);
+assert(alloc2.targetCount <= 5, 'allocateReviewBlock limits 5m plan to max 5 items');
+assert(alloc2.estimatedMinutes <= 3, 'allocateReviewBlock caps 5m review time to max 3 minutes');
+
 // -------------------------------------------------------------
-// Test Group 2: Local Calendar Date Formatting
+// Test Group 2: Local Calendar Date Formatting & Validation
 // -------------------------------------------------------------
-console.log('\n--- Test Group 2: Local Calendar Date Formatter ---');
+console.log('\n--- Test Group 2: Local Calendar Date Formatter & Validator ---');
 
 const testDate = new Date(2026, 7, 25, 23, 45, 0); // Local Aug 25, 2026 23:45
 assert(getLocalDateKey(testDate) === '2026-08-25', 'Local calendar date correctly formatted YYYY-MM-DD');
 
 const testDate2 = new Date(2026, 0, 5, 0, 15, 0); // Local Jan 5, 2026 00:15
 assert(getLocalDateKey(testDate2) === '2026-01-05', 'Single digit month and day padded with zeros');
+
+assert(isValidLocalDateKey('2026-08-25'), 'Valid local date string accepted');
+assert(isValidLocalDateKey('2024-02-29'), 'Valid leap year date accepted (2024-02-29)');
+assert(!isValidLocalDateKey('2026-02-29'), 'Invalid non-leap year date rejected (2026-02-29)');
+assert(!isValidLocalDateKey('2026-04-31'), 'Invalid day in 30-day month rejected (2026-04-31)');
+assert(!isValidLocalDateKey('2026-13-01'), 'Invalid month 13 rejected');
+assert(!isValidLocalDateKey('2026-00-10'), 'Invalid month 00 rejected');
+assert(!isValidLocalDateKey('not-a-date'), 'Malformed string rejected');
 
 // -------------------------------------------------------------
 // Test Group 3: Deterministic Plan Generation & Time Budgets
@@ -92,17 +116,21 @@ for (const minutes of ALLOWED_DAILY_MINUTES) {
   const settings: StudyPlanSettings = {
     schemaVersion: 1,
     dailyMinutes: minutes,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: 1756100000000,
+    updatedAt: 1756100000000,
   };
 
-  const plan1 = generateTodayStudyPlan(context, settings, '2026-08-25', 12345);
-  const plan2 = generateTodayStudyPlan(context, settings, '2026-08-25', 12345);
+  const fixedTimestamp = 1756108800000;
+  const plan1 = generateTodayStudyPlan(context, settings, '2026-08-25', 12345, fixedTimestamp);
+  const plan2 = generateTodayStudyPlan(context, settings, '2026-08-25', 12345, fixedTimestamp);
 
   assert(
     JSON.stringify(plan1) === JSON.stringify(plan2),
-    `Plan generation is 100% deterministic for ${minutes} min goal`
+    `Plan generation is 100% deterministic for ${minutes} min goal with explicit seed & timestamp`
   );
+
+  assert(plan1.planSeed === 12345, `planSeed is recorded independently (${plan1.planSeed})`);
+  assert(plan1.createdAt === fixedTimestamp, `createdAt stores real timestamp (${plan1.createdAt})`);
 
   assert(
     plan1.tasks.length >= 1 && plan1.tasks.length <= 4,
@@ -120,9 +148,44 @@ for (const minutes of ALLOWED_DAILY_MINUTES) {
 }
 
 // -------------------------------------------------------------
-// Test Group 4: Priority Order Verification
+// Test Group 4: Quick Test Routing & Evidence Mode
 // -------------------------------------------------------------
-console.log('\n--- Test Group 4: Priority Ordering Logic ---');
+console.log('\n--- Test Group 4: Quick Test Routing & Canonical Config ---');
+
+const quickTestContext: StudyPlanContext = {
+  review: { dueCount: 0, reviewedTodayCount: 0 },
+  lessons: { completedLessonIds: new Set(['greetings', 'food']), recentLessonIds: [] },
+  placement: { estimatedLevel: 'B2', recommendedLessonIds: [], latestResultId: 'p-1' },
+};
+const quickTestSettings: StudyPlanSettings = {
+  schemaVersion: 1,
+  dailyMinutes: 20,
+  createdAt: 1000,
+  updatedAt: 1000,
+};
+const quickPlan = generateTodayStudyPlan(quickTestContext, quickTestSettings, '2026-08-25');
+const quickTask = quickPlan.tasks.find((t) => t.type === 'quick-test');
+
+assert(quickTask !== undefined, '20 min plan includes a Quick Test task');
+if (quickTask) {
+  assert(
+    quickTask.estimatedMinutes === QUICK_TEST_CONFIG.durationMinutes,
+    `Quick Test estimated minutes matches canonical QUICK_TEST_CONFIG.durationMinutes (${QUICK_TEST_CONFIG.durationMinutes}m)`
+  );
+  assert(
+    quickTask.description.includes(`${QUICK_TEST_CONFIG.questionCount}-question`),
+    `Quick Test description specifies ${QUICK_TEST_CONFIG.questionCount}-question test`
+  );
+  assert(
+    quickTask.evidence?.examMode === 'quick',
+    'Quick Test task evidence explicitly records examMode === "quick"'
+  );
+}
+
+// -------------------------------------------------------------
+// Test Group 5: Priority Order Verification
+// -------------------------------------------------------------
+console.log('\n--- Test Group 5: Priority Ordering Logic ---');
 
 // Case A: User has not taken Placement -> Placement task is included
 const newLearnerContext: StudyPlanContext = {
@@ -172,10 +235,25 @@ if (unfinishedLesson) {
   );
 }
 
+// Case D: All Curriculum Completed Edge Case -> does NOT fake LESSONS[0] as uncompleted
+const allCompletedContext: StudyPlanContext = {
+  review: { dueCount: 0, reviewedTodayCount: 0 },
+  lessons: {
+    completedLessonIds: new Set(LESSONS.map((l) => l.id)),
+    recentLessonIds: [],
+  },
+  placement: { estimatedLevel: 'C2', recommendedLessonIds: [], latestResultId: 'p-c2' },
+};
+const allCompletedPlan = generateTodayStudyPlan(allCompletedContext, newLearnerSettings, '2026-08-25');
+assert(
+  allCompletedPlan.tasks.every((t) => t.type !== 'lesson'),
+  'When entire curriculum is completed, engine does not output fake uncompleted lesson tasks'
+);
+
 // -------------------------------------------------------------
-// Test Group 5: Schema Validation and Tamper Attack Tests
+// Test Group 6: Schema Validation and Tamper Attack Tests
 // -------------------------------------------------------------
-console.log('\n--- Test Group 5: Storage Schema Validation & Tamper Rejection ---');
+console.log('\n--- Test Group 6: Storage Schema Validation & Tamper Rejection ---');
 
 // Settings tests
 assert(
@@ -222,7 +300,12 @@ assert(
 
 assert(
   !validateStudyPlanTask({ ...validTask, type: 'placement', lessonId: 'greetings' }),
-  'Placement task with fake lessonId rejected'
+  'Placement task with forbidden lessonId rejected'
+);
+
+assert(
+  !validateStudyPlanTask({ ...validTask, type: 'lesson', reviewItemTarget: 10 }),
+  'Lesson task with forbidden reviewItemTarget rejected'
 );
 
 // Today Plan tests
@@ -231,6 +314,7 @@ const validPlan: TodayStudyPlan = {
   id: 'plan-1',
   localDate: '2026-08-25',
   dailyMinutes: 15,
+  planSeed: 12345,
   createdAt: 1000,
   updatedAt: 1000,
   tasks: [validTask as any],
@@ -238,8 +322,8 @@ const validPlan: TodayStudyPlan = {
 assert(validateTodayStudyPlan(validPlan), 'Valid TodayStudyPlan accepted');
 
 assert(
-  !validateTodayStudyPlan({ ...validPlan, localDate: 'invalid-date-format' }),
-  'Plan with invalid localDate format rejected'
+  !validateTodayStudyPlan({ ...validPlan, localDate: '2026-02-31' }),
+  'Plan with non-existent calendar date (2026-02-31) rejected'
 );
 
 assert(
@@ -265,8 +349,8 @@ assert(
     date: '2026-08-25',
     plannedMinutes: 15,
     taskCount: 3,
-    completedCount: 3,
-    skippedCount: 0,
+    completedCount: 2,
+    skippedCount: 1,
     completedAt: 1000,
   }),
   'Valid history item accepted'
@@ -277,23 +361,103 @@ assert(
     date: '2026-08-25',
     plannedMinutes: 15,
     taskCount: 3,
-    completedCount: 5, // Impossible: > taskCount
-    skippedCount: 0,
+    completedCount: 2,
+    skippedCount: 2, // 2 + 2 = 4 > taskCount (3)
     completedAt: 1000,
   }),
-  'History item with completedCount > taskCount rejected'
+  'History item with (completedCount + skippedCount) > taskCount rejected'
 );
 
 // -------------------------------------------------------------
-// Test Group 6: Evidence-Based Task Reconciliation
+// Test Group 7: Goal Downgrade Invariants
 // -------------------------------------------------------------
-console.log('\n--- Test Group 6: Evidence-Based Status Reconciliation ---');
+console.log('\n--- Test Group 7: Goal Downgrade Invariant Tests ---');
+
+// Mock in-memory localStorage for Node testing
+const mockStorage: Record<string, string> = {};
+const mockWindow = {
+  dispatchEvent: () => true,
+  localStorage: {
+    getItem: (key: string) => mockStorage[key] || null,
+    setItem: (key: string, val: string) => {
+      mockStorage[key] = val;
+    },
+    removeItem: (key: string) => {
+      delete mockStorage[key];
+    },
+  },
+};
+(global as any).window = mockWindow;
+(global as any).localStorage = mockWindow.localStorage;
+
+// Setup a plan with 1 completed task of 8 mins
+const activePlanWithProgress: TodayStudyPlan = {
+  schemaVersion: 1,
+  id: 'plan-downgrade-test',
+  localDate: getLocalDateKey(),
+  dailyMinutes: 15,
+  planSeed: 9999,
+  createdAt: 1000,
+  updatedAt: 1000,
+  tasks: [
+    {
+      id: 'task-1',
+      type: 'lesson',
+      title: 'Lesson 1',
+      description: 'Desc',
+      reason: 'Reason',
+      estimatedMinutes: 8,
+      status: 'completed',
+      lessonId: LESSONS[0].id,
+      createdAt: 1000,
+    },
+    {
+      id: 'task-2',
+      type: 'lesson',
+      title: 'Lesson 2',
+      description: 'Desc',
+      reason: 'Reason',
+      estimatedMinutes: 7,
+      status: 'pending',
+      lessonId: LESSONS[1].id,
+      createdAt: 1000,
+    },
+  ],
+};
+saveTodayPlan(activePlanWithProgress);
+saveStudyPlanSettings({
+  schemaVersion: 1,
+  dailyMinutes: 15,
+  createdAt: 1000,
+  updatedAt: 1000,
+});
+
+// Downgrade goal to 5 minutes (less than the 8 minutes already completed)
+const downgradeResult = updateDailyGoalAndRegeneratePlan(5);
+assert(
+  downgradeResult.appliedToToday === false,
+  'Goal downgrade when resolved minutes > newGoal sets appliedToToday = false'
+);
+assert(
+  downgradeResult.message !== undefined && downgradeResult.message.includes('tomorrow'),
+  'Goal downgrade provides explanatory message for tomorrow'
+);
+assert(
+  loadStudyPlanSettings().dailyMinutes === 5,
+  'Study plan settings are updated to 5 minutes for future days'
+);
+
+// -------------------------------------------------------------
+// Test Group 8: Evidence-Based Task Reconciliation
+// -------------------------------------------------------------
+console.log('\n--- Test Group 8: Evidence-Based Status Reconciliation ---');
 
 const basePlan: TodayStudyPlan = {
   schemaVersion: 1,
   id: 'plan-rec-1',
   localDate: '2026-08-25',
   dailyMinutes: 15,
+  planSeed: 5555,
   createdAt: 1000,
   updatedAt: 1000,
   tasks: [
@@ -328,9 +492,9 @@ assert(typeof recResult.hasChanged === 'boolean', 'Reconciliation returns pure r
 assert(recResult.plan.tasks.length === 2, 'Reconciliation preserves task count');
 
 // -------------------------------------------------------------
-// Test Group 7: No Gamification Elements
+// Test Group 9: No Gamification Elements
 // -------------------------------------------------------------
-console.log('\n--- Test Group 7: Gamification Absence Guard ---');
+console.log('\n--- Test Group 9: Gamification Absence Guard ---');
 
 const generatedSample = generateTodayStudyPlan(
   {

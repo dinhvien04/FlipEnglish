@@ -60,6 +60,7 @@ export function buildStudyPlanContext(): StudyPlanContext {
     latestExam: latestExam
       ? {
           level: latestExam.level,
+          mode: latestExam.mode,
           latestId: latestExam.id,
         }
       : undefined,

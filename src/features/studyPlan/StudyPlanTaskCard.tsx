@@ -1,7 +1,5 @@
 import React from 'react';
 import { StudyPlanTask } from './studyPlanTypes';
-import { Lesson, CEFRLevel } from '../../types';
-import { getLessonById } from '../../data/lessons';
 
 interface StudyPlanTaskCardProps {
   task: StudyPlanTask;
@@ -19,8 +17,6 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
   const isCompleted = task.status === 'completed';
   const isSkipped = task.status === 'skipped';
   const isPending = task.status === 'pending';
-
-  const fullLesson: Lesson | undefined = task.lessonId ? getLessonById(task.lessonId) : undefined;
 
   const typeLabels: Record<string, { label: string; bg: string; text: string; border: string }> = {
     review: { label: 'Smart Review', bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-200' },

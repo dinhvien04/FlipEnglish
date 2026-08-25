@@ -7,8 +7,34 @@ import {
   TodayStudyPlan,
 } from './studyPlanTypes';
 import { LESSONS, getLessonById } from '../../data/lessons';
+import { QUICK_TEST_CONFIG } from '../../data/exams/config';
 
 export const ORDERED_LEVELS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+/**
+ * Checks if a string is a valid local calendar date in format YYYY-MM-DD.
+ * Validates actual calendar boundaries (e.g. rejects 2026-02-31, 2026-13-01).
+ */
+export function isValidLocalDateKey(dateStr: string): boolean {
+  if (typeof dateStr !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+
+  const [yearStr, monthStr, dayStr] = dateStr.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+
+  // Local calendar date round-trip validation
+  const testDate = new Date(year, month - 1, day);
+  return (
+    testDate.getFullYear() === year &&
+    testDate.getMonth() === month - 1 &&
+    testDate.getDate() === day
+  );
+}
 
 /**
  * Returns formatted YYYY-MM-DD string strictly in the user's LOCAL calendar timezone.
@@ -23,11 +49,11 @@ export function getLocalDateKey(date: Date = new Date()): string {
 
 /**
  * Determines maximum allowed review chunk size according to the daily time budget.
- * 5m  -> max 5 items
- * 10m -> max 8 items
- * 15m -> max 10 items
- * 20m -> max 15 items
- * 30m -> max 20 items
+ * 5m  -> max 5 items (~2 min)
+ * 10m -> max 8 items (~3-4 min)
+ * 15m -> max 10 items (~4 min)
+ * 20m -> max 15 items (~6 min)
+ * 30m -> max 20 items (~8 min)
  */
 export function getReviewChunkLimit(dailyMinutes: AllowedDailyMinutes): number {
   switch (dailyMinutes) {
@@ -47,13 +73,55 @@ export function getReviewChunkLimit(dailyMinutes: AllowedDailyMinutes): number {
 }
 
 /**
- * Estimates review time rounded to integer minutes based on ~25-30s per item.
+ * Estimates review time rounded to integer minutes based on ~25 seconds per item.
  */
 export function estimateReviewMinutes(itemCount: number): number {
   if (itemCount <= 0) return 0;
-  // ~25 seconds per item: itemCount * 25 / 60, rounded to nearest whole min, minimum 1 min
   const rawMinutes = (itemCount * 25) / 60;
   return Math.max(1, Math.round(rawMinutes));
+}
+
+/**
+ * Central allocation helper that returns both targetCount and estimatedMinutes
+ * while ensuring that if available time is constrained, targetCount scales down
+ * consistently with the 25-30s/item heuristic.
+ */
+export function allocateReviewBlock(
+  dueCount: number,
+  dailyMinutes: AllowedDailyMinutes,
+  availableMinutes: number
+): { targetCount: number; estimatedMinutes: number } {
+  if (dueCount <= 0 || availableMinutes <= 0) {
+    return { targetCount: 0, estimatedMinutes: 0 };
+  }
+
+  const chunkLimit = getReviewChunkLimit(dailyMinutes);
+  let targetCount = Math.min(dueCount, chunkLimit);
+  let estimatedMinutes = estimateReviewMinutes(targetCount);
+
+  // If daily budget > 5, ensure review leaves at least 2 minutes for curriculum if possible
+  if (dailyMinutes > 5 && availableMinutes - estimatedMinutes < 2 && estimatedMinutes > 2) {
+    estimatedMinutes = Math.max(2, availableMinutes - 2);
+    // Scale targetCount down so count remains realistic for the reduced time (~2 items per minute)
+    const maxItemsInTime = Math.max(1, Math.floor((estimatedMinutes * 60) / 25));
+    targetCount = Math.min(targetCount, maxItemsInTime);
+  }
+
+  // For 5-minute plan, cap review to max 3 minutes and scale items accordingly
+  if (dailyMinutes === 5 && estimatedMinutes > 3) {
+    estimatedMinutes = 3;
+    const maxItemsInTime = Math.max(1, Math.floor((estimatedMinutes * 60) / 25));
+    targetCount = Math.min(targetCount, maxItemsInTime);
+  }
+
+  // Ensure estimatedMinutes does not exceed available budget
+  if (estimatedMinutes > availableMinutes) {
+    estimatedMinutes = availableMinutes;
+    const maxItemsInTime = Math.max(1, Math.floor((estimatedMinutes * 60) / 25));
+    targetCount = Math.min(targetCount, maxItemsInTime);
+  }
+
+  return { targetCount, estimatedMinutes };
 }
 
 /**
@@ -75,7 +143,8 @@ export function generateTodayStudyPlan(
   context: StudyPlanContext,
   settings: StudyPlanSettings,
   localDate: string,
-  seed: number = stringToHash(localDate)
+  seed: number = stringToHash(localDate),
+  now: number = Date.now()
 ): TodayStudyPlan {
   const tasks: StudyPlanTask[] = [];
   const dailyMinutes = settings.dailyMinutes;
@@ -91,43 +160,30 @@ export function generateTodayStudyPlan(
   // 1. SMART REVIEW PRIORITY (Task #1 if items are due)
   // ----------------------------------------------------
   if (context.review.dueCount > 0) {
-    const chunkLimit = getReviewChunkLimit(dailyMinutes);
-    const targetCount = Math.min(context.review.dueCount, chunkLimit);
-    let reviewMinutes = estimateReviewMinutes(targetCount);
-
-    // Ensure review leaves at least 2 minutes for curriculum if budget > 5
-    if (dailyMinutes > 5 && remainingMinutes - reviewMinutes < 3 && reviewMinutes > 2) {
-      reviewMinutes = Math.max(2, remainingMinutes - 3);
-    }
-    // For 5-minute plan, allow review to take up to 3 mins
-    if (dailyMinutes === 5 && reviewMinutes > 3) {
-      reviewMinutes = 3;
-    }
-
-    if (reviewMinutes >= 1 && remainingMinutes >= reviewMinutes) {
+    const reviewBlock = allocateReviewBlock(context.review.dueCount, dailyMinutes, remainingMinutes);
+    if (reviewBlock.targetCount > 0 && reviewBlock.estimatedMinutes >= 1) {
       tasks.push({
         id: `task-review-${localDate}-${tasks.length}`,
         type: 'review',
         title: 'Smart Review',
-        description: `Review ${targetCount} vocabulary item${targetCount > 1 ? 's' : ''}`,
+        description: `Review ${reviewBlock.targetCount} vocabulary item${reviewBlock.targetCount > 1 ? 's' : ''}`,
         reason: `${context.review.dueCount} item${context.review.dueCount > 1 ? 's are' : ' is'} due for spaced repetition review.`,
-        estimatedMinutes: reviewMinutes,
+        estimatedMinutes: reviewBlock.estimatedMinutes,
         status: 'pending',
-        reviewItemTarget: targetCount,
-        createdAt: seed,
+        reviewItemTarget: reviewBlock.targetCount,
+        createdAt: now,
         evidence: {
           reviewedTodayBaseline: context.review.reviewedTodayCount || 0,
-          reviewTargetCount: targetCount,
+          reviewTargetCount: reviewBlock.targetCount,
         },
       });
-      remainingMinutes -= reviewMinutes;
+      remainingMinutes -= reviewBlock.estimatedMinutes;
     }
   }
 
   // ----------------------------------------------------
   // 2. ONBOARDING FOR BRAND-NEW LEARNER (15+ min)
   // ----------------------------------------------------
-  // If brand new learner with 10+ min budget and no placement, offer Placement Check
   if (isNewLearner && dailyMinutes >= 15 && tasks.length === 0) {
     const placementMinutes = Math.min(10, remainingMinutes);
     tasks.push({
@@ -138,7 +194,7 @@ export function generateTodayStudyPlan(
       reason: 'Adaptive 4-stage check across Vocabulary, Use of English, Reading, and Listening.',
       estimatedMinutes: placementMinutes,
       status: 'pending',
-      createdAt: seed,
+      createdAt: now,
       evidence: {
         latestPlacementResultIdAtCreation: context.placement?.latestResultId || null,
       },
@@ -151,7 +207,7 @@ export function generateTodayStudyPlan(
   // ----------------------------------------------------
   const targetStartingLevel: CEFRLevel = context.placement?.estimatedLevel || 'A1';
 
-  // Helper to find next incomplete lesson
+  // Helper to find next incomplete lesson (returns null when all curriculum is completed)
   const findNextLesson = (): { lesson: Lesson; reason: string } | null => {
     // 3A. Meaningful recently active unfinished lesson
     for (const rId of context.lessons.recentLessonIds) {
@@ -191,16 +247,15 @@ export function generateTodayStudyPlan(
       }
     }
 
-    // 3E. Fallback for completely finished or new learners: first incomplete in entire curriculum
+    // 3E. Fallback for new or earlier learners: first incomplete in entire curriculum
     for (const l of LESSONS) {
       if (!context.lessons.completedLessonIds.has(l.id) && !usedLessonIds.has(l.id)) {
         return { lesson: l, reason: `Continue English curriculum practice in ${l.level}.` };
       }
     }
 
-    // If ALL 72 lessons completed, return first lesson as review fallback
-    const fallback = LESSONS[0];
-    return { lesson: fallback, reason: `Curriculum practice review in ${fallback.level}.` };
+    // When ALL curriculum lessons are completed, return null (do NOT fake LESSONS[0] as uncompleted)
+    return null;
   };
 
   // Add Primary Curriculum Lesson if time permits
@@ -208,7 +263,6 @@ export function generateTodayStudyPlan(
     const candidate = findNextLesson();
     if (candidate) {
       usedLessonIds.add(candidate.lesson.id);
-      // Allocate lesson time: 5-8 min depending on remaining budget
       const lessonMinutes = Math.min(
         remainingMinutes >= 10 ? 8 : remainingMinutes >= 7 ? 6 : Math.max(2, remainingMinutes),
         remainingMinutes
@@ -224,7 +278,7 @@ export function generateTodayStudyPlan(
         status: 'pending',
         lessonId: candidate.lesson.id,
         level: candidate.lesson.level,
-        createdAt: seed,
+        createdAt: now,
         evidence: {
           lessonId: candidate.lesson.id,
           wasCompletedAtPlanCreation: context.lessons.completedLessonIds.has(candidate.lesson.id),
@@ -237,29 +291,36 @@ export function generateTodayStudyPlan(
   // ----------------------------------------------------
   // 4. SECONDARY REINFORCEMENT / QUICK TEST (for 15-30m)
   // ----------------------------------------------------
+  const quickTestDuration = QUICK_TEST_CONFIG.durationMinutes; // Canonical 10 min
+  const quickTestQuestions = QUICK_TEST_CONFIG.questionCount;   // Canonical 15 questions
+
   if (remainingMinutes >= 4 && tasks.length < 4) {
-    // Check if we should add Quick Test (20-30 min plans with enough budget)
-    if (dailyMinutes >= 20 && remainingMinutes >= 8 && context.lessons.completedLessonIds.size >= 1) {
+    // Check if we should add Quick Test (dailyMinutes >= 20, remaining budget >= quickTestDuration)
+    if (
+      dailyMinutes >= 20 &&
+      remainingMinutes >= quickTestDuration &&
+      (context.lessons.completedLessonIds.size >= 1 || context.placement !== undefined)
+    ) {
       const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
-      const testMinutes = Math.min(8, remainingMinutes);
       tasks.push({
         id: `task-test-${localDate}-${tasks.length}`,
         type: 'quick-test',
         title: `Quick Test: ${testLevel}`,
-        description: `15-question level assessment in ${testLevel}`,
+        description: `${quickTestQuestions}-question quick test at ${testLevel}`,
         reason: `Evaluate retention and measure progress in ${testLevel}.`,
-        estimatedMinutes: testMinutes,
+        estimatedMinutes: quickTestDuration,
         status: 'pending',
         level: testLevel,
-        createdAt: seed,
+        createdAt: now,
         evidence: {
           examHistoryLatestIdAtCreation: context.latestExam?.latestId || null,
           examLevel: testLevel,
+          examMode: 'quick',
         },
       });
-      remainingMinutes -= testMinutes;
+      remainingMinutes -= quickTestDuration;
     } else {
-      // Otherwise add a second distinct curriculum lesson
+      // Otherwise try to add a second distinct curriculum lesson if available
       const candidate2 = findNextLesson();
       if (candidate2 && !usedLessonIds.has(candidate2.lesson.id)) {
         usedLessonIds.add(candidate2.lesson.id);
@@ -274,36 +335,85 @@ export function generateTodayStudyPlan(
           status: 'pending',
           lessonId: candidate2.lesson.id,
           level: candidate2.lesson.level,
-          createdAt: seed,
+          createdAt: now,
           evidence: {
             lessonId: candidate2.lesson.id,
             wasCompletedAtPlanCreation: context.lessons.completedLessonIds.has(candidate2.lesson.id),
           },
         });
         remainingMinutes -= lessonMinutes2;
+      } else if (
+        tasks.length > 0 &&
+        tasks[0].type === 'review' &&
+        remainingMinutes >= quickTestDuration &&
+        context.lessons.completedLessonIds.size >= LESSONS.length
+      ) {
+        // All curriculum completed edge-case: Quick test fits alongside review
+        const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
+        tasks.push({
+          id: `task-test-${localDate}-${tasks.length}`,
+          type: 'quick-test',
+          title: `Quick Test: ${testLevel}`,
+          description: `${quickTestQuestions}-question quick test at ${testLevel}`,
+          reason: `Evaluate retention and measure progress in ${testLevel}.`,
+          estimatedMinutes: quickTestDuration,
+          status: 'pending',
+          level: testLevel,
+          createdAt: now,
+          evidence: {
+            examHistoryLatestIdAtCreation: context.latestExam?.latestId || null,
+            examLevel: testLevel,
+            examMode: 'quick',
+          },
+        });
+        remainingMinutes -= quickTestDuration;
       }
     }
   }
 
-  // Fallback guard: Ensure at least one task is created
+  // ----------------------------------------------------
+  // 5. FALLBACK / STARTER GUARD
+  // ----------------------------------------------------
+  // If no tasks were generated and curriculum has incomplete lessons, pick starter lesson
   if (tasks.length === 0) {
-    const starterLesson = LESSONS[0];
-    tasks.push({
-      id: `task-lesson-${localDate}-0`,
-      type: 'lesson',
-      title: `Start with ${starterLesson.level}: ${starterLesson.title}`,
-      description: `${starterLesson.level} · ${starterLesson.category || 'Vocabulary & Practice'}`,
-      reason: 'Essential introductory English vocabulary and concepts.',
-      estimatedMinutes: Math.min(5, dailyMinutes),
-      status: 'pending',
-      lessonId: starterLesson.id,
-      level: starterLesson.level,
-      createdAt: seed,
-      evidence: {
-        lessonId: starterLesson.id,
-        wasCompletedAtPlanCreation: false,
-      },
-    });
+    const candidate = findNextLesson();
+    if (candidate) {
+      tasks.push({
+        id: `task-lesson-${localDate}-0`,
+        type: 'lesson',
+        title: `Start with ${candidate.lesson.level}: ${candidate.lesson.title}`,
+        description: `${candidate.lesson.level} · ${candidate.lesson.category || 'Vocabulary & Practice'}`,
+        reason: candidate.reason,
+        estimatedMinutes: Math.min(5, dailyMinutes),
+        status: 'pending',
+        lessonId: candidate.lesson.id,
+        level: candidate.lesson.level,
+        createdAt: now,
+        evidence: {
+          lessonId: candidate.lesson.id,
+          wasCompletedAtPlanCreation: false,
+        },
+      });
+    } else {
+      // All curriculum completed and no review due: offer Quick Test if time permits
+      const testLevel = context.placement?.estimatedLevel || context.latestExam?.level || 'B1';
+      tasks.push({
+        id: `task-test-${localDate}-0`,
+        type: 'quick-test',
+        title: `Quick Test: ${testLevel}`,
+        description: `${quickTestQuestions}-question quick test at ${testLevel}`,
+        reason: `All curriculum completed! Practice retention with a quick test at ${testLevel}.`,
+        estimatedMinutes: Math.min(quickTestDuration, dailyMinutes),
+        status: 'pending',
+        level: testLevel,
+        createdAt: now,
+        evidence: {
+          examHistoryLatestIdAtCreation: context.latestExam?.latestId || null,
+          examLevel: testLevel,
+          examMode: 'quick',
+        },
+      });
+    }
   }
 
   return {
@@ -311,8 +421,9 @@ export function generateTodayStudyPlan(
     id: `plan-${localDate}-${dailyMinutes}`,
     localDate,
     dailyMinutes,
-    createdAt: seed,
-    updatedAt: seed,
+    planSeed: seed,
+    createdAt: now,
+    updatedAt: now,
     tasks: tasks.slice(0, 4), // Hard ceiling of 4 tasks
   };
 }
