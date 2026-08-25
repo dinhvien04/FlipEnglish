@@ -93,8 +93,11 @@ export function loadConversationStorage(now: number = Date.now()): ConversationS
 export function saveConversationSummary(summary: Omit<SavedConversationSummary, 'id' | 'date'> & { id?: string; date?: number }, now: number = Date.now()): void {
   try {
     const currentData = loadConversationStorage(now);
+    const secureIdSuffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().slice(0, 8)
+      : `${now.toString(36)}`;
     const newEntry: SavedConversationSummary = {
-      id: summary.id || `conv-${now}-${Math.random().toString(36).substring(2, 7)}`,
+      id: summary.id || `conv-${now}-${secureIdSuffix}`,
       scenarioId: summary.scenarioId,
       scenarioTitle: summary.scenarioTitle,
       category: summary.category,

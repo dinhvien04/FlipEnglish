@@ -1,4 +1,4 @@
-import { ALL_CURRICULUM_LESSONS, CEFR_LEVELS } from '../src/data/curriculum';
+import { ALL_CURRICULUM_LESSONS } from '../src/data/curriculum';
 import { CEFRLevel } from '../src/types';
 
 interface ValidationError {

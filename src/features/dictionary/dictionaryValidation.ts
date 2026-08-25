@@ -1,4 +1,3 @@
-import { CEFRLevel } from '../../types';
 import {
   DictionaryEntry,
   DictionaryEntrySnapshot,

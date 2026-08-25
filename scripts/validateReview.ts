@@ -2,15 +2,10 @@ import {
   scheduleReview,
   createInitialReviewState,
   recordMistakeSignal,
-  calculateNextInterval,
-  determineStatus,
-  clampInterval,
-  MIN_INTERVAL_MINUTES,
   MAX_INTERVAL_MINUTES,
   INTERVAL_1_DAY_MINUTES,
   INTERVAL_3_DAYS_MINUTES,
   INTERVAL_7_DAYS_MINUTES,
-  INTERVAL_30_DAYS_MINUTES,
 } from '../src/utils/reviewScheduler';
 import {
   loadReviewStorage,
@@ -19,11 +14,9 @@ import {
   getAllTrackedReviewItems,
   ensureReviewItem,
   applyReviewRatingToItem,
-  recordQuizMistake,
   getReviewDashboardStats,
   resetReviewStorage,
   batchAddLessonWordsToReview,
-  batchAddItemsToReview,
 } from '../src/utils/reviewStorage';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
 import { ReviewItemState } from '../src/types/review';

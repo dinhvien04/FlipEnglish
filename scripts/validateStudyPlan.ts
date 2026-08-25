@@ -16,7 +16,6 @@ import {
 import {
   validateStudyPlanSettings,
   validateStudyPlanTask,
-  validateStudyPlanTaskEvidence,
   validateTodayStudyPlan,
   validateHistoryItem,
   reconcilePlanTaskStatuses,

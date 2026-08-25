@@ -14,7 +14,7 @@ import {
   recordMistakeSignal,
   calculateNextInterval,
 } from './reviewScheduler';
-import { resolveCurriculumItem, getAllCurriculumItemIds } from './curriculumIndex';
+import { resolveCurriculumItem } from './curriculumIndex';
 import { ALL_CURRICULUM_LESSONS } from '../data/curriculum';
 
 export const REVIEW_STORAGE_KEY = 'flipenglish_review_v1';

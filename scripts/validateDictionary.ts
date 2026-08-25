@@ -18,14 +18,12 @@ import {
 } from '../server/dictionary/dictionaryService';
 import {
   normalizeDictionaryQuery,
-  getCurriculumMatchesForWord,
   buildCurriculumDictionaryEntry,
   getLocalCurriculumSuggestions,
   buildDictionaryEntryFromSavedSnapshot,
   getCurriculumMatchByIds,
 } from '../src/features/dictionary/dictionaryLocalIndex';
 import {
-  createEntrySnapshot,
   CACHE_TTL_MS,
 } from '../src/features/dictionary/dictionaryCache';
 import {
@@ -41,10 +39,8 @@ import {
   sanitizeSuggestionsArray,
   sanitizeRelatedWordsArray,
   sanitizeReverseResultsArray,
-  sanitizeSpellingSuggestions,
 } from '../src/features/dictionary/dictionaryValidation';
 import {
-  DictionaryEntry,
   SavedDictionaryWord,
 } from '../src/features/dictionary/dictionaryTypes';
 import {
@@ -263,7 +259,7 @@ async function runTests() {
   };
 
   const reconstitutedDef = buildDictionaryEntryFromSavedSnapshot(savedWithDef);
-  assert(reconstitutedDef !== null, 'Reconstituted entry built from snapshot');
+  assert(Boolean(reconstitutedDef), 'Reconstituted entry built from snapshot');
   assert(reconstitutedDef.word === 'resilient', 'Reconstituted word preserved');
   assert(reconstitutedDef.meanings.length === 1, 'Meanings populated with actual English definition');
   assert(reconstitutedDef.meanings[0].definitions[0].definition === 'Able to recover quickly from difficult conditions.', 'Exact definition retained');

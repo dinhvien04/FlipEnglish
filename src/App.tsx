@@ -92,7 +92,6 @@ export default function App() {
   const [conversationLevel, setConversationLevel] = useState<CEFRLevel>('A1');
   const [conversationTurns, setConversationTurns] = useState<ConversationTurn[]>([]);
   const [conversationEvaluation, setConversationEvaluation] = useState<ConversationEvaluation | null>(null);
-  const [isEvaluatingConversation, setIsEvaluatingConversation] = useState<boolean>(false);
 
   const selectedLesson: Lesson | null = selectedLessonId ? getLessonById(selectedLessonId) || null : null;
   const currentLessonProgress: LessonProgress | null = selectedLessonId ? getLessonProgress(selectedLessonId) : null;
@@ -283,7 +282,6 @@ export default function App() {
     if (!selectedScenario) return;
 
     setConversationTurns(turns);
-    setIsEvaluatingConversation(true);
 
     const learnerTurns = turns.filter((t) => t.role === 'user');
     const turnsCount = learnerTurns.length;
@@ -311,7 +309,6 @@ export default function App() {
         summary: shortSessionEval.summary,
       });
 
-      setIsEvaluatingConversation(false);
       setCurrentView('conversation-result');
       return;
     }
@@ -380,8 +377,6 @@ export default function App() {
       });
 
       setCurrentView('conversation-result');
-    } finally {
-      setIsEvaluatingConversation(false);
     }
   };
 
@@ -410,7 +405,10 @@ export default function App() {
 
   const handleStartPlacementSession = () => {
     setPlacementStartError(null);
-    const seed = Date.now() ^ Math.floor(Math.random() * 1000000);
+    const now = Date.now();
+    const seed = now ^ (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+      ? crypto.getRandomValues(new Uint32Array(1))[0] % 1000000
+      : Math.floor(Math.abs(Math.sin(now)) * 1000000));
     const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
 
     // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
@@ -420,12 +418,16 @@ export default function App() {
       return;
     }
 
+    const secureIdSuffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().slice(0, 8)
+      : `${now.toString(36)}`;
+
     const initialSession: PlacementSession = {
       schemaVersion: 1,
-      id: `placement-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: `placement-${now}-${secureIdSuffix}`,
       status: 'active',
       sessionSeed: seed,
-      startedAt: Date.now(),
+      startedAt: now,
       currentStageIndex: 0,
       currentQuestionInStageIndex: 0,
       currentLevel: 'B1',

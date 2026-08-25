@@ -1,4 +1,4 @@
-import { CEFRLevel, ExamLevelConfig, ExamMode } from '../../types/exam';
+import { CEFRLevel, ExamLevelConfig } from '../../types/exam';
 
 export const LEVEL_EXAM_CONFIGS: Record<CEFRLevel, ExamLevelConfig> = {
   A1: {

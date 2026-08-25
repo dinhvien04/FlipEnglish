@@ -1,4 +1,4 @@
-import { CEFRLevel, ReadingPassage, ExamQuestion } from '../../types/exam';
+import { CEFRLevel, ReadingPassage } from '../../types/exam';
 
 export interface ExamReadingItem {
   passage: ReadingPassage;

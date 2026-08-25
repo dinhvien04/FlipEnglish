@@ -4,7 +4,6 @@ import { USE_OF_ENGLISH_BANK } from '../exams/useOfEnglishBank';
 import { READING_PASSAGES_BANK } from '../exams/readingPassages';
 import {
   PlacementQuestion,
-  PlacementSkill,
   ORDERED_CEFR_LEVELS,
   PLACEMENT_STAGE_SIZE,
 } from '../../features/placement/placementTypes';

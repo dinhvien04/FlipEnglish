@@ -1,4 +1,4 @@
-import { Lesson, QuizQuestion, VocabWord, QuestionType } from '../types';
+import { Lesson, QuizQuestion, QuestionType } from '../types';
 
 // Helper to shuffle an array
 export function shuffleArray<T>(array: T[]): T[] {

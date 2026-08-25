@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ConversationScenario, ConversationTurn, UsefulExpression } from '../../types/conversation';
+import { ConversationScenario, ConversationTurn } from '../../types/conversation';
 import { CEFRLevel } from '../../types';
 import { getScenarioOpeningMessage } from '../../data/conversations/scenarios';
 import { speakWord } from '../../utils/speech';

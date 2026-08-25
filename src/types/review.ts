@@ -1,4 +1,4 @@
-import { CEFRLevel, PartOfSpeech, LearningItemType, VocabWord, Lesson } from './index';
+import { CEFRLevel, VocabWord, Lesson } from './index';
 
 export type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
 

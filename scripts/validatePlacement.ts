@@ -26,7 +26,6 @@ import {
   PLACEMENT_TOTAL_QUESTIONS,
 } from '../src/features/placement/placementTypes';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
-import { recordQuizMistake } from '../src/utils/reviewStorage';
 
 // Mock localStorage and window for Node.js test runner
 const mockStorage: Record<string, string> = {};

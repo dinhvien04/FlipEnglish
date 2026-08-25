@@ -1,4 +1,4 @@
-import { CEFRLevel, VocabWord } from './index';
+import { CEFRLevel } from './index';
 export type { CEFRLevel };
 
 export type ExamMode = 'quick' | 'level' | 'mock';

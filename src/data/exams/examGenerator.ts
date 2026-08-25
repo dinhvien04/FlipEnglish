@@ -2,8 +2,6 @@ import { CEFRLevel, VocabWord } from '../../types';
 import {
   ExamMode,
   ExamQuestion,
-  ExamQuestionKind,
-  ExamSectionType,
   ExamSession,
 } from '../../types/exam';
 import { LESSONS } from '../lessons';
@@ -132,7 +130,10 @@ export function isValidExamQuestion(q: ExamQuestion): boolean {
  */
 export function generateExamSession(mode: ExamMode, level: CEFRLevel): ExamSession {
   const now = Date.now();
-  const sessionId = `exam-${mode}-${level.toLowerCase()}-${now}-${Math.random().toString(36).substring(2, 7)}`;
+  const secureRandomSuffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID().slice(0, 8)
+    : `${now.toString(36)}-${Math.abs(Math.sin(now)).toString(36).substring(2, 8)}`;
+  const sessionId = `exam-${mode}-${level.toLowerCase()}-${now}-${secureRandomSuffix}`;
   const levelWords = getWordsForLevel(level);
 
   let durationMinutes = 20;

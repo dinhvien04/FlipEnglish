@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
-import { CONVERSATION_SCENARIOS, getScenarioById } from './src/data/conversations/scenarios';
+import { getScenarioById } from './src/data/conversations/scenarios';
 import {
   ConversationTurnInputSchema,
   ConversationTurnOutputSchema,
@@ -40,6 +40,7 @@ const SECURITY_CONFIG = {
     dictionarySuggest: 180, // 180 requests / 10 minutes (fast autocomplete)
     dictionaryRelated: 100, // 100 requests / 10 minutes
     dictionaryReverse: 60, // 60 requests / 10 minutes
+    spaFallback: 300, // 300 requests / 10 minutes per IP for SPA html routing
   },
 };
 
@@ -69,11 +70,23 @@ app.disable('x-powered-by');
 app.set('trust proxy', isProd ? 1 : false);
 
 // Helper: Sanitize strings for safe security logging (prevents log injection)
-function sanitizeForLog(val: any): string {
-  if (typeof val !== 'string') {
-    val = String(val ?? '');
+function sanitizeForLog(val: unknown): string {
+  let str = '';
+  if (typeof val === 'string') {
+    str = val;
+  } else if (val === null || val === undefined) {
+    str = '';
+  } else if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint') {
+    str = String(val);
+  } else {
+    try {
+      str = JSON.stringify(val) || '';
+    } catch {
+      str = '[Complex Value]';
+    }
   }
-  return val.replace(/[\r\n\t]+/g, ' ').slice(0, 200);
+  // Strip CR, LF, tabs, and non-printable control characters, bounded to 200 chars
+  return str.replace(/[\x00-\x1F\x7F]+/g, ' ').trim().slice(0, 200);
 }
 
 // ===================================================
@@ -94,23 +107,39 @@ const cspDirectives = {
   frameAncestors: isProd ? ["'none'"] : ["'self'", 'https://aistudio.google.com'],
 };
 
-app.use(
-  helmet({
-    // Enable frameguard (SAMEORIGIN / DENY) in production; disable in dev to let frameAncestors handle preview
-    frameguard: isProd ? { action: 'deny' } : false,
-    xContentTypeOptions: true,
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    strictTransportSecurity: isProd
-      ? { maxAge: 31536000, includeSubDomains: true, preload: false }
-      : false,
-    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-    contentSecurityPolicy: {
-      useDefaults: false,
-      directives: cspDirectives,
-      reportOnly: false,
-    },
-  })
-);
+if (isProd) {
+  // Hardened Production Helmet Configuration (CodeQL Clean - all security features active)
+  app.use(
+    helmet({
+      frameguard: { action: 'deny' },
+      xContentTypeOptions: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true, preload: false },
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: cspDirectives,
+        reportOnly: false,
+      },
+    })
+  );
+} else {
+  // Development Helmet Configuration (Permits AI Studio iframe preview without disabling global security)
+  app.use(
+    helmet({
+      frameguard: false,
+      xContentTypeOptions: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      strictTransportSecurity: false,
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: cspDirectives,
+        reportOnly: false,
+      },
+    })
+  );
+}
 
 // Middleware: Authoritative Request ID Generator with strict client ID sanitization
 const SAFE_CLIENT_ID_REGEX = /^[A-Za-z0-9_-]{1,64}$/;
@@ -250,6 +279,14 @@ const dictionaryReverseLimiter = createLimiter({
   max: SECURITY_CONFIG.rateLimits.dictionaryReverse,
   genericMessage: 'Reverse dictionary rate limit reached. Please wait a moment before trying again.',
   name: 'DICTIONARY_REVERSE',
+});
+
+// SPA Fallback Limiter (Guards index.html file system access against volumetric flood)
+const spaFallbackLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: SECURITY_CONFIG.rateLimits.spaFallback,
+  genericMessage: 'Navigation request limit exceeded. Please wait a moment before trying again.',
+  name: 'SPA_FALLBACK',
 });
 
 // Middleware: Strict JSON Content-Type validator for POST endpoints
@@ -1612,7 +1649,7 @@ async function startServer() {
         },
       })
     );
-    app.get('*', (req, res) => {
+    app.get('*', spaFallbackLimiter, (req, res) => {
       // If the request has a file extension or probes system paths and was not found in dist/client, return 404
       const ext = path.extname(req.path);
       if (ext || req.path.startsWith('/.') || req.path.includes('/..')) {
