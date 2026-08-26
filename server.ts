@@ -17,7 +17,7 @@ import {
   ConversationEvaluateOutputSchema,
   conversationTurnJsonSchema,
   conversationEvaluateJsonSchema,
-} from './src/data/conversations/conversationSchemas';
+} from './server/conversations/conversationSchemas';
 import { DictionaryService } from './server/dictionary/dictionaryService';
 import { DictionaryRelationType } from './server/dictionary/dictionaryTypes';
 
@@ -52,9 +52,43 @@ const SECURITY_CONFIG = {
 };
 
 // Platform environment variables (supplied automatically by hosting environment / Cloud Run)
-const PORT = Number(process.env.PORT) || 5173;
+function resolvePort(): number {
+  const rawPort = process.env.PORT;
+  if (!rawPort) return 5173;
+  const parsed = Number(rawPort);
+  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 65535) {
+    return parsed;
+  }
+  return 5173;
+}
+
+const PORT = resolvePort();
 const isProd = process.env.NODE_ENV === 'production';
 const nodeEnv = process.env.NODE_ENV || 'development';
+
+// Fail-Fast Production Startup Configuration Validation
+function validateProductionConfig(): void {
+  if (isProd) {
+    const rawPort = process.env.PORT;
+    if (rawPort !== undefined && rawPort !== '') {
+      const parsedPort = Number(rawPort);
+      if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+        console.error(
+          `[FATAL Config] Invalid PORT specified in environment: "${sanitizeForLog(rawPort)}". Port must be an integer between 1 and 65535.`
+        );
+        process.exit(1);
+      }
+    }
+
+    if (process.env.GEMINI_API_KEY) {
+      console.log('[Config] Production startup: GEMINI_API_KEY is configured (Live AI features enabled).');
+    } else {
+      console.warn(
+        '[Config] Production startup notice: GEMINI_API_KEY is not set. Core offline learning features will operate normally; live AI endpoints will return 503.'
+      );
+    }
+  }
+}
 
 // Declare extended Request type for request tracking
 declare global {
@@ -629,9 +663,12 @@ function validateImageMagicBytes(buffer: Buffer, mime: string): boolean {
 // Apply general API rate limiter to /api/*
 app.use('/api', apiLimiter);
 
-// 1. Health check endpoint
+// 1. Health check endpoint (Safe, minimal operational status without leaking environment/secrets)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({
+    status: 'ok',
+    aiConfigured: Boolean(process.env.GEMINI_API_KEY),
+  });
 });
 
 // 2. Gemini Targeted Practice Endpoint with Prompt Injection Boundary
@@ -1716,5 +1753,6 @@ function setupGracefulShutdown() {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
+validateProductionConfig();
 setupGracefulShutdown();
 startServer();

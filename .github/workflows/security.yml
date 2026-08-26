@@ -67,6 +67,9 @@ jobs:
       - name: Performance & Bundle Gate Audit
         run: npm run validate:performance
 
+      - name: Production Deployment & Runtime Boundaries Audit
+        run: npm run validate:deployment
+
       - name: Production Dependency Security Audit
         run: npm run security:audit
 

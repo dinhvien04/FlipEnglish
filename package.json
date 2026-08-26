@@ -24,6 +24,7 @@
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "validate:review": "tsx scripts/validateReview.ts",
     "validate:conversation": "tsx scripts/validateConversation.ts",
+    "validate:deployment": "tsx scripts/validateDeployment.ts",
     "security:audit": "npm audit --omit=dev --audit-level=high",
     "test:security": "tsx scripts/securitySmokeTest.ts"
   },

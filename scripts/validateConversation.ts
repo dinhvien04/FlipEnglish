@@ -9,7 +9,7 @@ import {
   ConversationEvaluateOutputSchema,
   conversationTurnJsonSchema,
   conversationEvaluateJsonSchema,
-} from '../src/data/conversations/conversationSchemas';
+} from '../server/conversations/conversationSchemas';
 
 console.log('=== Running FlipEnglish AI Conversation Lab Integrity Audit ===\n');
 

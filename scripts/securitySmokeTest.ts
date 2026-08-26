@@ -117,6 +117,10 @@ async function runSecuritySmokeTests() {
     // 1. Health check & security headers
     const health = await makeRequest({ method: 'GET', path: '/api/health' });
     assert(health.statusCode === 200, 'GET /api/health returns 200 OK');
+    const healthBody = JSON.parse(health.body || '{}');
+    assert(healthBody.status === 'ok', 'Health response status is "ok"');
+    assert(typeof healthBody.aiConfigured === 'boolean', 'Health response contains boolean aiConfigured flag');
+    assert(!healthBody.apiKey && !healthBody.key, 'Health response never exposes API key or secrets');
     assert(health.headers['x-content-type-options'] === 'nosniff', 'Header X-Content-Type-Options is nosniff');
     assert(!health.headers['x-powered-by'], 'Header X-Powered-By is stripped/absent');
     assert(Boolean(health.headers['referrer-policy']), 'Header Referrer-Policy is present');
