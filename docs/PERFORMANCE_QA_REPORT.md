@@ -1,5 +1,16 @@
 # FlipEnglish Release Readiness & Performance / Mobile UX Engineering Report
 
+<!-- PERF_METADATA_START -->
+<!-- PERF:SIMULATED_MOBILE_LCP_MS=2946 -->
+<!-- PERF:DEVTOOLS_MOBILE_LCP_MS=3928 -->
+<!-- PERF:DEVTOOLS_DESKTOP_LCP_MS=685 -->
+<!-- PERF:SIMULATED_DESKTOP_LCP_MS=746 -->
+<!-- PERF:SIMULATED_MOBILE_PERF_SCORE=90 -->
+<!-- PERF:DEVTOOLS_MOBILE_PERF_SCORE=79 -->
+<!-- PERF:CLS=0.000 -->
+<!-- PERF:RELEASE_VERDICT=CONDITIONALLY READY -->
+<!-- PERF_METADATA_END -->
+
 **Date**: August 26, 2026  
 **Release Version**: 1.0.0 (Production Candidate — Phase 3.2 Hardened)  
 **Branch**: `main`  
@@ -16,7 +27,7 @@ This engineering release report establishes the comprehensive findings of **Perf
 | Verification Dimension | Status | Notes |
 | :--- | :---: | :--- |
 | **Functional Release Status** | **READY FOR DEMO / RELEASE CANDIDATE** | All 13 automated verification suites, TypeScript static type checks, PWA precache contracts, security smoke tests, and dynamic import resilience tests passed with zero errors. |
-| **Performance Target Status** | **NOT YET MEETING LAB TARGET** | Desktop DevTools/Simulated LCP: **0.6s–0.9s** (Target: <=2.5s — MET). Mobile DevTools Applied LCP: **3.7s–4.1s** (Target: <=2.5s — NOT MET). Mobile Simulated Lantern LCP: **2.9s–3.0s** (Target: <=2.5s — NOT MET). Under throttled 4G network and 4x CPU slowdown, client-side React bootstrap (network transfer + script evaluation + DOM initial mount) requires ~3.7s–4.1s. Visual stability is preserved (CLS: 0.000) and post-FCP main-thread blocking is negligible (TBT: 0–120 ms). |
+| **Performance Target Status** | **NOT YET MEETING LAB TARGET** | Desktop DevTools/Simulated LCP: **0.6s–0.9s** (Target: <=2.5s — MET). Mobile DevTools Applied LCP: **3.7s–4.1s** (Target: <=2.5s — NOT MET). Mobile Simulated Lantern LCP: **2.9s–3.0s** (Target: <=2.5s — NOT MET). Under throttled 4G network and 4x CPU slowdown, client-side React bootstrap (network transfer + script evaluation + DOM initial mount) requires ~3.7s–4.1s observed wall-clock load timing. Visual stability is preserved (CLS: 0.000) and post-FCP main-thread blocking is negligible (TBT: 0–120 ms). |
 | **Overall Release Status** | **CONDITIONALLY READY** | Core offline capabilities, error recovery UX, localized retry banners, double-submission protection, and offline data schemas are fully hardened. Performance targets under 4x CPU lab throttling and simulated/applied mobile network constraints remain unmet due to client-side initial bundle transfer and bootstrap costs inherent to single-page client-side rendering (CSR). |
 
 ---
@@ -76,33 +87,33 @@ All 15 empirical benchmark runs were executed on a production build (`NODE_ENV=p
 
 ### 3.1 Complete 15-Run Audit Log
 
-| Run Group | Run # | Metric Category | Form Factor | Throttling Method | CPU Slowdown | Perf Score | FCP | LCP | TBT | CLS | Speed Index |
-| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Simulated Mobile** | Run 1 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | **89** | 2.9s | 3.0s | 70 ms | 0.000 | 2.9s |
-| **Simulated Mobile** | Run 2 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | **90** | 2.8s | 2.9s | 50 ms | 0.000 | 2.8s |
-| **Simulated Mobile** | Run 3 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | **90** | 2.8s | 2.9s | 70 ms | 0.000 | 2.8s |
-| **Simulated Desktop** | Run 1 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 0.7s |
-| **Simulated Desktop** | Run 2 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | **99** | 0.7s | 0.8s | 10 ms | 0.000 | 0.8s |
-| **Simulated Desktop** | Run 3 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | **99** | 0.6s | 0.7s | 10 ms | 0.000 | 0.6s |
-| **DevTools Mobile** | Run 1 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | **81** | 3.7s | 3.7s | 110 ms | 0.000 | 3.3s |
-| **DevTools Mobile** | Run 2 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | **76** | 4.1s | 4.1s | 120 ms | 0.000 | 3.6s |
-| **DevTools Mobile** | Run 3 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | **79** | 3.9s | 3.9s | 70 ms | 0.000 | 3.4s |
-| **DevTools Desktop** | Run 1 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | **98** | 0.9s | 0.9s | 0 ms | 0.000 | 0.7s |
-| **DevTools Desktop** | Run 2 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 0.7s |
-| **DevTools Desktop** | Run 3 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | **100** | 0.6s | 0.6s | 0 ms | 0.000 | 0.6s |
-| **Provided Control** | Run 1 | Observed (Provided / Unthrottled) | Mobile | `provided` | 4x (unapplied net) | **100** | 1.0s | 1.0s | 0 ms | 0.000 | 1.4s |
-| **Provided Control** | Run 2 | Observed (Provided / Unthrottled) | Mobile | `provided` | 4x (unapplied net) | **100** | 0.9s | 0.9s | 0 ms | 0.000 | 1.3s |
-| **Provided Control** | Run 3 | Observed (Provided / Unthrottled) | Mobile | `provided` | 4x (unapplied net) | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 1.2s |
+| Run Group | Run # | Metric Category | Form Factor | Throttling Method | CPU Slowdown | Benchmark Index | Perf Score | FCP | LCP | TBT | CLS | Speed Index |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Simulated Mobile** | Run 1 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | 1467.5 | **89** | 2.9s | 3.0s | 70 ms | 0.000 | 2.9s |
+| **Simulated Mobile** | Run 2 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | 1082.5 | **90** | 2.8s | 2.9s | 50 ms | 0.000 | 2.8s |
+| **Simulated Mobile** | Run 3 | Modeled (Simulated / Lantern) | Mobile | `simulate` | 4x | 857.5 | **90** | 2.8s | 2.9s | 70 ms | 0.000 | 2.8s |
+| **Simulated Desktop** | Run 1 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | 1457.5 | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 0.7s |
+| **Simulated Desktop** | Run 2 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | 776.0 | **99** | 0.7s | 0.8s | 10 ms | 0.000 | 0.8s |
+| **Simulated Desktop** | Run 3 | Modeled (Simulated / Lantern) | Desktop | `simulate` | 1x | 1281.0 | **99** | 0.6s | 0.7s | 10 ms | 0.000 | 0.6s |
+| **DevTools Mobile** | Run 1 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | 1129.0 | **81** | 3.7s | 3.7s | 110 ms | 0.000 | 3.3s |
+| **DevTools Mobile** | Run 2 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | 1235.5 | **76** | 4.1s | 4.1s | 120 ms | 0.000 | 3.6s |
+| **DevTools Mobile** | Run 3 | Observed (DevTools Applied) | Mobile | `devtools` | 4x | 405.5 | **79** | 3.9s | 3.9s | 70 ms | 0.000 | 3.4s |
+| **DevTools Desktop** | Run 1 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | 919.5 | **98** | 0.9s | 0.9s | 0 ms | 0.000 | 0.7s |
+| **DevTools Desktop** | Run 2 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | 634.5 | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 0.7s |
+| **DevTools Desktop** | Run 3 | Observed (DevTools Applied) | Desktop | `devtools` | 1x | 540.5 | **100** | 0.6s | 0.6s | 0 ms | 0.000 | 0.6s |
+| **Provided Control** | Run 1 | Observed (Provided / No Lighthouse Throttling) | Mobile | `provided` | 4x (unapplied net) | 701.0 | **100** | 1.0s | 1.0s | 0 ms | 0.000 | 1.4s |
+| **Provided Control** | Run 2 | Observed (Provided / No Lighthouse Throttling) | Mobile | `provided` | 4x (unapplied net) | 484.5 | **100** | 0.9s | 0.9s | 0 ms | 0.000 | 1.3s |
+| **Provided Control** | Run 3 | Observed (Provided / No Lighthouse Throttling) | Mobile | `provided` | 4x (unapplied net) | 907.0 | **100** | 0.7s | 0.7s | 0 ms | 0.000 | 1.2s |
 
 ### 3.2 Median Results by Category
 
-| Configuration / Group | Median Perf Score | Median FCP | Median LCP | Median TBT | Median CLS | Median Speed Index |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Simulated Mobile (Lantern Modeled)** | `90` | `2.8s` | `2.9s` | `70 ms` | `0.000` | `2.8s` |
-| **DevTools Mobile (Observed Applied)** | `79` | `3.9s` | `3.9s` | `110 ms` | `0.000` | `3.4s` |
-| **Simulated Desktop (Lantern Modeled)** | `99` | `0.7s` | `0.7s` | `10 ms` | `0.000` | `0.7s` |
-| **DevTools Desktop (Observed Applied)** | `100` | `0.7s` | `0.7s` | `0 ms` | `0.000` | `0.7s` |
-| **Provided Mobile Control (Unthrottled)** | `100` | `0.9s` | `0.9s` | `0 ms` | `0.000` | `1.3s` |
+| Configuration / Group | Median Benchmark Index | Median Perf Score | Median FCP | Median LCP | Median TBT | Median CLS | Median Speed Index |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Simulated Mobile (Lantern Modeled)** | `1082.5` | `90` | `2.8s` (2,791 ms) | `2.9s` (2,946 ms) | `74 ms` | `0.000` | `2.8s` (2,791 ms) |
+| **DevTools Mobile (Observed Applied)** | `1129.0` | `79` | `3.9s` (3,928 ms) | `3.9s` (3,928 ms) | `110 ms` | `0.000` | `3.4s` (3,427 ms) |
+| **Simulated Desktop (Lantern Modeled)** | `1281.0` | `99` | `0.7s` (681 ms) | `0.7s` (746 ms) | `8 ms` | `0.000` | `0.7s` (681 ms) |
+| **DevTools Desktop (Observed Applied)** | `634.5` | `100` | `0.7s` (685 ms) | `0.7s` (685 ms) | `0 ms` | `0.000` | `0.7s` (672 ms) |
+| **Provided Mobile Control (No Throttling)** | `701.0` | `100` | `0.9s` (859 ms) | `0.9s` (859 ms) | `0 ms` | `0.000` | `1.3s` (1,317 ms) |
 
 ---
 
@@ -116,7 +127,7 @@ A critical architectural finding of Phase 3.2 is the technical distinction betwe
 
 ### 4.2 DevTools Applied Throttling (`throttlingMethod: "devtools"`)
 1. **Execution Model**: Chrome DevTools Protocol commands actively throttle the CPU clock by 4x and emulate mobile network packet transmission rates (1.6 Mbps throughput, 150ms RTT) in real time during the actual page load.
-2. **Observed Trace Reality**: Under applied DevTools throttling, the physical transmission time required to download the 261.6 kB initial JS bundle over the emulated network interface takes ~2.10 seconds. Coupled with real-time 4x throttled JS execution, layout, and mounting, this yields an observed physical LCP of **3.7s–4.1s**.
+2. **Observed Trace Reality**: Under applied DevTools throttling, the network transmission duration required to download the 261.6 kB initial JS bundle over the emulated network interface takes ~2.10 seconds. Coupled with real-time 4x throttled JS execution, layout, and mounting, this yields an observed LCP of **3.7s–4.1s under DevTools applied throttling**.
 
 ---
 
@@ -161,13 +172,13 @@ From the empirical Chrome DevTools trace captured during throttled mobile startu
 | :--- | :---: | :---: | :--- |
 | **TTFB (Document Request)** | `14.8 ms` | 0.4% | Fast local Express static caching (`responseStart`) |
 | **HTML Transfer Duration** | `4.2 ms` | 0.1% | Efficient 1.38 kB gzip HTML shell (`responseStart` to `responseEnd`) |
-| **Initial JS Network Transfer** | `2,103.0 ms` | 50.9% | Physical download of 261.6 kB initial JS over throttled 4G connection |
+| **Initial JS Network Transfer** | `2,103.0 ms` | 50.9% | Network download of 261.6 kB initial JS over throttled 4G connection |
 | **Main-Thread Script Evaluation** | `758.2 ms` | 18.3% | Evaluating React 19, Lucide icons, Motion, and initial view graph on 4x slowed CPU |
 | **Style & Layout Calculation** | `605.1 ms` | 14.6% | Computing CSS layout and flexbox tree for onboarding screen |
 | **Parse HTML & CSS** | `33.7 ms` | 0.8% | Initial tokenization of document and Tailwind CSS stylesheet |
 | **Compositor & Paint Pipeline** | `27.3 ms` | 0.7% | Rasterization and frame submission to GPU |
 | **Chrome Internal & Scheduling** | `589.7 ms` | 14.3% | Browser IPC, task queues, and V8 baseline compilation |
-| **Total Pre-FCP / LCP Timeline** | **`4,132.0 ms`** | **100.0%** | **Physical time from navigation start to initial screen paint** |
+| **Total Pre-FCP / LCP Timeline** | **`4,132.0 ms`** | **100.0%** | **Observed wall-clock load timing from navigation start to initial screen paint** |
 
 ### 5.4 Clarification of Total Blocking Time (TBT) Window
 
@@ -213,7 +224,7 @@ Total Blocking Time (TBT) measures the sum of blocking portions (>50ms) of long 
 | **Mobile LCP** | `<= 2.5s` | `3.9s` | `2.9s` | N/A | **NOT MET** |
 | **Desktop LCP** | `<= 2.5s` | N/A | `0.7s` | `0.7s` | **MET** |
 | **Cumulative Layout Shift (CLS)** | `<= 0.1` | `0.000` | `0.000` | `0.000` | **MET** |
-| **Total Blocking Time (TBT)** | `<= 200 ms` | `110 ms` | `70 ms` | `0 ms` | **MET** |
+| **Total Blocking Time (TBT)** | `<= 200 ms` | `110 ms` | `74 ms` | `0 ms` | **MET** |
 | **Initial JS (Gzip)** | `< 300 kB` | `257.35 kB` | `257.35 kB` | `257.35 kB` | **MET** |
 | **Total JS (Gzip)** | `< 400 kB` | `360.64 kB` | `360.64 kB` | `360.64 kB` | **MET** |
 | **Largest Dynamic Chunk (Gzip)** | `< 60 kB` | `18.03 kB` | `18.03 kB` | `18.03 kB` | **MET** |
@@ -262,49 +273,123 @@ Both Placement Check and Exam Generation flows implement dual-layer protection:
 
 ---
 
-## 9. Verification Suite Results Summary
+## 9. Benchmark Reproduction Commands
 
-All repository validation suites ran with zero errors:
+To reproduce the benchmark runs locally against a clean production server, execute the following commands:
 
 ```bash
-# 1. Static Type Checking
-npm run lint                 # PASSED (tsc --noEmit, 0 errors)
+# 1. Build and start production candidate server
+npm run build
+NODE_ENV=production PORT=3000 npm run start
 
-# 2. I18n & Multilingual UX Integrity
-npm run validate:i18n        # PASSED (100% key parity, zero hardcoded error strings, accessible radio roles)
+# 2. Simulated Mobile Throttling (Lantern Modeled)
+# Note: Reproduction command reconstructed from retained Lighthouse configSettings
+npx lighthouse http://127.0.0.1:3000 \
+  --output=json \
+  --output-path=.qa/lighthouse/repro-sim-mobile.json \
+  --only-categories=performance \
+  --throttling-method=simulate \
+  --form-factor=mobile \
+  --screenEmulation.mobile=true \
+  --chrome-flags="--headless --no-sandbox --disable-gpu"
 
-# 3. PWA & Service Worker Rules
-npm run validate:pwa         # PASSED (All 5 sections, 36 cache entries verified)
+# 3. Simulated Desktop Throttling (Lantern Modeled)
+# Note: Reproduction command reconstructed from retained Lighthouse configSettings
+npx lighthouse http://127.0.0.1:3000 \
+  --output=json \
+  --output-path=.qa/lighthouse/repro-sim-desktop.json \
+  --only-categories=performance \
+  --throttling-method=simulate \
+  --preset=desktop \
+  --chrome-flags="--headless --no-sandbox --disable-gpu"
 
-# 4. Curriculum & Vocab Integrity
-npm run validate:curriculum  # PASSED (72 lessons, 720 vocabulary items, 0 errors)
+# 4. DevTools Applied Mobile Throttling (Observed Applied)
+# Note: Reproduction command reconstructed from retained Lighthouse configSettings
+npx lighthouse http://127.0.0.1:3000 \
+  --output=json \
+  --output-path=.qa/lighthouse/repro-dev-mobile.json \
+  --only-categories=performance \
+  --throttling-method=devtools \
+  --form-factor=mobile \
+  --screenEmulation.mobile=true \
+  --throttling.rttMs=150 \
+  --throttling.throughputKbps=1638.4 \
+  --throttling.cpuSlowdownMultiplier=4 \
+  --chrome-flags="--headless --no-sandbox --disable-gpu"
 
-# 5. Adaptive Placement Engine
-npm run validate:placement   # PASSED (24 questions, 4 stages, score bounds verified)
+# 5. DevTools Applied Desktop Throttling (Observed Applied)
+# Note: Reproduction command reconstructed from retained Lighthouse configSettings
+npx lighthouse http://127.0.0.1:3000 \
+  --output=json \
+  --output-path=.qa/lighthouse/repro-dev-desktop.json \
+  --only-categories=performance \
+  --throttling-method=devtools \
+  --preset=desktop \
+  --throttling.rttMs=40 \
+  --throttling.throughputKbps=10240 \
+  --throttling.cpuSlowdownMultiplier=1 \
+  --chrome-flags="--headless --no-sandbox --disable-gpu"
 
-# 6. Exam Generation & Quotas
-npm run validate:exams       # PASSED (Quick Test 15, Level 25, Mock 50 verified)
-
-# 7. Study Plan & Daily Progression
-npm run validate:study-plan  # PASSED (Daily targets & storage transitions verified)
-
-# 8. Spaced Repetition (SRS)
-npm run validate:review      # PASSED (Again/Hard/Good/Easy intervals verified)
-
-# 9. AI Scenarios & Security
-npm run validate:conversation# PASSED (AI contracts & Zod schemas verified)
-npm run test:security        # PASSED (11 security suites passed, 0 vulnerabilities)
-
-# 10. Dictionary Integrity
-npm run validate:dictionary  # PASSED (Lexicon structure and offline search verified)
-
-# 11. Performance Validator V3
-npm run validate:performance # PASSED (All JS/precache budgets verified within headroom)
+# 6. Provided Control (No Lighthouse Throttling)
+# Note: Reproduction command reconstructed from retained Lighthouse configSettings
+npx lighthouse http://127.0.0.1:3000 \
+  --output=json \
+  --output-path=.qa/lighthouse/repro-prov-mobile.json \
+  --only-categories=performance \
+  --throttling-method=provided \
+  --form-factor=mobile \
+  --chrome-flags="--headless --no-sandbox --disable-gpu"
 ```
 
 ---
 
-## 10. Release Recommendation & Truthful Verdict
+## 10. Verification Suite Results Summary
+
+All repository validation suites ran with zero errors:
+
+```bash
+# 1. Clean Dependency Installation
+npm ci                       # PASSED (486 packages audited, 0 vulnerabilities)
+
+# 2. Static Type Checking
+npm run lint                 # PASSED (tsc --noEmit, 0 errors)
+
+# 3. I18n & Multilingual UX Integrity
+npm run validate:i18n        # PASSED (100% key parity, zero hardcoded error strings, accessible radio roles)
+
+# 4. PWA & Service Worker Rules
+npm run validate:pwa         # PASSED (All 5 sections, 36 cache entries verified)
+
+# 5. Curriculum & Vocab Integrity
+npm run validate:curriculum  # PASSED (72 lessons, 720 vocabulary items, 0 errors)
+
+# 6. Adaptive Placement Engine
+npm run validate:placement   # PASSED (24 questions, 4 stages, score bounds verified)
+
+# 7. Exam Generation & Quotas
+npm run validate:exams       # PASSED (Quick Test 15, Level 25, Mock 50 verified)
+
+# 8. Study Plan & Daily Progression
+npm run validate:study-plan  # PASSED (Daily targets & storage transitions verified)
+
+# 9. Spaced Repetition (SRS)
+npm run validate:review      # PASSED (Again/Hard/Good/Easy intervals verified)
+
+# 10. AI Scenarios & Security
+npm run validate:conversation# PASSED (AI contracts & Zod schemas verified)
+npm run test:security        # PASSED (26 security smoke tests passed, 0 failures)
+npm run security:audit       # PASSED (0 high/critical vulnerabilities)
+
+# 11. Dictionary Integrity
+npm run validate:dictionary  # PASSED (Lexicon structure and offline search verified)
+
+# 12. Performance Validator V3
+npm run validate:performance # PASSED (All JS/precache budgets and cross-check assertions verified)
+```
+
+---
+
+## 11. Release Recommendation & Truthful Verdict
 
 **Production Release Candidate Status**: **CONDITIONALLY READY (V1.0.0)**
 

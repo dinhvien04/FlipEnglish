@@ -374,8 +374,8 @@ function validatePerformance() {
   console.log('\n--- 6. Validating Double-Submission Guards on Network & Async Actions ---');
   const flipLensPath = path.join(projectRoot, 'src', 'pages', 'FlipLens.tsx');
   const flipLens = fs.readFileSync(flipLensPath, 'utf8');
-  if (!flipLens.includes("step === 'analyzing'") || !flipLens.includes("disabled={step === 'analyzing'}")) {
-    console.error('❌ FlipLens must disable analyze button and guard in-flight requests.');
+  if (!flipLens.includes("step === 'analyzing'") || !flipLens.includes('activeAbortControllerRef.current')) {
+    console.error('❌ FlipLens must guard in-flight requests and provide cancellation support.');
     process.exit(1);
   }
 

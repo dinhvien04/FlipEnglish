@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "commit": "5ed98958cefc4d24fd9b25e03e6556e91f5152ce",
+  "generatedAt": "2026-08-26T05:29:15.567Z",
+  "environment": {
+    "nodeVersion": "v20.20.2",
+    "chromeVersion": "151.0.0.0",
+    "lighthouseVersion": "12.8.2"
+  },
+  "groups": {
+    "simulatedMobile": {
+      "runs": 3,
+      "performanceMedian": 90,
+      "fcpMedianMs": 2791,
+      "lcpMedianMs": 2946,
+      "tbtMedianMs": 74,
+      "clsMedian": 0,
+      "speedIndexMedianMs": 2791,
+      "benchmarkIndexMedian": 1082.5,
+      "files": [
+        "phase32-sim-mobile-1.json",
+        "phase32-sim-mobile-2.json",
+        "phase32-sim-mobile-3.json"
+      ]
+    },
+    "devtoolsMobile": {
+      "runs": 3,
+      "performanceMedian": 79,
+      "fcpMedianMs": 3928,
+      "lcpMedianMs": 3928,
+      "tbtMedianMs": 110,
+      "clsMedian": 0,
+      "speedIndexMedianMs": 3427,
+      "benchmarkIndexMedian": 1129,
+      "files": [
+        "phase32-dev-mobile-1.json",
+        "phase32-dev-mobile-2.json",
+        "phase32-dev-mobile-3.json"
+      ]
+    },
+    "simulatedDesktop": {
+      "runs": 3,
+      "performanceMedian": 99,
+      "fcpMedianMs": 681,
+      "lcpMedianMs": 746,
+      "tbtMedianMs": 8,
+      "clsMedian": 0,
+      "speedIndexMedianMs": 681,
+      "benchmarkIndexMedian": 1281,
+      "files": [
+        "phase32-sim-desktop-1.json",
+        "phase32-sim-desktop-2.json",
+        "phase32-sim-desktop-3.json"
+      ]
+    },
+    "devtoolsDesktop": {
+      "runs": 3,
+      "performanceMedian": 100,
+      "fcpMedianMs": 685,
+      "lcpMedianMs": 685,
+      "tbtMedianMs": 0,
+      "clsMedian": 0,
+      "speedIndexMedianMs": 672,
+      "benchmarkIndexMedian": 634.5,
+      "files": [
+        "phase32-dev-desktop-1.json",
+        "phase32-dev-desktop-2.json",
+        "phase32-dev-desktop-3.json"
+      ]
+    },
+    "providedMobile": {
+      "runs": 3,
+      "performanceMedian": 100,
+      "fcpMedianMs": 859,
+      "lcpMedianMs": 859,
+      "tbtMedianMs": 0,
+      "clsMedian": 0,
+      "speedIndexMedianMs": 1317,
+      "benchmarkIndexMedian": 701,
+      "files": [
+        "phase32-prov-mobile-1.json",
+        "phase32-prov-mobile-2.json",
+        "phase32-prov-mobile-3.json"
+      ]
+    }
+  }
+}

@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
-interface LcpElementInfo {
+export interface LcpElementInfo {
   tag?: string;
   selector?: string;
   snippet?: string;
@@ -10,7 +11,7 @@ interface LcpElementInfo {
   type?: 'TEXT' | 'IMAGE' | 'OTHER';
 }
 
-interface LcpBreakdown {
+export interface LcpBreakdown {
   ttfb?: number;
   loadDelay?: number;
   loadDuration?: number;
@@ -19,16 +20,24 @@ interface LcpBreakdown {
   sourceAudit?: string;
 }
 
+export interface NetworkThrottlingMetadata {
+  rttMs?: number;
+  throughputKbps?: number;
+  requestLatencyMs?: number;
+  downloadThroughputKbps?: number;
+  uploadThroughputKbps?: number;
+}
+
 export interface LighthouseSummary {
   file: string;
   formFactor?: string;
   throttlingMethod?: string;
   cpuSlowdownMultiplier?: number;
-  rttMs?: number;
-  throughputKbps?: number;
-  metricCategory: 'Modeled (Simulated / Lantern)' | 'Observed (DevTools Applied)' | 'Observed (Provided / Unthrottled)';
+  network?: NetworkThrottlingMetadata;
+  metricCategory: 'Modeled (Simulated / Lantern)' | 'Observed (DevTools Applied)' | 'Observed (Provided / No Lighthouse Throttling)';
   userAgent?: string;
   lighthouseVersion?: string;
+  benchmarkIndex?: number | null;
   performance: number;
   accessibility: number;
   bestPractices: number;
@@ -48,6 +57,43 @@ export interface LighthouseSummary {
   availableLcpAudits: string[];
 }
 
+export interface GroupBenchmarkSummary {
+  runs: number;
+  performanceMedian: number;
+  fcpMedianMs: number;
+  lcpMedianMs: number;
+  tbtMedianMs: number;
+  clsMedian: number;
+  speedIndexMedianMs: number;
+  benchmarkIndexMedian: number | null;
+  files: string[];
+}
+
+export interface AggregateBenchmarkReport {
+  schemaVersion: number;
+  commit: string;
+  generatedAt: string;
+  environment: {
+    nodeVersion: string;
+    chromeVersion: string;
+    lighthouseVersion: string;
+  };
+  groups: {
+    simulatedMobile: GroupBenchmarkSummary;
+    devtoolsMobile: GroupBenchmarkSummary;
+    simulatedDesktop: GroupBenchmarkSummary;
+    devtoolsDesktop: GroupBenchmarkSummary;
+    providedMobile: GroupBenchmarkSummary;
+  };
+}
+
+function computeMedian(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export function parseLighthouseJson(filePath: string): LighthouseSummary {
   const fullPath = path.resolve(filePath);
   if (!fs.existsSync(fullPath)) {
@@ -60,13 +106,34 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
   const configSettings = data.configSettings || {};
   const throttling = configSettings.throttling || {};
   const throttlingMethod = configSettings.throttlingMethod || 'simulate';
+  const environment = data.environment || {};
 
   const metricCategory =
     throttlingMethod === 'simulate'
       ? 'Modeled (Simulated / Lantern)'
       : throttlingMethod === 'devtools'
       ? 'Observed (DevTools Applied)'
-      : 'Observed (Provided / Unthrottled)';
+      : 'Observed (Provided / No Lighthouse Throttling)';
+
+  // Structured network metadata based on throttling mode
+  const network: NetworkThrottlingMetadata = {};
+  if (throttlingMethod === 'simulate') {
+    if (typeof throttling.rttMs === 'number') network.rttMs = throttling.rttMs;
+    if (typeof throttling.throughputKbps === 'number') network.throughputKbps = throttling.throughputKbps;
+  } else if (throttlingMethod === 'devtools') {
+    if (typeof throttling.requestLatencyMs === 'number') network.requestLatencyMs = throttling.requestLatencyMs;
+    if (typeof throttling.downloadThroughputKbps === 'number') network.downloadThroughputKbps = throttling.downloadThroughputKbps;
+    if (typeof throttling.uploadThroughputKbps === 'number') network.uploadThroughputKbps = throttling.uploadThroughputKbps;
+    if (typeof throttling.rttMs === 'number') network.rttMs = throttling.rttMs;
+    if (typeof throttling.throughputKbps === 'number') network.throughputKbps = throttling.throughputKbps;
+  } else {
+    // Provided / no throttling
+    if (typeof throttling.rttMs === 'number') network.rttMs = throttling.rttMs;
+    if (typeof throttling.throughputKbps === 'number') network.throughputKbps = throttling.throughputKbps;
+    if (typeof throttling.requestLatencyMs === 'number') network.requestLatencyMs = throttling.requestLatencyMs;
+    if (typeof throttling.downloadThroughputKbps === 'number') network.downloadThroughputKbps = throttling.downloadThroughputKbps;
+    if (typeof throttling.uploadThroughputKbps === 'number') network.uploadThroughputKbps = throttling.uploadThroughputKbps;
+  }
 
   const availableLcpAudits = Object.keys(audits).filter(
     (k) => k.toLowerCase().includes('lcp') || k.toLowerCase().includes('largest-contentful')
@@ -169,7 +236,6 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
     }
   }
 
-  // Fallback: derive from server response time if available, do not invent zero for delays unless proven text
   if (!lcpBreakdown && lcpAudit.numericValue) {
     const srtAudit = audits['server-response-time'] || {};
     const ttfb = srtAudit.numericValue;
@@ -192,11 +258,11 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
     formFactor: configSettings.formFactor,
     throttlingMethod,
     cpuSlowdownMultiplier: throttling.cpuSlowdownMultiplier ?? configSettings.cpuSlowdownMultiplier,
-    rttMs: throttling.rttMs,
-    throughputKbps: throttling.requestLatencyMs ? undefined : throttling.throughputKbps,
+    network,
     metricCategory,
     userAgent: data.userAgent,
     lighthouseVersion: data.lighthouseVersion,
+    benchmarkIndex: typeof environment.benchmarkIndex === 'number' ? environment.benchmarkIndex : null,
     performance: Math.round((cats.performance?.score || 0) * 100),
     accessibility: Math.round((cats.accessibility?.score || 0) * 100),
     bestPractices: Math.round((cats['best-practices']?.score || 0) * 100),
@@ -225,8 +291,85 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
   };
 }
 
-if (process.argv.length > 2) {
+export function buildGroupSummary(items: LighthouseSummary[]): GroupBenchmarkSummary {
+  const perfScores = items.map((i) => i.performance);
+  const fcpScores = items.map((i) => i.fcpNumeric || 0);
+  const lcpScores = items.map((i) => i.lcpNumeric || 0);
+  const tbtScores = items.map((i) => i.tbtNumeric || 0);
+  const clsScores = items.map((i) => i.clsNumeric ?? 0);
+  const speedIndexScores = items.map((i) => i.speedIndexNumeric || 0);
+  const benchmarkIndices = items
+    .map((i) => i.benchmarkIndex)
+    .filter((b): b is number => typeof b === 'number');
+
+  return {
+    runs: items.length,
+    performanceMedian: Math.round(computeMedian(perfScores)),
+    fcpMedianMs: Math.round(computeMedian(fcpScores)),
+    lcpMedianMs: Math.round(computeMedian(lcpScores)),
+    tbtMedianMs: Math.round(computeMedian(tbtScores)),
+    clsMedian: Number(computeMedian(clsScores).toFixed(3)),
+    speedIndexMedianMs: Math.round(computeMedian(speedIndexScores)),
+    benchmarkIndexMedian: benchmarkIndices.length > 0 ? Number(computeMedian(benchmarkIndices).toFixed(1)) : null,
+    files: items.map((i) => i.file),
+  };
+}
+
+export function generateBenchmarkSummaryJson(): AggregateBenchmarkReport {
+  const qaDir = path.resolve('.qa/lighthouse');
+  if (!fs.existsSync(qaDir)) {
+    throw new Error(`Directory not found: ${qaDir}`);
+  }
+
+  const allFiles = fs.readdirSync(qaDir).filter((f) => f.startsWith('phase32-') && f.endsWith('.json'));
+  const parsed = allFiles.map((f) => parseLighthouseJson(path.join(qaDir, f)));
+
+  const simMobile = parsed.filter((p) => p.file.startsWith('phase32-sim-mobile-'));
+  const devMobile = parsed.filter((p) => p.file.startsWith('phase32-dev-mobile-'));
+  const simDesktop = parsed.filter((p) => p.file.startsWith('phase32-sim-desktop-'));
+  const devDesktop = parsed.filter((p) => p.file.startsWith('phase32-dev-desktop-'));
+  const provMobile = parsed.filter((p) => p.file.startsWith('phase32-prov-mobile-'));
+
+  let commitSha = 'HEAD';
+  try {
+    commitSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    commitSha = 'UNKNOWN';
+  }
+
+  const first: LighthouseSummary | undefined = parsed[0];
+  const chromeVer = (first?.userAgent || '').match(/Chrome\/([0-9.]+)/)?.[1] || '151.0.0.0';
+
+  const report: AggregateBenchmarkReport = {
+    schemaVersion: 1,
+    commit: commitSha,
+    generatedAt: new Date().toISOString(),
+    environment: {
+      nodeVersion: process.version,
+      chromeVersion: chromeVer,
+      lighthouseVersion: first?.lighthouseVersion || '12.8.2',
+    },
+    groups: {
+      simulatedMobile: buildGroupSummary(simMobile),
+      devtoolsMobile: buildGroupSummary(devMobile),
+      simulatedDesktop: buildGroupSummary(simDesktop),
+      devtoolsDesktop: buildGroupSummary(devDesktop),
+      providedMobile: buildGroupSummary(provMobile),
+    },
+  };
+
+  const outputPath = path.resolve('.qa/performance-summary.json');
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  console.log(`✅ Machine-readable benchmark summary written to: ${outputPath}`);
+  return report;
+}
+
+if (process.argv.includes('--generate-summary') || process.argv.includes('-s')) {
+  generateBenchmarkSummaryJson();
+} else if (process.argv.length > 2) {
   const files = process.argv.slice(2);
   const results = files.map(parseLighthouseJson);
   console.log(JSON.stringify(results, null, 2));
+} else {
+  generateBenchmarkSummaryJson();
 }

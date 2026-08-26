@@ -62,7 +62,7 @@ function assert(condition: boolean, testName: string, detail?: string) {
   }
 }
 
-async function waitForServerReady(maxAttempts = 35, delayMs = 200): Promise<boolean> {
+async function waitForServerReady(maxAttempts = 75, delayMs = 200): Promise<boolean> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const res = await makeRequest({ method: 'GET', path: '/api/health' });

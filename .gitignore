@@ -2,7 +2,8 @@ node_modules/
 build/
 dist/
 coverage/
-.qa/
+.qa/*
+!.qa/performance-summary.json
 .DS_Store
 *.log
 .env*

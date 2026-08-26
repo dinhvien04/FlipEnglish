@@ -21,7 +21,13 @@ import {
 import { DictionaryService } from './server/dictionary/dictionaryService';
 import { DictionaryRelationType } from './server/dictionary/dictionaryTypes';
 
-dotenv.config();
+// Load .env only when NODE_ENV is not explicitly provided in environment
+if (!process.env.NODE_ENV) {
+  dotenv.config();
+} else {
+  // Load .env without overriding pre-set environment variables like NODE_ENV or PORT
+  dotenv.config({ override: false });
+}
 
 // ===================================================
 // 1. Centralized Application Security Configuration

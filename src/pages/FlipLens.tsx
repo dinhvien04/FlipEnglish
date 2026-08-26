@@ -61,12 +61,22 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const listRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
 
-  // Clean up speech when navigating steps
+  // Clean up speech and in-flight requests when unmounting or navigating steps
   useEffect(() => {
     stopSpeech();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+        activeAbortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   // Handle selected file from desktop or camera
   const handleFileSelect = async (file: File) => {
@@ -113,6 +123,12 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
   const handleAnalyzePhoto = async () => {
     if (!imageData || !imageData.dataUrl || step === 'analyzing') return;
 
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    activeAbortControllerRef.current = abortController;
+
     setStep('analyzing');
     setErrorMessage(null);
 
@@ -124,9 +140,14 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
           image: imageData.dataUrl,
           mimeType: imageData.mimeType,
         }),
+        signal: abortController.signal,
       });
 
       const data = await response.json();
+
+      if (abortController.signal.aborted) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to analyze photo.');
@@ -148,6 +169,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
 
       setStep('detected');
     } catch (err: any) {
+      if (err.name === 'AbortError' || abortController.signal.aborted) {
+        return;
+      }
       console.error('Error analyzing photo with Gemini:', err);
       setErrorMessage(
         getApiErrorMessage(
@@ -156,6 +180,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
         )
       );
       setStep('preview');
+    } finally {
+      if (activeAbortControllerRef.current === abortController) {
+        activeAbortControllerRef.current = null;
+      }
     }
   };
 
@@ -272,6 +300,10 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
 
   // Reset & Try another photo
   const handleReset = () => {
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+      activeAbortControllerRef.current = null;
+    }
     stopSpeech();
     setImageSrc(null);
     setImageData(null);
@@ -480,7 +512,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       {/* ======================================================================= */}
       {/* STEP 2: PREVIEW & CONFIRM */}
       {/* ======================================================================= */}
-      {(step === 'preview' || step === 'analyzing') && imageSrc && (
+      {step === 'preview' && imageSrc && (
         <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
           <div className="text-center space-y-1">
             <h2 className="text-2xl font-black text-slate-900">Photo Ready for Analysis</h2>
@@ -520,7 +552,6 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 type="button"
                 id="fliplens-analyze-btn"
                 onClick={handleAnalyzePhoto}
-                disabled={step === 'analyzing'}
                 className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center"
               >
                 Analyze Photo with Gemini
