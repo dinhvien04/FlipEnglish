@@ -10,7 +10,7 @@ import {
   PlacementSkill,
   PlacementConfidence,
 } from './placementTypes';
-import { isValidPlacementQuestion } from '../../data/placement/placementPool';
+import { isValidPlacementQuestion } from './placementValidation';
 import { routeNextLevel } from './placementEngine';
 import { LESSONS } from '../../data/lessons';
 

@@ -13,11 +13,9 @@ import {
   getLatestPlacementResult,
   loadLatestPlacementReport,
 } from './features/placement/placementStorage';
-import { selectPlacementQuestionsForStage } from './data/placement/placementPool';
-import { LESSONS, getLessonById } from './data/lessons';
+import { getLessonById } from './data/lessons';
 import { getLessonProgress } from './utils/storage';
 import { getActiveExam, clearActiveExam } from './utils/examStorage';
-import { generateExamSession } from './data/exams/examGenerator';
 import { saveConversationSummary } from './utils/conversationStorage';
 import { Header } from './components/Header';
 import { Home } from './pages/Home';
@@ -122,7 +120,14 @@ export default function App() {
   const [conversationTurns, setConversationTurns] = useState<ConversationTurn[]>([]);
   const [conversationEvaluation, setConversationEvaluation] = useState<ConversationEvaluation | null>(null);
 
-  const selectedLesson: Lesson | null = selectedLessonId ? getLessonById(selectedLessonId) || null : null;
+  // Temporary Lesson State (for Exam AI Practice and dynamically constructed lessons)
+  const [temporaryLesson, setTemporaryLesson] = useState<Lesson | null>(null);
+
+  const selectedLesson: Lesson | null = temporaryLesson && temporaryLesson.id === selectedLessonId
+    ? temporaryLesson
+    : selectedLessonId
+    ? getLessonById(selectedLessonId) || null
+    : null;
   const currentLessonProgress: LessonProgress | null = selectedLessonId ? getLessonProgress(selectedLessonId) : null;
 
   // Check for active unfinished exam or placement on initial load + idempotent onboarding migration
@@ -150,6 +155,7 @@ export default function App() {
   // Curriculum & Main Navigation Handlers
   const handleNavigateToday = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setResumedLearnContext(null);
@@ -212,6 +218,7 @@ export default function App() {
     setHomeLevelFilter('ALL');
     setCurrentView('home');
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setResumedLearnContext(null);
@@ -220,6 +227,7 @@ export default function App() {
 
   const handleNavigateReview = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setResumedLearnContext(null);
@@ -229,6 +237,7 @@ export default function App() {
 
   const handleNavigateConversation = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setCurrentView('conversation');
@@ -236,11 +245,13 @@ export default function App() {
 
   const handleOpenFlipLens = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setCurrentView('flip-lens');
   };
 
   const handleSelectLesson = (lesson: Lesson) => {
+    setTemporaryLesson(null);
     setSelectedLessonId(lesson.id);
     setIsReviewMistakesMode(false);
     setResumedLearnContext(null);
@@ -248,6 +259,7 @@ export default function App() {
   };
 
   const handleSelectLessonById = (lessonId: string) => {
+    setTemporaryLesson(null);
     setSelectedLessonId(lessonId);
     setIsReviewMistakesMode(false);
     setResumedLearnContext(null);
@@ -308,6 +320,7 @@ export default function App() {
 
   const handleNavigateHelp = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setCurrentView('help');
@@ -461,6 +474,7 @@ export default function App() {
   // Exam Center Handlers
   const handleNavigateExamCenter = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setCurrentView('exam-center');
   };
@@ -468,12 +482,13 @@ export default function App() {
   // Placement Handlers
   const handleStartPlacementIntro = () => {
     setSelectedLessonId(null);
+    setTemporaryLesson(null);
     setIsReviewMistakesMode(false);
     setPlacementStartError(null);
     setCurrentView('placement-intro');
   };
 
-  const handleStartPlacementSession = () => {
+  const handleStartPlacementSession = async () => {
     setPlacementStartError(null);
     const now = Date.now();
     let randSuffix = 0;
@@ -485,6 +500,9 @@ export default function App() {
       randSuffix = Math.floor(Math.abs(Math.sin(now)) * 1000000);
     }
     const seed = (now ^ randSuffix) >>> 0;
+
+    // Dynamic import to keep initial bundle lean
+    const { selectPlacementQuestionsForStage } = await import('./data/placement/placementPool');
     const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
 
     // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
@@ -577,15 +595,17 @@ export default function App() {
     setCurrentView('exam-intro');
   };
 
-  const handleStartQuickTestFromPlan = (level: CEFRLevel) => {
+  const handleStartQuickTestFromPlan = async (level: CEFRLevel) => {
     setExamMode('quick');
     setExamLevel(level);
+    const { generateExamSession } = await import('./data/exams/examGenerator');
     const session = generateExamSession('quick', level);
     setActiveExamSession(session);
     setCurrentView('exam-session');
   };
 
-  const handleStartExamSession = () => {
+  const handleStartExamSession = async () => {
+    const { generateExamSession } = await import('./data/exams/examGenerator');
     const session = generateExamSession(examMode, examLevel);
     setActiveExamSession(session);
     setCurrentView('exam-session');
@@ -640,6 +660,7 @@ export default function App() {
         imageUrl: words[0]?.imageUrl || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
         words: words,
       };
+      setTemporaryLesson(tempLesson);
       setSelectedLessonId(tempLesson.id);
       setMistakeWords(words);
       setIsReviewMistakesMode(false);
@@ -972,7 +993,7 @@ export default function App() {
               FlipEnglish — Master English vocabulary one flip card at a time.
             </p>
             <p className="text-slate-400">
-              {LESSONS.length} Structured Lessons • CEFR A1—C2 • Practice Exams & AI Diagnostics
+              72 Structured Lessons • CEFR A1—C2 • Practice Exams & AI Diagnostics
             </p>
           </div>
         </footer>
