@@ -354,12 +354,12 @@ function validatePerformance() {
   }
   console.log('✅ Core eager study loop (Today, Curriculum, Intro, Flashcards, Quiz, Result, Onboarding) preserved.');
 
-  console.log('\n--- 5. Validating LCP Image Optimization & SafeImage Contracts ---');
+  console.log('\n--- 5. Validating Secondary Route Image Priority Contracts ---');
   const lessonIntroPath = path.join(projectRoot, 'src', 'pages', 'LessonIntro.tsx');
   const lessonIntro = fs.readFileSync(lessonIntroPath, 'utf8');
 
   if (!lessonIntro.includes('loading="eager"') || !lessonIntro.includes('fetchPriority="high"')) {
-    console.error('❌ LessonIntro hero banner must specify loading="eager" and fetchPriority="high" for optimal LCP.');
+    console.error('❌ LessonIntro hero banner must specify loading="eager" and fetchPriority="high" for optimal secondary route performance.');
     process.exit(1);
   }
 
@@ -369,7 +369,7 @@ function validatePerformance() {
     console.error('❌ LessonCard curriculum thumbnails must specify loading="lazy".');
     process.exit(1);
   }
-  console.log('✅ LCP and lazy loading image priorities verified.');
+  console.log('✅ Secondary route eager/lazy image priority contracts verified.');
 
   console.log('\n--- 6. Validating Double-Submission Guards on Network & Async Actions ---');
   const flipLensPath = path.join(projectRoot, 'src', 'pages', 'FlipLens.tsx');
@@ -398,7 +398,27 @@ function validatePerformance() {
     console.error('❌ App.tsx must guard dynamic module imports with synchronous ref locks.');
     process.exit(1);
   }
-  console.log('✅ In-flight network and async module loading double-tap guards verified.');
+
+  // Today Quick Test loading prop passing
+  if (!appTsx.includes('isStartingQuickTest={isStartingExam}')) {
+    console.error('❌ App.tsx must pass isStartingQuickTest={isStartingExam} to TodayPage.');
+    process.exit(1);
+  }
+
+  const todayPagePath = path.join(projectRoot, 'src', 'features', 'studyPlan', 'TodayPage.tsx');
+  const todayPageTsx = fs.readFileSync(todayPagePath, 'utf8');
+  if (!todayPageTsx.includes('isStartingQuickTest') || !todayPageTsx.includes('isStarting={isThisTaskStarting}')) {
+    console.error('❌ TodayPage must support isStartingQuickTest and pass isStarting to StudyPlanTaskCard.');
+    process.exit(1);
+  }
+
+  const taskCardPath = path.join(projectRoot, 'src', 'features', 'studyPlan', 'StudyPlanTaskCard.tsx');
+  const taskCardTsx = fs.readFileSync(taskCardPath, 'utf8');
+  if (!taskCardTsx.includes('isStarting') || !taskCardTsx.includes('aria-busy={isStarting}')) {
+    console.error('❌ StudyPlanTaskCard must support isStarting and aria-busy.');
+    process.exit(1);
+  }
+  console.log('✅ In-flight network, async module loading, and Quick Test loading feedback guards verified.');
 
   console.log('\n--- 7. Validating Mobile & Tablet Viewport Invariants ---');
   const indexCssPath = path.join(projectRoot, 'src', 'index.css');
@@ -415,7 +435,12 @@ function validatePerformance() {
   }
   console.log('✅ Mobile layout rules and safe-area invariants verified.');
 
-  console.log('\n🎉 ALL PERFORMANCE, BUNDLE SPLITTING, PWA PRECACHE, AND MOBILE UX STATIC CHECKS PASSED WITH ZERO ERRORS.');
+  console.log('\n🎉 ALL STATIC PERFORMANCE REGRESSION CHECKS PASSED.');
+  console.log('   - Bundle budgets:               PASS');
+  console.log('   - Dynamic splitting contracts:  PASS');
+  console.log('   - PWA precache accounting:      PASS');
+  console.log('   - Async-start guards:           PASS');
+  console.log('   - Mobile source invariants:     PASS');
 }
 
 validatePerformance();

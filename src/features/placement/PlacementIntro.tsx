@@ -49,10 +49,10 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
         >
           <div className="space-y-1">
             <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-              Placement Preparation Issue
+              {t('placement.intro.errorBadge')}
             </span>
             <h3 className="text-base sm:text-lg font-black text-slate-900 pt-1">
-              Placement Check could not prepare enough valid questions.
+              {t('placement.intro.errorTitle')}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600">
               {startError}
@@ -65,7 +65,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
               disabled={isStartingPlacement}
               className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t('result.retakeQuizBtn')}
+              {t('ui.common.retry')}
             </button>
             <button
               type="button"
@@ -197,7 +197,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
           >
             {isStartingPlacement ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
                 <span>{t('placement.intro.preparing')}</span>
               </>
             ) : (

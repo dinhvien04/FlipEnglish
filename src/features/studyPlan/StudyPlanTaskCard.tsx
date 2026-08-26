@@ -6,6 +6,8 @@ interface StudyPlanTaskCardProps {
   index: number;
   onStartTask: (task: StudyPlanTask) => void;
   onSkipTask: (taskId: string) => void;
+  isStarting?: boolean;
+  startingLabel?: string;
 }
 
 export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
@@ -13,6 +15,8 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
   index,
   onStartTask,
   onSkipTask,
+  isStarting = false,
+  startingLabel,
 }) => {
   const isCompleted = task.status === 'completed';
   const isSkipped = task.status === 'skipped';
@@ -117,16 +121,26 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
               <button
                 type="button"
                 onClick={() => onStartTask(task)}
-                className="flex-1 sm:flex-initial min-h-11 sm:min-h-12 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer inline-flex items-center justify-center text-center"
+                disabled={isStarting}
+                aria-busy={isStarting}
+                className="flex-1 sm:flex-initial min-h-11 sm:min-h-12 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer inline-flex items-center justify-center text-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
               >
-                {ctaText}
+                {isStarting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+                    <span>{startingLabel || ctaText}</span>
+                  </>
+                ) : (
+                  <span>{ctaText}</span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => onSkipTask(task.id)}
+                disabled={isStarting}
                 title="Skip this task for today"
-                className="min-h-11 px-3 py-2 rounded-xl text-2xs font-semibold text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
+                className="min-h-11 px-3 py-2 rounded-xl text-2xs font-semibold text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer inline-flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Skip
               </button>

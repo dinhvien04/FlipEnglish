@@ -24,6 +24,7 @@ interface TodayPageProps {
   onNavigateCurriculum: () => void;
   onNavigateConversation?: () => void;
   onNavigateFlipLens?: () => void;
+  isStartingQuickTest?: boolean;
 }
 
 export const TodayPage: React.FC<TodayPageProps> = ({
@@ -34,6 +35,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
   onNavigateCurriculum,
   onNavigateConversation,
   onNavigateFlipLens,
+  isStartingQuickTest = false,
 }) => {
   const { t, formatDate } = useI18n();
   const [plan, setPlan] = useState<TodayStudyPlan>(() => getOrGenerateTodayPlan());
@@ -257,9 +259,20 @@ export const TodayPage: React.FC<TodayPageProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigateQuickTest('B2')}
-                className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1"
+                disabled={isStartingQuickTest}
+                aria-busy={isStartingQuickTest}
+                className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer space-y-1 disabled:opacity-75 disabled:cursor-not-allowed"
               >
-                <span className="block text-sm font-bold text-slate-900">{t('exam.title')}</span>
+                <span className="block text-sm font-bold text-slate-900">
+                  {isStartingQuickTest ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+                      <span>{t('exam.starting')}</span>
+                    </span>
+                  ) : (
+                    t('exam.title')
+                  )}
+                </span>
                 <span className="block text-2xs text-slate-500">{t('exam.mode.quickDesc')}</span>
               </button>
 
@@ -362,15 +375,20 @@ export const TodayPage: React.FC<TodayPageProps> = ({
             </h2>
 
             <div className="space-y-3">
-              {plan.tasks.map((task, idx) => (
-                <StudyPlanTaskCard
-                  key={task.id}
-                  task={task}
-                  index={idx}
-                  onStartTask={handleStartTask}
-                  onSkipTask={handleSkipTask}
-                />
-              ))}
+              {plan.tasks.map((task, idx) => {
+                const isThisTaskStarting = task.type === 'quick-test' && isStartingQuickTest;
+                return (
+                  <StudyPlanTaskCard
+                    key={task.id}
+                    task={task}
+                    index={idx}
+                    onStartTask={handleStartTask}
+                    onSkipTask={handleSkipTask}
+                    isStarting={isThisTaskStarting}
+                    startingLabel={t('exam.starting')}
+                  />
+                );
+              })}
             </div>
           </section>
         </>

@@ -67,13 +67,14 @@ function LazyViewFallback() {
       aria-live="polite"
       className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center"
     >
-      <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
+      <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin motion-reduce:animate-none mb-4" />
       <p className="text-sm font-semibold text-slate-600">{t('ui.common.loading')}</p>
     </div>
   );
 }
 
 export default function App() {
+  const { t } = useI18n();
   const [currentView, setCurrentView] = useState<AppView>(() => {
     return shouldShowOnboarding() ? 'onboarding' : 'today';
   });
@@ -519,7 +520,7 @@ export default function App() {
 
       // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
       if (initialStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
-        setPlacementStartError('Placement Check could not prepare enough valid questions for the initial stage.');
+        setPlacementStartError(t('placement.intro.errorQuestions'));
         setCurrentView('placement-intro');
         return;
       }
@@ -553,7 +554,7 @@ export default function App() {
       setPendingResumePlacement(null);
       setCurrentView('placement-session');
     } catch (err) {
-      setPlacementStartError('Unable to load placement question modules. Please check your network and try again.');
+      setPlacementStartError(t('placement.intro.errorLoad'));
       setCurrentView('placement-intro');
     } finally {
       placementStartInFlightRef.current = false;
@@ -629,7 +630,7 @@ export default function App() {
       setActiveExamSession(session);
       setCurrentView('exam-session');
     } catch (err) {
-      setExamStartError('Unable to load exam generator module. Please check your network and try again.');
+      setExamStartError(t('exam.errorLoad'));
       setCurrentView('exam-intro');
     } finally {
       examStartInFlightRef.current = false;
@@ -649,7 +650,7 @@ export default function App() {
       setActiveExamSession(session);
       setCurrentView('exam-session');
     } catch (err) {
-      setExamStartError('Unable to load exam generator module. Please check your network and try again.');
+      setExamStartError(t('exam.errorLoad'));
       setCurrentView('exam-intro');
     } finally {
       examStartInFlightRef.current = false;
@@ -818,6 +819,7 @@ export default function App() {
               onNavigateCurriculum={handleNavigateHome}
               onNavigateConversation={handleNavigateConversation}
               onNavigateFlipLens={handleOpenFlipLens}
+              isStartingQuickTest={isStartingExam}
             />
           )}
 

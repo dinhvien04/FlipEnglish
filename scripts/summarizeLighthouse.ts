@@ -61,36 +61,81 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
     audits['lcp-element'] ||
     audits['largest-contentful-paint-element-insight'];
 
-  if (lcpElemAudit && lcpElemAudit.details && Array.isArray(lcpElemAudit.details.items) && lcpElemAudit.details.items.length > 0) {
-    const item = lcpElemAudit.details.items[0];
-    const node = item.node || {};
-    const snippet = node.snippet || item.snippet || '';
-    const selector = node.selector || item.selector || '';
-    const nodeLabel = node.nodeLabel || item.nodeLabel || '';
-    const url = item.url || node.url || undefined;
-    const isImage = Boolean(url) || snippet.toLowerCase().includes('<img') || snippet.toLowerCase().includes('background-image');
+  if (lcpElemAudit && lcpElemAudit.details) {
+    let nodeObj: any = undefined;
+    let url: string | undefined = undefined;
 
-    lcpElement = {
-      tag: node.nodeName || (snippet.match(/^<([a-zA-Z0-9]+)/) || [])[1] || 'UNKNOWN',
-      selector,
-      snippet,
-      url,
-      nodeLabel,
-      type: isImage ? 'IMAGE' : snippet ? 'TEXT' : 'OTHER',
-    };
+    if (Array.isArray(lcpElemAudit.details.items)) {
+      for (const item of lcpElemAudit.details.items) {
+        if (item.node) {
+          nodeObj = item.node;
+          url = item.url || item.node?.url;
+          break;
+        }
+        if (Array.isArray(item.items)) {
+          for (const subItem of item.items) {
+            if (subItem.node) {
+              nodeObj = subItem.node;
+              url = subItem.url || subItem.node?.url;
+              break;
+            }
+          }
+        }
+        if (nodeObj) break;
+      }
+    }
+
+    if (nodeObj) {
+      const snippet = nodeObj.snippet || '';
+      const selector = nodeObj.selector || '';
+      const nodeLabel = nodeObj.nodeLabel || '';
+      const isImage = Boolean(url) || snippet.toLowerCase().includes('<img') || snippet.toLowerCase().includes('background-image');
+
+      lcpElement = {
+        tag: nodeObj.nodeName || (snippet.match(/^<([a-zA-Z0-9]+)/) || [])[1] || 'UNKNOWN',
+        selector,
+        snippet,
+        url,
+        nodeLabel,
+        type: isImage ? 'IMAGE' : snippet ? 'TEXT' : 'OTHER',
+      };
+    }
   }
 
   // Extract LCP Breakdown subparts if exposed
   let lcpBreakdown: LcpBreakdown | undefined;
+  const lcpAudit = audits['largest-contentful-paint'] || {};
+
+  if (lcpElemAudit && lcpElemAudit.details && Array.isArray(lcpElemAudit.details.items)) {
+    for (const item of lcpElemAudit.details.items) {
+      if (item.headings && Array.isArray(item.items)) {
+        const phases: Record<string, number> = {};
+        for (const phaseItem of item.items) {
+          if (phaseItem.phase && typeof phaseItem.timing === 'number') {
+            phases[phaseItem.phase.toLowerCase()] = phaseItem.timing;
+          }
+        }
+        if (Object.keys(phases).length > 0) {
+          lcpBreakdown = {
+            ttfb: phases['ttfb'],
+            loadDelay: phases['load delay'] ?? phases['loaddelay'],
+            loadDuration: phases['load time'] ?? phases['loadduration'] ?? phases['load duration'],
+            renderDelay: phases['render delay'] ?? phases['renderdelay'],
+            lcpValue: lcpAudit.numericValue ? Math.round(lcpAudit.numericValue) : undefined,
+          };
+          break;
+        }
+      }
+    }
+  }
+
   const lcpBreakdownAudit =
     audits['lcp-breakdown-insight'] ||
     audits['lcp-breakdown'] ||
     audits['largest-contentful-paint-breakdown'] ||
     audits['lcp-discovery-insight'];
 
-  const lcpAudit = audits['largest-contentful-paint'] || {};
-
-  if (lcpBreakdownAudit && lcpBreakdownAudit.details) {
+  if (!lcpBreakdown && lcpBreakdownAudit && lcpBreakdownAudit.details) {
     const items = lcpBreakdownAudit.details.items || [];
     if (items.length > 0) {
       const b = items[0];
@@ -99,7 +144,7 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
         loadDelay: b.loadDelay,
         loadDuration: b.loadDuration,
         renderDelay: b.renderDelay,
-        lcpValue: lcpAudit.numericValue,
+        lcpValue: lcpAudit.numericValue ? Math.round(lcpAudit.numericValue) : undefined,
       };
     }
   }

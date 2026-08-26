@@ -396,6 +396,46 @@ function runValidation() {
   }
   console.log('✅ ReviewDashboard.tsx fully utilizes localized time/batch translation tokens.');
 
+  // Check 7: Ensure App.tsx, PlacementIntro.tsx, and ExamIntro.tsx no longer contain hardcoded English startup error strings
+  const appTsxPath = path.join(projectRoot, 'src', 'App.tsx');
+  const appTsxContent = fs.readFileSync(appTsxPath, 'utf8');
+
+  const forbiddenEnglishStringsInApp = [
+    'Unable to load placement question modules',
+    'Unable to load exam generator module',
+    'Placement Check could not prepare enough valid questions for the initial stage',
+  ];
+
+  for (const forbidden of forbiddenEnglishStringsInApp) {
+    if (appTsxContent.includes(forbidden)) {
+      console.error(`❌ App.tsx contains hardcoded English string: "${forbidden}". Use localized t(...) key.`);
+      process.exit(1);
+    }
+  }
+
+  const placementIntroPath = path.join(projectRoot, 'src', 'features', 'placement', 'PlacementIntro.tsx');
+  const placementIntroContent = fs.readFileSync(placementIntroPath, 'utf8');
+  if (
+    placementIntroContent.includes('Placement Preparation Issue') ||
+    placementIntroContent.includes('Placement Check could not prepare enough valid questions.') ||
+    placementIntroContent.includes("t('result.retakeQuizBtn')")
+  ) {
+    console.error('❌ PlacementIntro.tsx contains hardcoded error UI strings or incorrect retakeQuizBtn key.');
+    process.exit(1);
+  }
+
+  const examIntroPath = path.join(projectRoot, 'src', 'pages', 'ExamIntro.tsx');
+  const examIntroContent = fs.readFileSync(examIntroPath, 'utf8');
+  if (
+    examIntroContent.includes('Exam Preparation Issue') ||
+    examIntroContent.includes("t('result.retakeQuizBtn')")
+  ) {
+    console.error('❌ ExamIntro.tsx contains hardcoded error UI strings or incorrect retakeQuizBtn key.');
+    process.exit(1);
+  }
+
+  console.log('✅ Startup recovery error UI in App, PlacementIntro, and ExamIntro fully localized.');
+
   console.log('\n🎉 ALL I18N AND MULTILINGUAL CHECKS PASSED WITH ZERO ERRORS.');
 }
 
