@@ -19,6 +19,13 @@ interface AssetInfo {
   type: 'js' | 'css' | 'html' | 'image' | 'manifest' | 'other';
 }
 
+interface PrecacheCategoryStat {
+  count: number;
+  rawBytes: number;
+  gzipBytes: number;
+  files: string[];
+}
+
 function formatBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(2)} kB`;
 }
@@ -96,7 +103,7 @@ function parsePrecacheManifestFromSw(): { url: string; revision: string | null }
     const rawJson = match[1];
     const parsed = JSON.parse(rawJson);
     return parsed;
-  } catch (err) {
+  } catch {
     // If JSON parsing fails due to unquoted keys or formatting, fallback to regex extraction
     const entryRegex = /\{\s*"url":\s*"([^"]+)"(?:\s*,\s*"revision":\s*("[^"]*"|null))?\s*\}/g;
     const entries: { url: string; revision: string | null }[] = [];
@@ -111,12 +118,33 @@ function parsePrecacheManifestFromSw(): { url: string; revision: string | null }
   }
 }
 
+function categorizePrecacheUrl(url: string): 'js' | 'css' | 'html' | 'image' | 'manifest' | 'other' {
+  const lower = url.toLowerCase();
+  if (lower.endsWith('.js')) return 'js';
+  if (lower.endsWith('.css')) return 'css';
+  if (lower.endsWith('.html') || lower === 'index.html') return 'html';
+  if (
+    lower.endsWith('.png') ||
+    lower.endsWith('.jpg') ||
+    lower.endsWith('.jpeg') ||
+    lower.endsWith('.webp') ||
+    lower.endsWith('.svg') ||
+    lower.endsWith('.ico')
+  ) {
+    return 'image';
+  }
+  if (lower.endsWith('.webmanifest') || lower.endsWith('.json') || lower.endsWith('.xml') || lower.endsWith('.txt')) {
+    return 'manifest';
+  }
+  return 'other';
+}
+
 function validatePerformance() {
   console.log('================================================================');
-  console.log('   FlipEnglish Performance Validator V2 (Bundle & PWA Audit)    ');
+  console.log('   FlipEnglish Performance Validator V3 (Static Asset & UX Audit)');
   console.log('================================================================\n');
 
-  console.log('--- 1. Client Bundle & Initial JS / CSS Accounting ---');
+  console.log('--- 1. Client Bundle Accounting (Static Payload Analysis) ---');
   const assets = getAssetStats();
 
   const mainJs = assets.find((a) => a.type === 'js' && a.name.startsWith('index-'));
@@ -153,6 +181,13 @@ function validatePerformance() {
     }
   }
 
+  let dynamicJsRaw = 0;
+  let dynamicJsGzip = 0;
+  for (const chunk of dynamicChunks) {
+    dynamicJsRaw += chunk.rawBytes;
+    dynamicJsGzip += chunk.gzipBytes;
+  }
+
   let totalJsRaw = 0;
   let totalJsGzip = 0;
   for (const js of allJsAssets) {
@@ -161,9 +196,9 @@ function validatePerformance() {
   }
 
   console.log(`\n📦 Initial Load JS:             ${formatBytes(initialJsRaw)} raw │ ${formatBytes(initialJsGzip)} gzip`);
+  console.log(`🔀 Dynamic Chunks Total JS:     ${formatBytes(dynamicJsRaw)} raw │ ${formatBytes(dynamicJsGzip)} gzip (${dynamicChunks.length} chunks)`);
   console.log(`📦 Total Application JS (All):  ${formatBytes(totalJsRaw)} raw │ ${formatBytes(totalJsGzip)} gzip`);
   console.log(`🎨 Main Application Styles:     ${formatBytes(mainCss.rawBytes)} raw │ ${formatBytes(mainCss.gzipBytes)} gzip`);
-  console.log(`🔀 Dynamic Chunks Count:        ${dynamicChunks.length} chunks`);
 
   // Print Top 5 largest JS chunks
   const sortedJs = [...allJsAssets].sort((a, b) => b.rawBytes - a.rawBytes);
@@ -175,11 +210,33 @@ function validatePerformance() {
   // Threshold Checks
   // Initial JS Gzip budget: < 300 kB (down from 350.89 kB before Phase 2 splitting)
   const MAX_INITIAL_JS_GZIP = 300 * 1024;
+  const initialJsHeadroom = MAX_INITIAL_JS_GZIP - initialJsGzip;
   if (initialJsGzip > MAX_INITIAL_JS_GZIP) {
     console.error(`\n❌ Initial JS gzip size (${formatBytes(initialJsGzip)}) exceeds strict budget of 300 kB!`);
     process.exit(1);
   }
-  console.log(`\n✅ Initial JS Gzip (${formatBytes(initialJsGzip)}) satisfies strict budget (< 300 kB).`);
+  console.log(`\n✅ Initial JS Gzip (${formatBytes(initialJsGzip)}) satisfies strict budget (< 300 kB) [Headroom: ${formatBytes(initialJsHeadroom)}].`);
+
+  // Largest Dynamic Chunk Budget: Single dynamic chunk < 60 kB gzip
+  const MAX_DYNAMIC_CHUNK_GZIP = 60 * 1024;
+  const largestDynamicChunk = [...dynamicChunks].sort((a, b) => b.gzipBytes - a.gzipBytes)[0];
+  if (largestDynamicChunk && largestDynamicChunk.gzipBytes > MAX_DYNAMIC_CHUNK_GZIP) {
+    console.error(`❌ Largest dynamic chunk (${largestDynamicChunk.name}: ${formatBytes(largestDynamicChunk.gzipBytes)}) exceeds budget of 60 kB gzip!`);
+    process.exit(1);
+  }
+  if (largestDynamicChunk) {
+    console.log(`✅ Largest dynamic chunk (${largestDynamicChunk.name}: ${formatBytes(largestDynamicChunk.gzipBytes)}) within budget (< 60 kB gzip).`);
+  }
+
+  // Total Application JS Budget: < 1.5 MB raw, < 400 kB gzip
+  const MAX_TOTAL_JS_RAW = 1.5 * 1024 * 1024;
+  const MAX_TOTAL_JS_GZIP = 400 * 1024;
+  const totalJsHeadroomGzip = MAX_TOTAL_JS_GZIP - totalJsGzip;
+  if (totalJsGzip > MAX_TOTAL_JS_GZIP || totalJsRaw > MAX_TOTAL_JS_RAW) {
+    console.error(`❌ Total JS size (${formatBytes(totalJsRaw)} raw / ${formatBytes(totalJsGzip)} gzip) exceeds budget (1.5 MB raw / 400 kB gzip)!`);
+    process.exit(1);
+  }
+  console.log(`✅ Total Application JS (${formatBytes(totalJsRaw)} raw / ${formatBytes(totalJsGzip)} gzip) within budget [Headroom gzip: ${formatBytes(totalJsHeadroomGzip)}].`);
 
   // Ensure heavy secondary engines & views are isolated in separate Rollup chunks
   const expectedChunkPrefixes = [
@@ -205,13 +262,22 @@ function validatePerformance() {
   }
   console.log('✅ All heavy secondary features and question banks isolated into dynamic chunks.');
 
-  console.log('\n--- 2. PWA Service Worker Precache Accounting ---');
+  console.log('\n--- 2. PWA Service Worker Precache Accounting & Category Breakdown ---');
   const precacheEntries = parsePrecacheManifestFromSw();
   console.log(`Precache Manifest Entries: ${precacheEntries.length}`);
 
   let totalPrecacheRaw = 0;
   let totalPrecacheGzip = 0;
   const missingPrecacheFiles: string[] = [];
+
+  const categories: Record<'js' | 'css' | 'html' | 'image' | 'manifest' | 'other', PrecacheCategoryStat> = {
+    js: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+    css: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+    html: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+    image: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+    manifest: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+    other: { count: 0, rawBytes: 0, gzipBytes: 0, files: [] },
+  };
 
   for (const entry of precacheEntries) {
     const localFilePath = path.join(distClientDir, entry.url);
@@ -224,6 +290,12 @@ function validatePerformance() {
     const gzip = zlib.gzipSync(content);
     totalPrecacheRaw += stat.size;
     totalPrecacheGzip += gzip.length;
+
+    const cat = categorizePrecacheUrl(entry.url);
+    categories[cat].count++;
+    categories[cat].rawBytes += stat.size;
+    categories[cat].gzipBytes += gzip.length;
+    categories[cat].files.push(entry.url);
   }
 
   if (missingPrecacheFiles.length > 0) {
@@ -231,14 +303,22 @@ function validatePerformance() {
     process.exit(1);
   }
 
-  console.log(`PWA Precache Total Size:   ${formatBytes(totalPrecacheRaw)} raw │ ${formatBytes(totalPrecacheGzip)} gzip`);
+  console.log('Precache Categories:');
+  for (const [catName, catStat] of Object.entries(categories)) {
+    if (catStat.count > 0) {
+      console.log(`  - ${catName.toUpperCase().padEnd(10)} : ${String(catStat.count).padStart(2)} files │ ${formatBytes(catStat.rawBytes).padStart(10)} raw │ ${formatBytes(catStat.gzipBytes).padStart(9)} gzip`);
+    }
+  }
+
+  console.log(`\nPWA Precache Total Size:   ${formatBytes(totalPrecacheRaw)} raw │ ${formatBytes(totalPrecacheGzip)} gzip`);
   // Total PWA Precache raw budget: < 2.0 MB (currently ~1.52 MB)
   const MAX_PRECACHE_RAW = 2.0 * 1024 * 1024;
+  const precacheHeadroomRaw = MAX_PRECACHE_RAW - totalPrecacheRaw;
   if (totalPrecacheRaw > MAX_PRECACHE_RAW) {
     console.error(`❌ PWA Precache raw size (${formatBytes(totalPrecacheRaw)}) exceeds budget of 2.0 MB!`);
     process.exit(1);
   }
-  console.log('✅ PWA precache payload accounting verified within bounds.');
+  console.log(`✅ PWA precache payload accounting verified within bounds [Headroom raw: ${formatBytes(precacheHeadroomRaw)}].`);
 
   console.log('\n--- 3. Validating Suspense & Lazy Loading Accessibility ---');
   const appTsxPath = path.join(projectRoot, 'src', 'App.tsx');
@@ -291,7 +371,7 @@ function validatePerformance() {
   }
   console.log('✅ LCP and lazy loading image priorities verified.');
 
-  console.log('\n--- 6. Validating Double-Submission Guards on Network Actions ---');
+  console.log('\n--- 6. Validating Double-Submission Guards on Network & Async Actions ---');
   const flipLensPath = path.join(projectRoot, 'src', 'pages', 'FlipLens.tsx');
   const flipLens = fs.readFileSync(flipLensPath, 'utf8');
   if (!flipLens.includes("step === 'analyzing'") || !flipLens.includes("disabled={step === 'analyzing'}")) {
@@ -312,7 +392,13 @@ function validatePerformance() {
     console.error('❌ Result page must guard against concurrent AI practice requests.');
     process.exit(1);
   }
-  console.log('✅ In-flight network action double-tap guards verified.');
+
+  // App-level dynamic import double-tap ref guards
+  if (!appTsx.includes('placementStartInFlightRef.current') || !appTsx.includes('examStartInFlightRef.current')) {
+    console.error('❌ App.tsx must guard dynamic module imports with synchronous ref locks.');
+    process.exit(1);
+  }
+  console.log('✅ In-flight network and async module loading double-tap guards verified.');
 
   console.log('\n--- 7. Validating Mobile & Tablet Viewport Invariants ---');
   const indexCssPath = path.join(projectRoot, 'src', 'index.css');
@@ -329,7 +415,7 @@ function validatePerformance() {
   }
   console.log('✅ Mobile layout rules and safe-area invariants verified.');
 
-  console.log('\n🎉 ALL PERFORMANCE, BUNDLE SPLITTING, PWA PRECACHE, AND MOBILE UX CHECKS PASSED WITH ZERO ERRORS.');
+  console.log('\n🎉 ALL PERFORMANCE, BUNDLE SPLITTING, PWA PRECACHE, AND MOBILE UX STATIC CHECKS PASSED WITH ZERO ERRORS.');
 }
 
 validatePerformance();

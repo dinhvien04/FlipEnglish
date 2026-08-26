@@ -13,6 +13,7 @@ interface PlacementIntroProps {
   latestHistoryItem?: CompactPlacementHistoryItem | null;
   onViewPreviousResult?: () => void;
   startError?: string | null;
+  isStartingPlacement?: boolean;
 }
 
 export const PlacementIntro: React.FC<PlacementIntroProps> = ({
@@ -21,6 +22,7 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
   latestHistoryItem,
   onViewPreviousResult,
   startError,
+  isStartingPlacement = false,
 }) => {
   const { t } = useI18n();
 
@@ -31,7 +33,8 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-2"
+          disabled={isStartingPlacement}
+          className="min-h-11 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t('ui.common.back')}
         </button>
@@ -39,7 +42,11 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
 
       {/* Start Generation Error Notification if any */}
       {startError && (
-        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center space-y-4 animate-fadeIn">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center space-y-4 animate-fadeIn"
+        >
           <div className="space-y-1">
             <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
               Placement Preparation Issue
@@ -55,14 +62,16 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
             <button
               type="button"
               onClick={onStartPlacement}
-              className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+              disabled={isStartingPlacement}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('result.retakeQuizBtn')}
             </button>
             <button
               type="button"
               onClick={onBack}
-              className="min-h-11 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center"
+              disabled={isStartingPlacement}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('ui.common.back')}
             </button>
@@ -182,15 +191,25 @@ export const PlacementIntro: React.FC<PlacementIntroProps> = ({
             type="button"
             id="start-placement-btn"
             onClick={onStartPlacement}
-            className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm sm:text-base shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+            disabled={isStartingPlacement}
+            aria-busy={isStartingPlacement}
+            className="min-h-12 sm:min-h-14 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm sm:text-base shadow-md transition-all cursor-pointer inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
           >
-            {t('placement.intro.start')}
+            {isStartingPlacement ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t('placement.intro.preparing')}</span>
+              </>
+            ) : (
+              <span>{t('placement.intro.start')}</span>
+            )}
           </button>
 
           <button
             type="button"
             onClick={onBack}
-            className="min-h-12 sm:min-h-14 px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+            disabled={isStartingPlacement}
+            className="min-h-12 sm:min-h-14 px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t('ui.common.cancel')}
           </button>

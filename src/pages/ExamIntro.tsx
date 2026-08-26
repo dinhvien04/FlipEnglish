@@ -9,6 +9,8 @@ interface ExamIntroProps {
   level: CEFRLevel;
   onStartExam: () => void;
   onBackToExamCenter: () => void;
+  isStartingExam?: boolean;
+  startError?: string | null;
 }
 
 export const ExamIntro: React.FC<ExamIntroProps> = ({
@@ -16,6 +18,8 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
   level,
   onStartExam,
   onBackToExamCenter,
+  isStartingExam = false,
+  startError,
 }) => {
   const { t } = useI18n();
   let title = `${level} Practice Exam`;
@@ -57,10 +61,47 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
         type="button"
         id="back-to-exam-center-intro-btn"
         onClick={onBackToExamCenter}
-        className="min-h-11 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer inline-flex items-center justify-center"
+        disabled={isStartingExam}
+        className="min-h-11 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shadow-2xs transition-all cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {t('ui.common.back')}
       </button>
+
+      {/* Start Error Notification if any */}
+      {startError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-amber-50 border border-amber-200 rounded-3xl p-6 text-center space-y-4 animate-fadeIn"
+        >
+          <div className="space-y-1">
+            <span className="text-2xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+              Exam Preparation Issue
+            </span>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 pt-1">
+              {startError}
+            </h3>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <button
+              type="button"
+              onClick={onStartExam}
+              disabled={isStartingExam}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('result.retakeQuizBtn')}
+            </button>
+            <button
+              type="button"
+              onClick={onBackToExamCenter}
+              disabled={isStartingExam}
+              className="min-h-11 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('ui.common.back')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Info Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
@@ -166,7 +207,8 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
           <button
             type="button"
             onClick={onBackToExamCenter}
-            className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center"
+            disabled={isStartingExam}
+            className="w-full sm:w-auto min-h-12 px-6 py-3.5 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t('ui.common.cancel')}
           </button>
@@ -175,9 +217,18 @@ export const ExamIntro: React.FC<ExamIntroProps> = ({
             type="button"
             id="start-exam-confirmed-btn"
             onClick={onStartExam}
-            className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-sm sm:text-base shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+            disabled={isStartingExam}
+            aria-busy={isStartingExam}
+            className="w-full sm:w-auto min-h-12 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-sm sm:text-base shadow-2xs transition-all cursor-pointer flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed gap-2"
           >
-            {t('exam.start')}
+            {isStartingExam ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t('exam.starting')}</span>
+              </>
+            ) : (
+              <span>{t('exam.start')}</span>
+            )}
           </button>
         </div>
       </div>

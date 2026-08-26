@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { AppView, Lesson, VocabWord, LessonProgress, CEFRLevel } from './types';
 import { ExamMode, ExamResultReport, ExamSession } from './types/exam';
 import { ConversationScenario, ConversationTurn, ConversationEvaluation } from './types/conversation';
@@ -100,6 +100,13 @@ export default function App() {
   const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
   const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
   const [placementStartError, setPlacementStartError] = useState<string | null>(null);
+  const [isStartingPlacement, setIsStartingPlacement] = useState<boolean>(false);
+  const placementStartInFlightRef = useRef<boolean>(false);
+
+  // Exam Loading & In-flight Double-Tap Protection
+  const [isStartingExam, setIsStartingExam] = useState<boolean>(false);
+  const [examStartError, setExamStartError] = useState<string | null>(null);
+  const examStartInFlightRef = useRef<boolean>(false);
 
   // Curriculum Filter State
   const [homeLevelFilter, setHomeLevelFilter] = useState<CEFRLevel | 'ALL'>('ALL');
@@ -489,57 +496,69 @@ export default function App() {
   };
 
   const handleStartPlacementSession = async () => {
+    if (placementStartInFlightRef.current) return;
+    placementStartInFlightRef.current = true;
+    setIsStartingPlacement(true);
     setPlacementStartError(null);
-    const now = Date.now();
-    let randSuffix = 0;
-    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-      const buf = new Uint32Array(1);
-      crypto.getRandomValues(buf);
-      randSuffix = buf[0] & 0x7fffffff;
-    } else {
-      randSuffix = Math.floor(Math.abs(Math.sin(now)) * 1000000);
-    }
-    const seed = (now ^ randSuffix) >>> 0;
 
-    // Dynamic import to keep initial bundle lean
-    const { selectPlacementQuestionsForStage } = await import('./data/placement/placementPool');
-    const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
+    try {
+      const now = Date.now();
+      let randSuffix = 0;
+      if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        randSuffix = buf[0] & 0x7fffffff;
+      } else {
+        randSuffix = Math.floor(Math.abs(Math.sin(now)) * 1000000);
+      }
+      const seed = (now ^ randSuffix) >>> 0;
 
-    // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
-    if (initialStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
-      setPlacementStartError('Placement Check could not prepare enough valid questions for the initial stage.');
+      // Dynamic import to keep initial bundle lean
+      const { selectPlacementQuestionsForStage } = await import('./data/placement/placementPool');
+      const initialStageQuestions = selectPlacementQuestionsForStage('B1', 0, seed);
+
+      // Requirement 7: Initial Stage Guard (must have exactly 6 valid questions)
+      if (initialStageQuestions.length !== PLACEMENT_STAGE_SIZE) {
+        setPlacementStartError('Placement Check could not prepare enough valid questions for the initial stage.');
+        setCurrentView('placement-intro');
+        return;
+      }
+
+      const secureIdSuffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID().slice(0, 8)
+        : `${now.toString(36)}`;
+
+      const initialSession: PlacementSession = {
+        schemaVersion: 1,
+        id: `placement-${now}-${secureIdSuffix}`,
+        status: 'active',
+        sessionSeed: seed,
+        startedAt: now,
+        currentStageIndex: 0,
+        currentQuestionInStageIndex: 0,
+        currentLevel: 'B1',
+        stages: [
+          {
+            stageIndex: 0,
+            level: 'B1',
+            questions: initialStageQuestions,
+            isLocked: false,
+          },
+        ],
+        stageResults: [],
+        answers: {},
+      };
+
+      setActivePlacementSession(initialSession);
+      setPendingResumePlacement(null);
+      setCurrentView('placement-session');
+    } catch (err) {
+      setPlacementStartError('Unable to load placement question modules. Please check your network and try again.');
       setCurrentView('placement-intro');
-      return;
+    } finally {
+      placementStartInFlightRef.current = false;
+      setIsStartingPlacement(false);
     }
-
-    const secureIdSuffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID().slice(0, 8)
-      : `${now.toString(36)}`;
-
-    const initialSession: PlacementSession = {
-      schemaVersion: 1,
-      id: `placement-${now}-${secureIdSuffix}`,
-      status: 'active',
-      sessionSeed: seed,
-      startedAt: now,
-      currentStageIndex: 0,
-      currentQuestionInStageIndex: 0,
-      currentLevel: 'B1',
-      stages: [
-        {
-          stageIndex: 0,
-          level: 'B1',
-          questions: initialStageQuestions,
-          isLocked: false,
-        },
-      ],
-      stageResults: [],
-      answers: {},
-    };
-
-    setActivePlacementSession(initialSession);
-    setPendingResumePlacement(null);
-    setCurrentView('placement-session');
   };
 
   const handleFinishPlacementSession = (report: PlacementResultReport) => {
@@ -592,23 +611,50 @@ export default function App() {
   const handleStartExamFlow = (mode: ExamMode, level: CEFRLevel) => {
     setExamMode(mode);
     setExamLevel(level);
+    setExamStartError(null);
     setCurrentView('exam-intro');
   };
 
   const handleStartQuickTestFromPlan = async (level: CEFRLevel) => {
+    if (examStartInFlightRef.current) return;
+    examStartInFlightRef.current = true;
+    setIsStartingExam(true);
+    setExamStartError(null);
     setExamMode('quick');
     setExamLevel(level);
-    const { generateExamSession } = await import('./data/exams/examGenerator');
-    const session = generateExamSession('quick', level);
-    setActiveExamSession(session);
-    setCurrentView('exam-session');
+
+    try {
+      const { generateExamSession } = await import('./data/exams/examGenerator');
+      const session = generateExamSession('quick', level);
+      setActiveExamSession(session);
+      setCurrentView('exam-session');
+    } catch (err) {
+      setExamStartError('Unable to load exam generator module. Please check your network and try again.');
+      setCurrentView('exam-intro');
+    } finally {
+      examStartInFlightRef.current = false;
+      setIsStartingExam(false);
+    }
   };
 
   const handleStartExamSession = async () => {
-    const { generateExamSession } = await import('./data/exams/examGenerator');
-    const session = generateExamSession(examMode, examLevel);
-    setActiveExamSession(session);
-    setCurrentView('exam-session');
+    if (examStartInFlightRef.current) return;
+    examStartInFlightRef.current = true;
+    setIsStartingExam(true);
+    setExamStartError(null);
+
+    try {
+      const { generateExamSession } = await import('./data/exams/examGenerator');
+      const session = generateExamSession(examMode, examLevel);
+      setActiveExamSession(session);
+      setCurrentView('exam-session');
+    } catch (err) {
+      setExamStartError('Unable to load exam generator module. Please check your network and try again.');
+      setCurrentView('exam-intro');
+    } finally {
+      examStartInFlightRef.current = false;
+      setIsStartingExam(false);
+    }
   };
 
   const handleFinishExamSession = (report: ExamResultReport) => {
@@ -808,6 +854,7 @@ export default function App() {
               latestHistoryItem={getLatestPlacementResult()}
               onViewPreviousResult={handleViewPlacementResult}
               startError={placementStartError}
+              isStartingPlacement={isStartingPlacement}
             />
           )}
 
@@ -956,6 +1003,8 @@ export default function App() {
               level={examLevel}
               onStartExam={handleStartExamSession}
               onBackToExamCenter={handleNavigateExamCenter}
+              isStartingExam={isStartingExam}
+              startError={examStartError}
             />
           )}
 
