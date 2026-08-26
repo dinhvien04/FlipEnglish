@@ -54,11 +54,33 @@ const SECURITY_CONFIG = {
 // Platform environment variables (supplied automatically by hosting environment / Cloud Run)
 function resolvePort(): number {
   const rawPort = process.env.PORT;
-  if (!rawPort) return 5173;
+  const isProdEnv = process.env.NODE_ENV === 'production';
+
+  if (!rawPort || rawPort.trim() === '') {
+    if (isProdEnv) {
+      console.error(
+        '[FATAL Config] Missing PORT environment variable in production mode. Cloud Run/hosting platform must inject PORT (1-65535).'
+      );
+      process.exit(1);
+    }
+    return 5173;
+  }
+
   const parsed = Number(rawPort);
   if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 65535) {
     return parsed;
   }
+
+  if (isProdEnv) {
+    console.error(
+      `[FATAL Config] Invalid PORT specified in production environment: "${sanitizeForLog(rawPort)}". Port must be an integer between 1 and 65535.`
+    );
+    process.exit(1);
+  }
+
+  console.warn(
+    `[Config Warning] Invalid PORT "${sanitizeForLog(rawPort)}" in development mode. Falling back to default port 5173.`
+  );
   return 5173;
 }
 
@@ -70,14 +92,19 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 function validateProductionConfig(): void {
   if (isProd) {
     const rawPort = process.env.PORT;
-    if (rawPort !== undefined && rawPort !== '') {
-      const parsedPort = Number(rawPort);
-      if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
-        console.error(
-          `[FATAL Config] Invalid PORT specified in environment: "${sanitizeForLog(rawPort)}". Port must be an integer between 1 and 65535.`
-        );
-        process.exit(1);
-      }
+    if (!rawPort || rawPort.trim() === '') {
+      console.error(
+        '[FATAL Config] Missing PORT environment variable in production mode. Cloud Run/hosting platform must inject PORT.'
+      );
+      process.exit(1);
+    }
+
+    const parsedPort = Number(rawPort);
+    if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+      console.error(
+        `[FATAL Config] Invalid PORT specified in environment: "${sanitizeForLog(rawPort)}". Port must be an integer between 1 and 65535.`
+      );
+      process.exit(1);
     }
 
     if (process.env.GEMINI_API_KEY) {
@@ -660,16 +687,16 @@ function validateImageMagicBytes(buffer: Buffer, mime: string): boolean {
 // 4. API Routes
 // ==========================================
 
-// Apply general API rate limiter to /api/*
-app.use('/api', apiLimiter);
-
-// 1. Health check endpoint (Safe, minimal operational status without leaking environment/secrets)
-app.get('/api/health', (req, res) => {
+// 1. Health check endpoint (Exempt from global API rate limiter so Cloud Run / infrastructure probes never 429)
+app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     aiConfigured: Boolean(process.env.GEMINI_API_KEY),
   });
 });
+
+// Apply general API rate limiter to remaining /api/* endpoints
+app.use('/api', apiLimiter);
 
 // 2. Gemini Targeted Practice Endpoint with Prompt Injection Boundary
 app.post(

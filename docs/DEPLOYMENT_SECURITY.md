@@ -6,8 +6,8 @@ This document outlines the security architecture, environment configuration, con
 
 ## 1. Supported Production Runtime & Node/npm Standards
 
-- **Node.js**: `24.x LTS` (configured in `package.json` engines).
-- **Package Manager**: `npm@10.9.8` (deterministic installation via `npm ci`).
+- **Node.js**: `24.x LTS` (pinned in `package.json` under `engines.node`).
+- **Package Manager**: `npm@10.9.8` (pinned in `package.json` under `engines.npm` and `packageManager`). This contract ensures reproducible builds across local environments, GitHub Actions CI, and Google Cloud Run Node.js buildpacks.
 - **Build Toolchain**:
   - Frontend: Vite 6 compiling client SPA to `dist/client`.
   - Backend: esbuild bundling `server.ts` into a standalone CommonJS bundle at `dist/server.cjs`.
@@ -22,7 +22,7 @@ FlipEnglish minimizes operational friction by utilizing centralized safe default
 | Variable | Type | Default | Description & Security Rules |
 | :--- | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | `string` | *None* | **REQUIRED (SECRET)**. Server-side Google Gemini API key. Managed via Google Cloud Secret Manager. Never prefixed with `VITE_` and never exposed to browser bundles. |
-| `PORT` | `number` | `5173` (local fallback) | **Injected by Cloud Run**. Port on which the Express server listens. Validated on startup as a valid integer (1–65535). |
+| `PORT` | `number` | *Injected by Cloud Run* | **REQUIRED in production**. Port on which the Express server listens. Validated on startup as a valid integer (1–65535). In production (`NODE_ENV=production`), missing or invalid PORT fails fast and exits process with code 1. In development, falls back safely to `5173`. |
 | `NODE_ENV` | `string` | `development` | Set to `production` in container environments. Enables strict CSP, HSTS, frameguard, and isolated static file serving from `dist/client`. |
 | `APP_URL` | `string` | *None* | Public application URL automatically injected by Google AI Studio / Cloud Run. |
 
@@ -48,7 +48,7 @@ Security limits and policies are maintained directly in `server.ts` with safe de
 
 ### B. Reverse Proxy & Rate Limiting Model
 - **In-Memory Window Limiting**: Rate limiters use `express-rate-limit` with an in-memory sliding store per container instance. Note: in horizontally scaled multi-instance deployments, rate limits are enforced per-container rather than globally across all instances.
-- **Trust Proxy Setting**: In production (`NODE_ENV=production`), `app.set('trust proxy', 1)` is enabled to inspect the single trusted Google Front End (GFE) edge reverse-proxy hop. In development, trust proxy is disabled (`false`) to prevent local IP spoofing.
+- **Trust Proxy Setting & Topology Assumption**: In production (`NODE_ENV=production`), `app.set('trust proxy', 1)` is enabled. This configuration strictly assumes a direct Google Cloud Run deployment where Google Front End (GFE) is the single trusted reverse-proxy hop directly in front of the container. If deploying behind additional custom CDN/WAF layers (e.g. Cloudflare, Fastly, or Cloud Armor external HTTP(S) Load Balancer), this trust proxy hop count or subnet CIDR whitelist must be revalidated to prevent client IP spoofing or inaccurate rate limit bucketing. In development, trust proxy is disabled (`false`) to prevent local header injection.
 
 ### C. TLS & Edge Security
 - Cloud Run automatically terminates SSL/TLS at Google's global edge network.
@@ -62,15 +62,16 @@ Security limits and policies are maintained directly in `server.ts` with safe de
 - Cloud Run sends a `SIGTERM` signal before terminating container instances during scale-down.
 - The server intercepts `SIGTERM` and `SIGINT`, calls `serverInstance.close()`, allows pending HTTP connections up to 10 seconds to finish, and exits cleanly with code `0`.
 
-### F. Health Endpoint (`/api/health`)
-- Returns a minimal, safe operational JSON payload:
+### F. Health Endpoint (`/api/health`) & Infrastructure Probes
+- **Rate Limit Exemption**: `/api/health` is mounted before the global API rate limiter (`app.use('/api', apiLimiter)`). Platform liveness, readiness, and Cloud Run startup probes will never be throttled or return `429 Too Many Requests`.
+- **Minimal Operational Payload**: Returns a minimal, safe operational JSON payload:
   ```json
   {
     "status": "ok",
     "aiConfigured": true
   }
   ```
-- Never exposes API keys, file paths, environment dumps, or internal system diagnostics.
+- **Zero Information Leakage**: Never exposes API keys, database credentials, internal system diagnostics, memory metrics, or local filesystem paths.
 
 ---
 

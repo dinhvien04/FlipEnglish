@@ -94,8 +94,17 @@ async function validateDeployment() {
   const distClient = path.join(cwd, 'dist', 'client');
   const distServer = path.join(cwd, 'dist', 'server.cjs');
 
+  // --- Section 0: Buildpack Engines & Package Manager Pinning ---
+  console.log('--- 0. Buildpack Engines & Package Manager Pinning ---');
+  const pkgJsonPath = path.join(cwd, 'package.json');
+  assert(fs.existsSync(pkgJsonPath), 'package.json exists');
+  const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+  assert(pkgJson.engines?.node === '24.x', 'package.json engines.node is pinned to "24.x"');
+  assert(pkgJson.engines?.npm === '10.9.8', 'package.json engines.npm is pinned to "10.9.8" for Cloud Run buildpack');
+  assert(pkgJson.packageManager === 'npm@10.9.8', 'package.json packageManager is pinned to "npm@10.9.8"');
+
   // --- Section 1: Build Artifacts & Output Isolation ---
-  console.log('--- 1. Build Artifacts & File Isolation ---');
+  console.log('\n--- 1. Build Artifacts & File Isolation ---');
   assert(fs.existsSync(distClient), 'dist/client directory exists');
   assert(fs.existsSync(distServer), 'dist/server.cjs compiled server exists');
   assert(fs.existsSync(path.join(distClient, 'index.html')), 'dist/client/index.html exists');
@@ -192,13 +201,26 @@ async function validateDeployment() {
     const isReady = await waitForServerReady(testPort);
     assert(isReady, `Server boots on Cloud Run injected PORT=${testPort}`);
 
-    // Test A: Health check response
+    // Test A: Health check response & Rate-limit Immunity (>60 consecutive requests must all be 200 OK)
     const health = await makeRequest(testPort, { method: 'GET', path: '/api/health' });
     assert(health.statusCode === 200, 'GET /api/health returns 200 OK');
     const healthJson = JSON.parse(health.body || '{}');
     assert(healthJson.status === 'ok', 'Health status is "ok"');
     assert(healthJson.aiConfigured === true, 'Health reports aiConfigured: true when key present');
     assert(!healthJson.apiKey && !healthJson.GEMINI_API_KEY, 'Health response does not leak secret key');
+
+    console.log('    Testing /api/health rate-limit exemption across 70 consecutive requests...');
+    let healthFailures = 0;
+    for (let i = 0; i < 70; i++) {
+      const hRes = await makeRequest(testPort, { method: 'GET', path: '/api/health' });
+      if (hRes.statusCode !== 200) {
+        healthFailures++;
+      }
+    }
+    assert(
+      healthFailures === 0,
+      `All 70 rapid /api/health requests returned 200 OK (0 rate-limited 429s, exempt from global 60-req limiter)`
+    );
 
     // Test B: Security headers on app shell
     const shell = await makeRequest(testPort, { method: 'GET', path: '/' });
@@ -275,6 +297,47 @@ async function validateDeployment() {
       assert(cleanExit, 'Server terminates cleanly upon SIGTERM');
     }
   }
+
+  // --- Section 7: Fail-Fast Production Port Validation Subprocess Probes ---
+  console.log('\n--- 7. Production Fail-Fast Startup & PORT Contract Tests ---');
+
+  async function testServerExit(envOverrides: Record<string, string | undefined>): Promise<number | null> {
+    return new Promise((resolve) => {
+      const child = spawn('node', [distServer], {
+        env: {
+          ...process.env,
+          ...envOverrides,
+        },
+        stdio: ['ignore', 'ignore', 'ignore'],
+      });
+
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        resolve(null); // Timed out (did not exit immediately)
+      }, 2500);
+
+      child.on('exit', (code) => {
+        clearTimeout(timer);
+        resolve(code);
+      });
+    });
+  }
+
+  // 1. Missing PORT in production mode must exit 1 immediately
+  const missingPortCode = await testServerExit({ NODE_ENV: 'production', PORT: '' });
+  assert(missingPortCode === 1, 'Production server fails fast with exit code 1 when PORT is empty/missing');
+
+  // 2. Invalid non-numeric PORT in production mode must exit 1 immediately
+  const invalidAlphaPortCode = await testServerExit({ NODE_ENV: 'production', PORT: 'invalid-port' });
+  assert(invalidAlphaPortCode === 1, 'Production server fails fast with exit code 1 when PORT is non-numeric');
+
+  // 3. Out-of-bounds PORT (0) in production mode must exit 1 immediately
+  const invalidZeroPortCode = await testServerExit({ NODE_ENV: 'production', PORT: '0' });
+  assert(invalidZeroPortCode === 1, 'Production server fails fast with exit code 1 when PORT=0');
+
+  // 4. Out-of-bounds PORT (70000) in production mode must exit 1 immediately
+  const invalidHighPortCode = await testServerExit({ NODE_ENV: 'production', PORT: '70000' });
+  assert(invalidHighPortCode === 1, 'Production server fails fast with exit code 1 when PORT=70000 (>65535)');
 
   console.log('\n------------------------------------------------------');
   console.log(`🎉 All Deployment & Runtime Validation Checks Passed (${passedChecks}/${totalChecks})`);

@@ -92,21 +92,31 @@ function parsePrecacheManifestFromSw(): { url: string; revision: string | null }
   }
   const swCode = fs.readFileSync(swJsPath, 'utf8');
 
-  // Match precacheAndRoute([ ... ])
-  const precacheRegex = /workbox\.precacheAndRoute\(\s*(\[[^\]]+\])\s*,/s;
+  // Match precacheAndRoute([ ... ]) - tolerant of multiline, trailing commas, and formatting
+  const precacheRegex = /workbox\.precacheAndRoute\(\s*(\[[\s\S]*?\])\s*,\s*\{?\s*\}?\s*\)/;
   const match = precacheRegex.exec(swCode);
-  if (!match) {
-    return [];
-  }
 
-  try {
-    const rawJson = match[1];
-    const parsed = JSON.parse(rawJson);
-    return parsed;
-  } catch {
-    // If JSON parsing fails due to unquoted keys or formatting, fallback to regex extraction
+  let entries: { url: string; revision: string | null }[] = [];
+
+  if (match) {
+    try {
+      // Strip trailing commas before closing braces/brackets if any
+      const sanitizedJson = match[1].replace(/,\s*([\]}])/g, '$1');
+      entries = JSON.parse(sanitizedJson);
+    } catch {
+      // Fallback regex if standard JSON.parse encountered issues
+      const entryRegex = /\{\s*"url":\s*"([^"]+)"(?:\s*,\s*"revision":\s*("[^"]*"|null))?\s*\}/g;
+      let entryMatch: RegExpExecArray | null;
+      while ((entryMatch = entryRegex.exec(match[1])) !== null) {
+        entries.push({
+          url: entryMatch[1],
+          revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/"/g, ''),
+        });
+      }
+    }
+  } else {
+    // Direct regex scan across entire sw.js if wrapper syntax changes
     const entryRegex = /\{\s*"url":\s*"([^"]+)"(?:\s*,\s*"revision":\s*("[^"]*"|null))?\s*\}/g;
-    const entries: { url: string; revision: string | null }[] = [];
     let entryMatch: RegExpExecArray | null;
     while ((entryMatch = entryRegex.exec(swCode)) !== null) {
       entries.push({
@@ -114,8 +124,15 @@ function parsePrecacheManifestFromSw(): { url: string; revision: string | null }
         revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/"/g, ''),
       });
     }
-    return entries;
   }
+
+  if (!entries || entries.length === 0) {
+    throw new Error(
+      '❌ [Fail-Closed] Precache manifest in dist/client/sw.js could not be parsed or contains 0 entries. Verify build output.'
+    );
+  }
+
+  return entries;
 }
 
 function categorizePrecacheUrl(url: string): 'js' | 'css' | 'html' | 'image' | 'manifest' | 'other' {
