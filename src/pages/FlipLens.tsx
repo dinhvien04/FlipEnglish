@@ -17,7 +17,6 @@ import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
 import { getApiErrorMessage } from '../utils/apiError';
-import { useI18n } from '../features/i18n';
 
 interface FlipLensProps {
   onBackToHome: () => void;
@@ -34,7 +33,6 @@ type FlipLensStep =
   | 'result';
 
 export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
-  const { t } = useI18n();
   const [step, setStep] = useState<FlipLensStep>('upload');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageData, setImageData] = useState<ProcessedImage | null>(null);

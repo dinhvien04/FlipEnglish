@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateHelp,
   currentView,
 }) => {
-  const { mode, setMode, t, isBilingual } = useI18n();
+  const { mode, setMode, t } = useI18n();
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

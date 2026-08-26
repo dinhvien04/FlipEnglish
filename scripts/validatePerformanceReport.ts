@@ -14,12 +14,16 @@ import path from 'path';
 
 function validatePerformanceReport(): void {
   const reportPath = path.resolve('docs/PERFORMANCE_QA_REPORT.md');
-  if (!fs.existsSync(reportPath)) {
-    console.error(`❌ Performance QA Report missing at: ${reportPath}`);
-    process.exit(1);
+  let content: string;
+  try {
+    content = fs.readFileSync(reportPath, 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      console.error(`❌ Performance QA Report missing at: ${reportPath}`);
+      process.exit(1);
+    }
+    throw error;
   }
-
-  const content = fs.readFileSync(reportPath, 'utf8');
 
   // Check 1: Stateless hydration regex check (no /g flag to avoid stateful lastIndex issues)
   const hydrationRegex = /\bhydrat(ion|ing|ed)?\b/i;
@@ -85,16 +89,16 @@ function validatePerformanceReport(): void {
 
   // Check 5: Cross-check report against .qa/performance-summary.json (Strict Fail-Closed)
   const summaryPath = path.resolve('.qa/performance-summary.json');
-  if (!fs.existsSync(summaryPath)) {
-    console.error(`❌ Benchmark summary missing at: ${summaryPath}`);
-    console.error('   Generate it by running: npx tsx scripts/summarizeLighthouse.ts');
-    process.exit(1);
-  }
-
   let summary: any;
   try {
-    summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    const rawSummary = fs.readFileSync(summaryPath, 'utf8');
+    summary = JSON.parse(rawSummary);
   } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+      console.error(`❌ Benchmark summary missing at: ${summaryPath}`);
+      console.error('   Generate it by running: npx tsx scripts/summarizeLighthouse.ts');
+      process.exit(1);
+    }
     console.error(`❌ Failed to parse .qa/performance-summary.json: ${(err as Error).message}`);
     process.exit(1);
   }

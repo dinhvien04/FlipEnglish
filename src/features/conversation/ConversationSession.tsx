@@ -4,7 +4,6 @@ import { CEFRLevel } from '../../types';
 import { getScenarioOpeningMessage } from '../../data/conversations/scenarios';
 import { speakWord } from '../../utils/speech';
 import { getApiErrorMessage } from '../../utils/apiError';
-import { useI18n } from '../i18n';
 
 interface ConversationSessionProps {
   scenario: ConversationScenario;
@@ -19,7 +18,6 @@ export const ConversationSession: React.FC<ConversationSessionProps> = ({
   onFinishConversation,
   onExitSession,
 }) => {
-  const { t } = useI18n();
   const [turns, setTurns] = useState<ConversationTurn[]>(() => [
     {
       id: 'turn-opening',

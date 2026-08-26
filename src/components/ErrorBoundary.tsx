@@ -10,18 +10,17 @@ export interface ErrorBoundaryProps {
 
 export interface ErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
 }
 
 export class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  override state: ErrorBoundaryState = { hasError: false, error: null };
+  override state: ErrorBoundaryState = { hasError: false };
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
+    return { hasError: true };
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -29,7 +28,7 @@ export class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBound
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false });
     if (this.props.onReset) {
       this.props.onReset();
     }

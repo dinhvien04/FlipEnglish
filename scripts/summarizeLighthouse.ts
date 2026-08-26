@@ -371,12 +371,13 @@ export function generateBenchmarkSummaryJson(): AggregateBenchmarkReport {
 
   // Provenance metadata (Task 7, 8, 9)
   const BENCHMARK_SOURCE_COMMIT = '5ed98958cefc4d24fd9b25e03e6556e91f5152ce';
-  let generatorCommit = 'HEAD';
-  try {
-    generatorCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
-  } catch {
-    generatorCommit = 'UNKNOWN';
-  }
+  const generatorCommit = (() => {
+    try {
+      return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    } catch {
+      return 'UNKNOWN';
+    }
+  })();
 
   const chromeVersionsSet = new Set<string>();
   const lighthouseVersionsSet = new Set<string>();

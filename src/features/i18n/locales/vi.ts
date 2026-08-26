@@ -1,4 +1,4 @@
-import { enCatalog, TranslationKey } from './en';
+import { TranslationKey } from './en';
 
 export const viCatalog: Record<TranslationKey, string> = {
   // Navigation

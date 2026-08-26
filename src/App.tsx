@@ -28,7 +28,6 @@ import { TodayPage } from './features/studyPlan/TodayPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import {
   shouldShowOnboarding,
-  saveOnboardingState,
   migrateOnboardingStateForExistingUser,
 } from './features/onboarding/onboardingStorage';
 import { OnboardingRoute } from './features/onboarding/onboardingTypes';

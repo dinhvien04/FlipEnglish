@@ -48,7 +48,7 @@ export const Home: React.FC<HomeProps> = ({
   onNavigateHelp,
   initialLevelTab = 'ALL',
 }) => {
-  const { t, isBilingual, formatNumber, formatPercent } = useI18n();
+  const { t, isBilingual } = useI18n();
   const [progress, setProgress] = useState<AllProgress>(() => getStoredProgress());
   const [stats, setStats] = useState(() => getOverallStats(LESSONS.length));
   const [reviewStats, setReviewStats] = useState(() => getReviewDashboardStats());

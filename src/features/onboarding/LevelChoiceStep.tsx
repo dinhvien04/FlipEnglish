@@ -14,7 +14,7 @@ export const LevelChoiceStep: React.FC<LevelChoiceStepProps> = ({
   onSelectLevel,
   onBack,
 }) => {
-  const { t, isBilingual } = useI18n();
+  const { t } = useI18n();
 
   return (
     <div className="space-y-8 animate-fade-in">

@@ -31,19 +31,34 @@ function formatBytes(bytes: number): string {
 }
 
 function getAssetStats(): AssetInfo[] {
-  if (!fs.existsSync(assetsDir)) {
-    throw new Error(`Assets directory not found at ${assetsDir}. Run npm run build first.`);
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(assetsDir, { withFileTypes: true });
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      throw new Error(`Assets directory not found at ${assetsDir}. Run npm run build first.`);
+    }
+    throw error;
   }
 
-  const files = fs.readdirSync(assetsDir);
   const results: AssetInfo[] = [];
 
-  for (const file of files) {
-    const fullPath = path.join(assetsDir, file);
-    const stat = fs.statSync(fullPath);
-    if (!stat.isFile()) continue;
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
 
-    const content = fs.readFileSync(fullPath);
+    const file = entry.name;
+    const fullPath = path.join(assetsDir, file);
+    let content: Buffer;
+    try {
+      content = fs.readFileSync(fullPath);
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        throw new Error(`Asset disappeared during validation: ${fullPath}`);
+      }
+      throw error;
+    }
+
+    const rawBytes = content.length;
     const gzip = zlib.gzipSync(content);
 
     const ext = path.extname(file).toLowerCase();
@@ -53,7 +68,7 @@ function getAssetStats(): AssetInfo[] {
     results.push({
       name: file,
       relativePath: `assets/${file}`,
-      rawBytes: stat.size,
+      rawBytes,
       gzipBytes: gzip.length,
       type,
     });
@@ -63,10 +78,15 @@ function getAssetStats(): AssetInfo[] {
 }
 
 function parseInitialScriptsFromHtml(): { scripts: string[]; modulepreloads: string[] } {
-  if (!fs.existsSync(indexHtmlPath)) {
-    throw new Error(`dist/client/index.html not found at ${indexHtmlPath}`);
+  let html: string;
+  try {
+    html = fs.readFileSync(indexHtmlPath, 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      throw new Error(`dist/client/index.html not found at ${indexHtmlPath}. Run npm run build first.`);
+    }
+    throw error;
   }
-  const html = fs.readFileSync(indexHtmlPath, 'utf8');
 
   // Match <script ... src="...">
   const scriptRegex = /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
@@ -87,10 +107,15 @@ function parseInitialScriptsFromHtml(): { scripts: string[]; modulepreloads: str
 }
 
 function parsePrecacheManifestFromSw(): { url: string; revision: string | null }[] {
-  if (!fs.existsSync(swJsPath)) {
-    throw new Error(`dist/client/sw.js not found at ${swJsPath}`);
+  let swCode: string;
+  try {
+    swCode = fs.readFileSync(swJsPath, 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      throw new Error(`dist/client/sw.js not found at ${swJsPath}. Run npm run build first.`);
+    }
+    throw error;
   }
-  const swCode = fs.readFileSync(swJsPath, 'utf8');
 
   // Match [identifier].precacheAndRoute([ ... ]) - tolerant of minified identifiers, multiline, and trailing commas
   const precacheRegex = /(?:workbox|\w+)\.precacheAndRoute\(\s*(\[[\s\S]*?\])\s*,\s*\{?\s*\}?\s*\)/;
@@ -302,19 +327,25 @@ function validatePerformance() {
 
   for (const entry of precacheEntries) {
     const localFilePath = path.join(distClientDir, entry.url);
-    if (!fs.existsSync(localFilePath)) {
-      missingPrecacheFiles.push(entry.url);
-      continue;
+    let content: Buffer;
+    try {
+      content = fs.readFileSync(localFilePath);
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        missingPrecacheFiles.push(entry.url);
+        continue;
+      }
+      throw error;
     }
-    const stat = fs.statSync(localFilePath);
-    const content = fs.readFileSync(localFilePath);
+
+    const rawBytes = content.length;
     const gzip = zlib.gzipSync(content);
-    totalPrecacheRaw += stat.size;
+    totalPrecacheRaw += rawBytes;
     totalPrecacheGzip += gzip.length;
 
     const cat = categorizePrecacheUrl(entry.url);
     categories[cat].count++;
-    categories[cat].rawBytes += stat.size;
+    categories[cat].rawBytes += rawBytes;
     categories[cat].gzipBytes += gzip.length;
     categories[cat].files.push(entry.url);
   }

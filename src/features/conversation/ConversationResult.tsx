@@ -3,7 +3,6 @@ import { ConversationScenario, ConversationEvaluation, ConversationTurn } from '
 import { CEFRLevel } from '../../types';
 import { resolveCurriculumItemByText } from '../../utils/curriculumIndex';
 import { batchAddItemsToReview, ensureReviewItem } from '../../utils/reviewStorage';
-import { useI18n } from '../i18n';
 
 interface ConversationResultProps {
   scenario: ConversationScenario;
@@ -24,7 +23,6 @@ export const ConversationResult: React.FC<ConversationResultProps> = ({
   onBackToLab,
   onNavigateReview,
 }) => {
-  const { t } = useI18n();
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
 
   const isEvaluated = evaluation.evaluationStatus === 'success' && typeof evaluation.overallScore === 'number';

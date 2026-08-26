@@ -344,7 +344,7 @@ async function validateDeployment() {
   console.log('------------------------------------------------------\n');
 }
 
-validateDeployment().catch((err) => {
-  console.error('❌ Deployment validation failed with error:', err);
+validateDeployment().catch(() => {
+  console.error('❌ Deployment validation failed. See the failed check details above.');
   process.exit(1);
 });
