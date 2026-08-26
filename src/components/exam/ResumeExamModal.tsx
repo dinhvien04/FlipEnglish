@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExamSession } from '../../types/exam';
+import { useI18n } from '../../features/i18n';
 
 interface ResumeExamModalProps {
   session: ExamSession;
@@ -12,6 +13,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
   onResume,
   onDiscard,
 }) => {
+  const { t } = useI18n();
   const answeredCount = Object.keys(session.answers).length;
   const totalQuestions = session.questions.length;
   const remainingMs = Math.max(0, session.endsAt - Date.now());
@@ -23,26 +25,28 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
       <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
         <div>
           <span className="text-2xs font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
-            Active Exam Found
+            {t('studyPlan.resumeModal.examBadge')}
           </span>
-          <h3 className="text-xl font-black text-slate-900 mt-1">Resume Exam?</h3>
+          <h3 className="text-xl font-black text-slate-900 mt-1">
+            {t('studyPlan.resumeModal.examTitle')}
+          </h3>
         </div>
 
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3 text-xs sm:text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500 font-semibold">Exam:</span>
+            <span className="text-slate-500 font-semibold">{t('studyPlan.resumeModal.examLabel')}</span>
             <span className="font-bold text-slate-900">{session.title}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-slate-500 font-semibold">Progress:</span>
+            <span className="text-slate-500 font-semibold">{t('studyPlan.resumeModal.examProgress')}</span>
             <span className="font-bold text-indigo-600">
-              {answeredCount} / {totalQuestions} answered
+              {t('studyPlan.resumeModal.examAnswered', { answered: answeredCount, total: totalQuestions })}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-slate-500 font-semibold">Time Remaining:</span>
+            <span className="text-slate-500 font-semibold">{t('studyPlan.resumeModal.examTimeRemaining')}</span>
             <span className="font-bold font-mono text-slate-900">
               {String(remainingMinutes).padStart(2, '0')}:{String(remainingSeconds).padStart(2, '0')}
             </span>
@@ -50,7 +54,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
         </div>
 
         <p className="text-xs text-slate-500 leading-relaxed">
-          You have an unfinished examination in progress. You can pick up where you left off with your exact saved answers and remaining time.
+          {t('studyPlan.resumeModal.examDesc')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
@@ -60,7 +64,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
             onClick={onDiscard}
             className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
           >
-            Discard & Start Over
+            {t('studyPlan.resumeModal.examDiscard')}
           </button>
 
           <button
@@ -69,7 +73,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
             onClick={onResume}
             className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
           >
-            Resume Exam
+            {t('studyPlan.resumeModal.examResume')}
           </button>
         </div>
       </div>

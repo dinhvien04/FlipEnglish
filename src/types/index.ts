@@ -33,6 +33,8 @@ export interface VocabWord {
   partOfSpeech?: PartOfSpeech;
   level?: CEFRLevel;
   example: string; // English example sentence
+  exampleTranslation?: string;
+  context?: string;
   imageUrl?: string;
   imageAlt?: string;
   visualQuizEligible?: boolean;

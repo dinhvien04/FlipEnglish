@@ -163,7 +163,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
     const nextStageQuestions = selectPlacementQuestionsForStage(
       nextLevel,
       nextStageIndex,
-      session.seed,
+      session.sessionSeed,
       existingQuestionIds,
       existingTargets
     );

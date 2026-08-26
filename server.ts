@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import path from 'path';
 import crypto from 'crypto';
 import type { Server } from 'http';
@@ -60,6 +61,20 @@ declare global {
 }
 
 const app = express();
+
+// Performance: Response compression (Brotli/Gzip) for text assets, HTML, JS, CSS, and JSON API payloads
+// Threshold 1024 bytes avoids compressing small responses where overhead exceeds benefit.
+app.use(
+  compression({
+    threshold: 1024,
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 // Security: Disable X-Powered-By header
 app.disable('x-powered-by');
@@ -1636,6 +1651,10 @@ async function startServer() {
           } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
             // Vite immutable hashed assets
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          } else if (basename === 'index.html' || basename.endsWith('.html')) {
+            // Explicit HTML shell revalidation: prevents stale chunk reference after new deployments
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
           }
         },
       })
@@ -1647,6 +1666,8 @@ async function startServer() {
         res.status(404).type('text/plain').send('Not Found');
         return;
       }
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
       res.sendFile(path.join(clientDistPath, 'index.html'));
     });
   }

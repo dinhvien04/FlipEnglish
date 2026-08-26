@@ -121,6 +121,10 @@ export const Exercise: React.FC<ExerciseProps> = ({
       <div className="mt-4">
         <QuizQuestionCard
           question={currentQuestion}
+          questionNumber={currentIndex + 1}
+          totalQuestions={totalQuestions}
+          lessonTitle={lesson.title}
+          lessonLevel={lesson.level}
           onAnswerSubmit={handleAnswerSubmit}
         />
       </div>

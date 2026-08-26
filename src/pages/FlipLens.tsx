@@ -713,7 +713,9 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
                 return (
                   <div
                     key={obj.id}
-                    ref={(el) => (listRefs.current[obj.id] = el)}
+                    ref={(el) => {
+                      listRefs.current[obj.id] = el;
+                    }}
                     onClick={() => handleToggleWord(obj.id)}
                     onMouseEnter={() => setHoveredWordId(obj.id)}
                     onMouseLeave={() => setHoveredWordId(null)}

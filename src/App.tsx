@@ -18,28 +18,14 @@ import { getLessonProgress } from './utils/storage';
 import { getActiveExam, clearActiveExam } from './utils/examStorage';
 import { saveConversationSummary } from './utils/conversationStorage';
 import { Header } from './components/Header';
+import { ResumeExamModal } from './components/exam/ResumeExamModal';
 import { Home } from './pages/Home';
 import { LessonIntro } from './pages/LessonIntro';
 import { Learn } from './pages/Learn';
 import { Exercise } from './pages/Exercise';
 import { Result } from './pages/Result';
-import { ResumeExamModal } from './components/exam/ResumeExamModal';
 import { TodayPage } from './features/studyPlan/TodayPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
-import {
-  shouldShowOnboarding,
-  saveOnboardingState,
-  migrateOnboardingStateForExistingUser,
-} from './features/onboarding/onboardingStorage';
-import { OnboardingRoute } from './features/onboarding/onboardingTypes';
-import {
-  DictionaryReturnContext,
-  LearnResumeContext,
-  ReviewResumeContext,
-} from './types/sessionResume';
-import { OfflineBanner } from './features/pwa/OfflineBanner';
-import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
-import { useI18n } from './features/i18n';
 
 // Feature-level code splitting for heavy/secondary views
 const FlipLens = lazy(() => import('./pages/FlipLens').then((m) => ({ default: m.FlipLens })));
@@ -732,13 +718,19 @@ export default function App() {
           <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
             <div className="space-y-2">
               <span className="text-2xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Incomplete Check Found
+                {t('studyPlan.resumeModal.placementBadge')}
               </span>
               <h3 className="text-xl font-black text-slate-900">
-                Resume Placement Check?
+                {t('studyPlan.resumeModal.placementTitle')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                You have an unfinished Placement Check at Stage {pendingResumePlacement.currentStageIndex + 1} of 4 (Question {pendingResumePlacement.currentStageIndex * 6 + pendingResumePlacement.currentQuestionInStageIndex + 1} of 24).
+                {t('studyPlan.resumeModal.placementDesc', {
+                  stage: pendingResumePlacement.currentStageIndex + 1,
+                  question:
+                    pendingResumePlacement.currentStageIndex * 6 +
+                    pendingResumePlacement.currentQuestionInStageIndex +
+                    1,
+                })}
               </p>
             </div>
 
@@ -749,7 +741,7 @@ export default function App() {
                 onClick={handleResumeActivePlacement}
                 className="flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
               >
-                Resume
+                {t('studyPlan.resumeModal.placementResume')}
               </button>
 
               <button
@@ -758,7 +750,7 @@ export default function App() {
                 onClick={handleDiscardActivePlacement}
                 className="min-h-12 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
               >
-                Start Over
+                {t('studyPlan.resumeModal.placementStartOver')}
               </button>
             </div>
           </div>

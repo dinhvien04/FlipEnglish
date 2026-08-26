@@ -1,5 +1,6 @@
 import React from 'react';
 import { AllowedDailyMinutes, ALLOWED_DAILY_MINUTES } from './studyPlanTypes';
+import { useI18n } from '../i18n';
 
 interface StudyPlanSettingsModalProps {
   currentMinutes: AllowedDailyMinutes;
@@ -14,6 +15,7 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { t } = useI18n();
   const [selectedMinutes, setSelectedMinutes] = React.useState<AllowedDailyMinutes>(currentMinutes);
   const modalRef = React.useRef<HTMLDivElement>(null);
   const firstOptionRef = React.useRef<HTMLButtonElement>(null);
@@ -74,10 +76,10 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
             id="study-plan-settings-title"
             className="text-xl font-black text-slate-900 tracking-tight"
           >
-            Daily Learning Goal
+            {t('studyPlan.settings.title')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Choose how much time you want to dedicate to English study each day.
+            {t('studyPlan.settings.subtitle')}
           </p>
         </div>
 
@@ -99,7 +101,7 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
               >
                 <span>{mins}</span>
                 <span className={`text-3xs font-bold uppercase ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
-                  min
+                  {t('studyPlan.settings.unit')}
                 </span>
               </button>
             );
@@ -107,7 +109,7 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
         </div>
 
         <p className="text-2xs text-slate-400 text-center leading-relaxed">
-          Your daily plan will automatically adapt its recommended review and lesson blocks to fit this target.
+          {t('studyPlan.settings.hint')}
         </p>
 
         {/* Actions */}
@@ -117,14 +119,14 @@ export const StudyPlanSettingsModal: React.FC<StudyPlanSettingsModalProps> = ({
             onClick={onClose}
             className="w-full sm:w-auto min-h-11 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer inline-flex items-center justify-center"
           >
-            Cancel
+            {t('studyPlan.settings.cancel')}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="w-full sm:w-auto min-h-11 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
           >
-            Save Goal
+            {t('studyPlan.settings.saveGoal')}
           </button>
         </div>
       </div>

@@ -57,15 +57,26 @@ export const TodayPage: React.FC<TodayPageProps> = ({
 
   // Subscribe to storage update events across components and tabs
   useEffect(() => {
-    refreshPlanAndSettings();
-
     const handleUpdate = () => refreshPlanAndSettings();
+
+    const handleStorageEvent = (event: StorageEvent) => {
+      // Only refresh when relevant FlipEnglish keys changed or storage was cleared
+      if (
+        !event.key ||
+        event.key.startsWith('flipenglish_') ||
+        event.key === 'flipenglish_study_plan_settings_v1' ||
+        event.key === 'flipenglish_today_plan_v1'
+      ) {
+        refreshPlanAndSettings();
+      }
+    };
+
     window.addEventListener(STUDY_PLAN_UPDATED_EVENT, handleUpdate);
     window.addEventListener(REVIEW_UPDATED_EVENT, handleUpdate);
     window.addEventListener(PLACEMENT_UPDATED_EVENT, handleUpdate);
     window.addEventListener('flipenglish_progress_updated', handleUpdate);
     window.addEventListener('flipenglish_exam_history_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('storage', handleStorageEvent);
     window.addEventListener('focus', handleUpdate);
 
     return () => {
@@ -74,7 +85,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
       window.removeEventListener(PLACEMENT_UPDATED_EVENT, handleUpdate);
       window.removeEventListener('flipenglish_progress_updated', handleUpdate);
       window.removeEventListener('flipenglish_exam_history_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('storage', handleStorageEvent);
       window.removeEventListener('focus', handleUpdate);
     };
   }, [refreshPlanAndSettings]);

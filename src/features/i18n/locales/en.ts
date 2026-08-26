@@ -530,6 +530,50 @@ export const enCatalog = {
   'error.rateLimit': 'Request limit exceeded. Please wait a moment before trying again.',
   'error.generic': 'An unexpected error occurred. Please try again.',
   'error.audioUnavailable': 'Audio pronunciation is currently unavailable on this device.',
+  'error.chunkLoadTitle': 'Screen Loading Interrupted',
+  'error.chunkLoadDesc': 'The requested view or component could not be loaded. Please check your network connection and retry.',
+
+  // Study Plan Task Cards & Modals
+  'studyPlan.card.smartReview': 'Smart Review',
+  'studyPlan.card.curriculum': 'Curriculum',
+  'studyPlan.card.levelCheck': 'Level Check',
+  'studyPlan.card.quickTest': 'Quick Test',
+  'studyPlan.card.startReview': 'Start Review',
+  'studyPlan.card.startLesson': 'Start Lesson',
+  'studyPlan.card.findLevel': 'Find My Level',
+  'studyPlan.card.takeQuickTest': 'Take Quick Test',
+  'studyPlan.card.startActivity': 'Start Activity',
+  'studyPlan.card.aboutMinutes': 'About {minutes} min',
+  'studyPlan.card.reason': 'Reason:',
+  'studyPlan.card.completed': 'Completed',
+  'studyPlan.card.skipped': 'Skipped',
+  'studyPlan.card.skip': 'Skip',
+  'studyPlan.card.skipAria': 'Skip this task for today',
+  'studyPlan.card.taskAria': 'Task {index}: {title}',
+
+  // Settings & Goal Modal
+  'studyPlan.settings.title': 'Daily Learning Goal',
+  'studyPlan.settings.subtitle': 'Choose how much time you want to dedicate to English study each day.',
+  'studyPlan.settings.unit': 'min',
+  'studyPlan.settings.hint': 'Your daily plan will automatically adapt its recommended review and lesson blocks to fit this target.',
+  'studyPlan.settings.cancel': 'Cancel',
+  'studyPlan.settings.saveGoal': 'Save Goal',
+
+  // Resume Modal (Placement & Exam)
+  'studyPlan.resumeModal.placementBadge': 'Incomplete Check Found',
+  'studyPlan.resumeModal.placementTitle': 'Resume Placement Check?',
+  'studyPlan.resumeModal.placementDesc': 'You have an unfinished Placement Check at Stage {stage} of 4 (Question {question} of 24).',
+  'studyPlan.resumeModal.placementResume': 'Resume',
+  'studyPlan.resumeModal.placementStartOver': 'Start Over',
+  'studyPlan.resumeModal.examBadge': 'Active Exam Found',
+  'studyPlan.resumeModal.examTitle': 'Resume Exam?',
+  'studyPlan.resumeModal.examLabel': 'Exam:',
+  'studyPlan.resumeModal.examProgress': 'Progress:',
+  'studyPlan.resumeModal.examAnswered': '{answered} / {total} answered',
+  'studyPlan.resumeModal.examTimeRemaining': 'Time Remaining:',
+  'studyPlan.resumeModal.examDesc': 'You have an unfinished examination in progress. You can pick up where you left off with your exact saved answers and remaining time.',
+  'studyPlan.resumeModal.examDiscard': 'Discard & Start Over',
+  'studyPlan.resumeModal.examResume': 'Resume Exam',
 };
 
 export type TranslationKey = keyof typeof enCatalog;

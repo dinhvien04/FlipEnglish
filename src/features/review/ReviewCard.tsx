@@ -69,11 +69,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ item, onRate, onLookupWo
     switch (word.type) {
       case 'collocation':
         return 'What does this collocation mean? Recall its natural usage.';
-      case 'phrasal_verb':
+      case 'phrasalVerb':
         return 'Recall the meaning and grammatical pattern of this phrasal verb.';
       case 'idiom':
         return 'What figurative meaning does this idiom convey?';
-      case 'nuance':
+      case 'nuanceSet':
         return 'Recall the specific nuance and context distinguishing this expression.';
       default:
         return 'Try to recall the Vietnamese meaning and how to use it in a sentence.';

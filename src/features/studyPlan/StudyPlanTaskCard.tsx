@@ -1,5 +1,6 @@
 import React from 'react';
 import { StudyPlanTask } from './studyPlanTypes';
+import { useI18n } from '../i18n';
 
 interface StudyPlanTaskCardProps {
   task: StudyPlanTask;
@@ -18,29 +19,50 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
   isStarting = false,
   startingLabel,
 }) => {
+  const { t } = useI18n();
   const isCompleted = task.status === 'completed';
   const isSkipped = task.status === 'skipped';
   const isPending = task.status === 'pending';
 
   const typeLabels: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    review: { label: 'Smart Review', bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-200' },
-    lesson: { label: 'Curriculum', bg: 'bg-indigo-50', text: 'text-indigo-800', border: 'border-indigo-200' },
-    placement: { label: 'Level Check', bg: 'bg-violet-50', text: 'text-violet-800', border: 'border-violet-200' },
-    'quick-test': { label: 'Quick Test', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
+    review: {
+      label: t('studyPlan.card.smartReview'),
+      bg: 'bg-teal-50',
+      text: 'text-teal-800',
+      border: 'border-teal-200',
+    },
+    lesson: {
+      label: t('studyPlan.card.curriculum'),
+      bg: 'bg-indigo-50',
+      text: 'text-indigo-800',
+      border: 'border-indigo-200',
+    },
+    placement: {
+      label: t('studyPlan.card.levelCheck'),
+      bg: 'bg-violet-50',
+      text: 'text-violet-800',
+      border: 'border-violet-200',
+    },
+    'quick-test': {
+      label: t('studyPlan.card.quickTest'),
+      bg: 'bg-amber-50',
+      text: 'text-amber-800',
+      border: 'border-amber-200',
+    },
   };
 
   const badgeStyle = typeLabels[task.type] || typeLabels.lesson;
 
   // Determine CTA text based on task type
-  let ctaText = 'Start Activity';
+  let ctaText = t('studyPlan.card.startActivity');
   if (task.type === 'review') {
-    ctaText = 'Start Review';
+    ctaText = t('studyPlan.card.startReview');
   } else if (task.type === 'lesson') {
-    ctaText = 'Start Lesson';
+    ctaText = t('studyPlan.card.startLesson');
   } else if (task.type === 'placement') {
-    ctaText = 'Find My Level';
+    ctaText = t('studyPlan.card.findLevel');
   } else if (task.type === 'quick-test') {
-    ctaText = 'Take Quick Test';
+    ctaText = t('studyPlan.card.takeQuickTest');
   }
 
   return (
@@ -52,7 +74,7 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
           ? 'bg-slate-50/70 border-slate-200 opacity-75'
           : 'bg-white border-slate-200 shadow-xs hover:border-slate-300'
       }`}
-      aria-label={`Task ${index + 1}: ${task.title}`}
+      aria-label={t('studyPlan.card.taskAria', { index: index + 1, title: task.title })}
     >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         {/* Left info column */}
@@ -76,7 +98,7 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
             )}
 
             <span className="text-2xs font-bold text-slate-400 ml-auto sm:ml-0">
-              About {task.estimatedMinutes} min
+              {t('studyPlan.card.aboutMinutes', { minutes: task.estimatedMinutes })}
             </span>
           </div>
 
@@ -96,7 +118,7 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
 
           {/* Explanation / Reason */}
           <div className="bg-slate-50 rounded-xl px-3 py-2 border border-slate-100 text-2xs text-slate-500 flex items-start gap-1.5">
-            <span className="font-bold text-slate-400 shrink-0">Reason:</span>
+            <span className="font-bold text-slate-400 shrink-0">{t('studyPlan.card.reason')}</span>
             <span className="leading-normal">{task.reason}</span>
           </div>
         </div>
@@ -106,13 +128,13 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
           {isCompleted && (
             <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Completed</span>
+              <span>{t('studyPlan.card.completed')}</span>
             </div>
           )}
 
           {isSkipped && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold">
-              <span>Skipped</span>
+              <span>{t('studyPlan.card.skipped')}</span>
             </div>
           )}
 
@@ -139,10 +161,10 @@ export const StudyPlanTaskCard: React.FC<StudyPlanTaskCardProps> = ({
                 type="button"
                 onClick={() => onSkipTask(task.id)}
                 disabled={isStarting}
-                title="Skip this task for today"
+                title={t('studyPlan.card.skipAria')}
                 className="min-h-11 px-3 py-2 rounded-xl text-2xs font-semibold text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer inline-flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Skip
+                {t('studyPlan.card.skip')}
               </button>
             </div>
           )}
