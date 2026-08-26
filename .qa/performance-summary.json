@@ -1,11 +1,21 @@
 {
-  "schemaVersion": 1,
-  "commit": "5ed98958cefc4d24fd9b25e03e6556e91f5152ce",
-  "generatedAt": "2026-08-26T05:29:15.567Z",
+  "schemaVersion": 2,
+  "benchmarkSource": {
+    "commit": "5ed98958cefc4d24fd9b25e03e6556e91f5152ce",
+    "commitSource": "retained Phase 3.2 benchmark metadata",
+    "artifactSet": "phase32"
+  },
+  "summaryGenerator": {
+    "commit": "c490ca3cf84555191c5a7b95cca335a5353de009",
+    "nodeVersion": "v20.20.2"
+  },
   "environment": {
-    "nodeVersion": "v20.20.2",
-    "chromeVersion": "151.0.0.0",
-    "lighthouseVersion": "12.8.2"
+    "chromeVersions": [
+      "151.0.0.0"
+    ],
+    "lighthouseVersions": [
+      "12.8.2"
+    ]
   },
   "groups": {
     "simulatedMobile": {

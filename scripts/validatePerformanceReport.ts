@@ -83,62 +83,132 @@ function validatePerformanceReport(): void {
     process.exit(1);
   }
 
-  // Check 5: Cross-check report against .qa/performance-summary.json
+  // Check 5: Cross-check report against .qa/performance-summary.json (Strict Fail-Closed)
   const summaryPath = path.resolve('.qa/performance-summary.json');
-  if (fs.existsSync(summaryPath)) {
-    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
-    const groups = summary.groups || {};
-
-    const extractPerfMarker = (key: string): string | null => {
-      const match = content.match(new RegExp(`<!--\\s*PERF:${key}=([^\n>]+)\\s*-->`));
-      return match ? match[1].trim() : null;
-    };
-
-    const simMobLcp = extractPerfMarker('SIMULATED_MOBILE_LCP_MS');
-    const devMobLcp = extractPerfMarker('DEVTOOLS_MOBILE_LCP_MS');
-    const devDeskLcp = extractPerfMarker('DEVTOOLS_DESKTOP_LCP_MS');
-    const simMobScore = extractPerfMarker('SIMULATED_MOBILE_PERF_SCORE');
-    const devMobScore = extractPerfMarker('DEVTOOLS_MOBILE_PERF_SCORE');
-    const clsVal = extractPerfMarker('CLS');
-    const verdict = extractPerfMarker('RELEASE_VERDICT');
-
-    if (simMobLcp && Number(simMobLcp) !== groups.simulatedMobile?.lcpMedianMs) {
-      console.error(`❌ Mismatch in SIMULATED_MOBILE_LCP_MS: report marker is ${simMobLcp}ms but summary is ${groups.simulatedMobile?.lcpMedianMs}ms`);
-      process.exit(1);
-    }
-
-    if (devMobLcp && Number(devMobLcp) !== groups.devtoolsMobile?.lcpMedianMs) {
-      console.error(`❌ Mismatch in DEVTOOLS_MOBILE_LCP_MS: report marker is ${devMobLcp}ms but summary is ${groups.devtoolsMobile?.lcpMedianMs}ms`);
-      process.exit(1);
-    }
-
-    if (devDeskLcp && Number(devDeskLcp) !== groups.devtoolsDesktop?.lcpMedianMs) {
-      console.error(`❌ Mismatch in DEVTOOLS_DESKTOP_LCP_MS: report marker is ${devDeskLcp}ms but summary is ${groups.devtoolsDesktop?.lcpMedianMs}ms`);
-      process.exit(1);
-    }
-
-    if (simMobScore && Number(simMobScore) !== groups.simulatedMobile?.performanceMedian) {
-      console.error(`❌ Mismatch in SIMULATED_MOBILE_PERF_SCORE: report marker is ${simMobScore} but summary is ${groups.simulatedMobile?.performanceMedian}`);
-      process.exit(1);
-    }
-
-    if (devMobScore && Number(devMobScore) !== groups.devtoolsMobile?.performanceMedian) {
-      console.error(`❌ Mismatch in DEVTOOLS_MOBILE_PERF_SCORE: report marker is ${devMobScore} but summary is ${groups.devtoolsMobile?.performanceMedian}`);
-      process.exit(1);
-    }
-
-    if (clsVal && Number(clsVal) !== groups.devtoolsMobile?.clsMedian) {
-      console.error(`❌ Mismatch in CLS: report marker is ${clsVal} but summary is ${groups.devtoolsMobile?.clsMedian}`);
-      process.exit(1);
-    }
-
-    if (verdict !== 'CONDITIONALLY READY') {
-      console.error(`❌ Invalid release verdict marker: "${verdict}". Expected "CONDITIONALLY READY".`);
-      process.exit(1);
-    }
-
-    console.log('✅ Cross-check between PERFORMANCE_QA_REPORT.md and .qa/performance-summary.json passed.');
+  if (!fs.existsSync(summaryPath)) {
+    console.error(`❌ Benchmark summary missing at: ${summaryPath}`);
+    console.error('   Generate it by running: npx tsx scripts/summarizeLighthouse.ts');
+    process.exit(1);
   }
+
+  let summary: any;
+  try {
+    summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+  } catch (err) {
+    console.error(`❌ Failed to parse .qa/performance-summary.json: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  // Validate Summary Schema v2 Structure
+  if (summary.schemaVersion !== 2) {
+    console.error(`❌ Invalid summary schemaVersion: ${summary.schemaVersion}. Expected schemaVersion: 2.`);
+    process.exit(1);
+  }
+
+  if (
+    !summary.benchmarkSource ||
+    typeof summary.benchmarkSource.commit !== 'string' ||
+    typeof summary.benchmarkSource.commitSource !== 'string' ||
+    typeof summary.benchmarkSource.artifactSet !== 'string'
+  ) {
+    console.error('❌ Invalid or missing benchmarkSource metadata in .qa/performance-summary.json.');
+    process.exit(1);
+  }
+
+  if (
+    !summary.summaryGenerator ||
+    typeof summary.summaryGenerator.commit !== 'string' ||
+    typeof summary.summaryGenerator.nodeVersion !== 'string'
+  ) {
+    console.error('❌ Invalid or missing summaryGenerator metadata in .qa/performance-summary.json.');
+    process.exit(1);
+  }
+
+  if (
+    !summary.environment ||
+    !Array.isArray(summary.environment.chromeVersions) ||
+    summary.environment.chromeVersions.length === 0 ||
+    !Array.isArray(summary.environment.lighthouseVersions) ||
+    summary.environment.lighthouseVersions.length === 0
+  ) {
+    console.error('❌ Invalid or missing environment metadata in .qa/performance-summary.json.');
+    process.exit(1);
+  }
+
+  const groups = summary.groups || {};
+  const requiredGroups = [
+    'simulatedMobile',
+    'devtoolsMobile',
+    'simulatedDesktop',
+    'devtoolsDesktop',
+    'providedMobile',
+  ];
+  for (const grp of requiredGroups) {
+    if (!groups[grp]) {
+      console.error(`❌ Missing required group "${grp}" in .qa/performance-summary.json.`);
+      process.exit(1);
+    }
+  }
+
+  const requirePerfMarker = (key: string): string => {
+    const match = content.match(new RegExp(`<!--\\s*PERF:${key}=([^\n>]+)\\s*-->`));
+    if (!match || !match[1].trim()) {
+      console.error(`❌ Missing required performance metadata marker: <!-- PERF:${key}=... --> in docs/PERFORMANCE_QA_REPORT.md`);
+      process.exit(1);
+    }
+    return match[1].trim();
+  };
+
+  const simMobLcp = requirePerfMarker('SIMULATED_MOBILE_LCP_MS');
+  const devMobLcp = requirePerfMarker('DEVTOOLS_MOBILE_LCP_MS');
+  const devDeskLcp = requirePerfMarker('DEVTOOLS_DESKTOP_LCP_MS');
+  const simDeskLcp = requirePerfMarker('SIMULATED_DESKTOP_LCP_MS');
+  const simMobScore = requirePerfMarker('SIMULATED_MOBILE_PERF_SCORE');
+  const devMobScore = requirePerfMarker('DEVTOOLS_MOBILE_PERF_SCORE');
+  const clsVal = requirePerfMarker('CLS');
+  const verdict = requirePerfMarker('RELEASE_VERDICT');
+
+  if (Number(simMobLcp) !== groups.simulatedMobile.lcpMedianMs) {
+    console.error(`❌ Mismatch in SIMULATED_MOBILE_LCP_MS: report marker is ${simMobLcp}ms but summary is ${groups.simulatedMobile.lcpMedianMs}ms`);
+    process.exit(1);
+  }
+
+  if (Number(devMobLcp) !== groups.devtoolsMobile.lcpMedianMs) {
+    console.error(`❌ Mismatch in DEVTOOLS_MOBILE_LCP_MS: report marker is ${devMobLcp}ms but summary is ${groups.devtoolsMobile.lcpMedianMs}ms`);
+    process.exit(1);
+  }
+
+  if (Number(devDeskLcp) !== groups.devtoolsDesktop.lcpMedianMs) {
+    console.error(`❌ Mismatch in DEVTOOLS_DESKTOP_LCP_MS: report marker is ${devDeskLcp}ms but summary is ${groups.devtoolsDesktop.lcpMedianMs}ms`);
+    process.exit(1);
+  }
+
+  if (Number(simDeskLcp) !== groups.simulatedDesktop.lcpMedianMs) {
+    console.error(`❌ Mismatch in SIMULATED_DESKTOP_LCP_MS: report marker is ${simDeskLcp}ms but summary is ${groups.simulatedDesktop.lcpMedianMs}ms`);
+    process.exit(1);
+  }
+
+  if (Number(simMobScore) !== groups.simulatedMobile.performanceMedian) {
+    console.error(`❌ Mismatch in SIMULATED_MOBILE_PERF_SCORE: report marker is ${simMobScore} but summary is ${groups.simulatedMobile.performanceMedian}`);
+    process.exit(1);
+  }
+
+  if (Number(devMobScore) !== groups.devtoolsMobile.performanceMedian) {
+    console.error(`❌ Mismatch in DEVTOOLS_MOBILE_PERF_SCORE: report marker is ${devMobScore} but summary is ${groups.devtoolsMobile.performanceMedian}`);
+    process.exit(1);
+  }
+
+  if (Number(clsVal) !== groups.devtoolsMobile.clsMedian) {
+    console.error(`❌ Mismatch in CLS: report marker is ${clsVal} but summary is ${groups.devtoolsMobile.clsMedian}`);
+    process.exit(1);
+  }
+
+  if (verdict !== 'CONDITIONALLY READY') {
+    console.error(`❌ Invalid release verdict marker: "${verdict}". Expected "CONDITIONALLY READY".`);
+    process.exit(1);
+  }
+
+  console.log('✅ Cross-check between PERFORMANCE_QA_REPORT.md and .qa/performance-summary.json passed (Schema v2 verified).');
 
   console.log('✅ PERFORMANCE_QA_REPORT.md validation passed successfully.');
 }

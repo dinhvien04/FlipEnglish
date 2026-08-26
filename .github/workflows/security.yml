@@ -37,11 +37,35 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Exam Generator Integrity Audit
-        run: npm run validate:exams
+      - name: Internationalization & Translation Parity Audit
+        run: npm run validate:i18n
+
+      - name: PWA & Offline Invariants Validation
+        run: npm run validate:pwa
 
       - name: Curriculum Integrity & Visual Audit
         run: npm run validate:curriculum
+
+      - name: Adaptive Placement Test Engine Audit
+        run: npm run validate:placement
+
+      - name: Exam Generator Integrity Audit
+        run: npm run validate:exams
+
+      - name: Daily Study Plan & Storage Engine Audit
+        run: npm run validate:study-plan
+
+      - name: Smart Review & Spaced Repetition Scheduler Audit
+        run: npm run validate:review
+
+      - name: AI Conversation Lab Integrity Audit
+        run: npm run validate:conversation
+
+      - name: Deterministic Dictionary Validation
+        run: npm run validate:dictionary
+
+      - name: Performance & Bundle Gate Audit
+        run: npm run validate:performance
 
       - name: Production Dependency Security Audit
         run: npm run security:audit

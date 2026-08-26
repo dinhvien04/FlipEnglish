@@ -85,6 +85,8 @@ Extracted directly from `dist/client/sw.js` and validated against filesystem ass
 
 All 15 empirical benchmark runs were executed on a production build (`NODE_ENV=production`) using Chrome Headless 151 via Lighthouse v12.8.2. Runs are categorized by their exact throttling configuration to prevent conflating modeled Lantern simulations with actual browser DevTools-throttled runs.
 
+> **Note on `benchmarkIndex`**: `benchmarkIndex` is Lighthouse's internal CPU benchmark computation executed on the host machine at the start of each audit run. Because host background CPU load naturally fluctuates across consecutive runs, individual run `benchmarkIndex` values exhibit normal environmental variation (e.g. 405.5 to 1467.5). Summary comparisons utilize the median value across runs.
+
 ### 3.1 Complete 15-Run Audit Log
 
 | Run Group | Run # | Metric Category | Form Factor | Throttling Method | CPU Slowdown | Benchmark Index | Perf Score | FCP | LCP | TBT | CLS | Speed Index |
@@ -126,8 +128,8 @@ A critical architectural finding of Phase 3.2 is the technical distinction betwe
 2. **Timing Artifacts**: Lantern's modeled network graph assumes an artificial TTFB of ~455ms on local loopback and projects a modeled FCP of 2.8s–2.9s and LCP of 2.9s–3.0s.
 
 ### 4.2 DevTools Applied Throttling (`throttlingMethod: "devtools"`)
-1. **Execution Model**: Chrome DevTools Protocol commands actively throttle the CPU clock by 4x and emulate mobile network packet transmission rates (1.6 Mbps throughput, 150ms RTT) in real time during the actual page load.
-2. **Observed Trace Reality**: Under applied DevTools throttling, the network transmission duration required to download the 261.6 kB initial JS bundle over the emulated network interface takes ~2.10 seconds. Coupled with real-time 4x throttled JS execution, layout, and mounting, this yields an observed LCP of **3.7s–4.1s under DevTools applied throttling**.
+1. **Execution Model**: Chrome DevTools Protocol (CDP) commands apply real-time request-level network throttling (562.5ms latency, 1.47 Mbps download throughput, 675 Kbps upload throughput) and 4x CPU slowdown in real time during the actual page load. Note that CDP network throttling operates at the HTTP request/response level rather than simulating low-level physical packet transport.
+2. **Observed Trace Reality**: Under applied DevTools throttling, the network transmission duration required to download the 261.6 kB initial JS bundle over the throttled connection takes ~2.10 seconds. Coupled with real-time 4x throttled JS execution, layout, and mounting, this yields an observed LCP of **3.7s–4.1s under DevTools applied throttling**.
 
 ---
 
@@ -314,6 +316,9 @@ npx lighthouse http://127.0.0.1:3000 \
   --screenEmulation.mobile=true \
   --throttling.rttMs=150 \
   --throttling.throughputKbps=1638.4 \
+  --throttling.requestLatencyMs=562.5 \
+  --throttling.downloadThroughputKbps=1474.56 \
+  --throttling.uploadThroughputKbps=675 \
   --throttling.cpuSlowdownMultiplier=4 \
   --chrome-flags="--headless --no-sandbox --disable-gpu"
 
