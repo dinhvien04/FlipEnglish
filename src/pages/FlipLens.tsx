@@ -480,7 +480,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
       {/* ======================================================================= */}
       {/* STEP 2: PREVIEW & CONFIRM */}
       {/* ======================================================================= */}
-      {step === 'preview' && imageSrc && (
+      {(step === 'preview' || step === 'analyzing') && imageSrc && (
         <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
           <div className="text-center space-y-1">
             <h2 className="text-2xl font-black text-slate-900">Photo Ready for Analysis</h2>

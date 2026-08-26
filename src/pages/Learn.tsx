@@ -53,7 +53,7 @@ export const Learn: React.FC<LearnProps> = ({
     });
   }, [lesson.id, currentIndex, hasCompletedAll, isReviewMistakesMode, onSessionContextChange]);
 
-  // Signal consumption to App after initial mount/hydration (one-shot)
+  // Signal consumption to App after initial client-side mount (one-shot)
   const didConsumeResumeRef = useRef<boolean>(false);
 
   useEffect(() => {

@@ -16,11 +16,19 @@ interface LcpBreakdown {
   loadDuration?: number;
   renderDelay?: number;
   lcpValue?: number;
+  sourceAudit?: string;
 }
 
 export interface LighthouseSummary {
   file: string;
   formFactor?: string;
+  throttlingMethod?: string;
+  cpuSlowdownMultiplier?: number;
+  rttMs?: number;
+  throughputKbps?: number;
+  metricCategory: 'Modeled (Simulated / Lantern)' | 'Observed (DevTools Applied)' | 'Observed (Provided / Unthrottled)';
+  userAgent?: string;
+  lighthouseVersion?: string;
   performance: number;
   accessibility: number;
   bestPractices: number;
@@ -34,6 +42,7 @@ export interface LighthouseSummary {
   fcpNumeric?: number;
   tbtNumeric?: number;
   clsNumeric?: number;
+  speedIndexNumeric?: number;
   lcpElement?: LcpElementInfo;
   lcpBreakdown?: LcpBreakdown;
   availableLcpAudits: string[];
@@ -49,6 +58,15 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
   const cats = data.categories || {};
   const audits = data.audits || {};
   const configSettings = data.configSettings || {};
+  const throttling = configSettings.throttling || {};
+  const throttlingMethod = configSettings.throttlingMethod || 'simulate';
+
+  const metricCategory =
+    throttlingMethod === 'simulate'
+      ? 'Modeled (Simulated / Lantern)'
+      : throttlingMethod === 'devtools'
+      ? 'Observed (DevTools Applied)'
+      : 'Observed (Provided / Unthrottled)';
 
   const availableLcpAudits = Object.keys(audits).filter(
     (k) => k.toLowerCase().includes('lcp') || k.toLowerCase().includes('largest-contentful')
@@ -122,6 +140,7 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
             loadDuration: phases['load time'] ?? phases['loadduration'] ?? phases['load duration'],
             renderDelay: phases['render delay'] ?? phases['renderdelay'],
             lcpValue: lcpAudit.numericValue ? Math.round(lcpAudit.numericValue) : undefined,
+            sourceAudit: 'largest-contentful-paint-element',
           };
           break;
         }
@@ -145,23 +164,39 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
         loadDuration: b.loadDuration,
         renderDelay: b.renderDelay,
         lcpValue: lcpAudit.numericValue ? Math.round(lcpAudit.numericValue) : undefined,
+        sourceAudit: 'lcp-breakdown-insight',
       };
     }
   }
 
-  // Fallback: derive from server response time and LCP timing if subparts not direct
+  // Fallback: derive from server response time if available, do not invent zero for delays unless proven text
   if (!lcpBreakdown && lcpAudit.numericValue) {
     const srtAudit = audits['server-response-time'] || {};
     const ttfb = srtAudit.numericValue;
+    const isTextLcp = lcpElement && lcpElement.type === 'TEXT';
     lcpBreakdown = {
-      ttfb: ttfb ? Math.round(ttfb) : undefined,
+      ttfb: ttfb !== undefined ? Math.round(ttfb) : undefined,
+      loadDelay: isTextLcp ? 0 : undefined,
+      loadDuration: isTextLcp ? 0 : undefined,
+      renderDelay:
+        ttfb !== undefined && isTextLcp
+          ? Math.round(lcpAudit.numericValue - ttfb)
+          : undefined,
       lcpValue: Math.round(lcpAudit.numericValue),
+      sourceAudit: 'server-response-time + largest-contentful-paint',
     };
   }
 
   return {
     file: path.basename(filePath),
     formFactor: configSettings.formFactor,
+    throttlingMethod,
+    cpuSlowdownMultiplier: throttling.cpuSlowdownMultiplier ?? configSettings.cpuSlowdownMultiplier,
+    rttMs: throttling.rttMs,
+    throughputKbps: throttling.requestLatencyMs ? undefined : throttling.throughputKbps,
+    metricCategory,
+    userAgent: data.userAgent,
+    lighthouseVersion: data.lighthouseVersion,
     performance: Math.round((cats.performance?.score || 0) * 100),
     accessibility: Math.round((cats.accessibility?.score || 0) * 100),
     bestPractices: Math.round((cats['best-practices']?.score || 0) * 100),
@@ -180,6 +215,9 @@ export function parseLighthouseJson(filePath: string): LighthouseSummary {
       : undefined,
     clsNumeric: audits['cumulative-layout-shift']?.numericValue !== undefined
       ? Number(audits['cumulative-layout-shift'].numericValue.toFixed(3))
+      : undefined,
+    speedIndexNumeric: audits['speed-index']?.numericValue
+      ? Math.round(audits['speed-index'].numericValue)
       : undefined,
     lcpElement,
     lcpBreakdown,

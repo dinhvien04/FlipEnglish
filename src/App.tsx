@@ -26,6 +26,20 @@ import { Exercise } from './pages/Exercise';
 import { Result } from './pages/Result';
 import { TodayPage } from './features/studyPlan/TodayPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
+import {
+  shouldShowOnboarding,
+  saveOnboardingState,
+  migrateOnboardingStateForExistingUser,
+} from './features/onboarding/onboardingStorage';
+import { OnboardingRoute } from './features/onboarding/onboardingTypes';
+import {
+  DictionaryReturnContext,
+  LearnResumeContext,
+  ReviewResumeContext,
+} from './types/sessionResume';
+import { OfflineBanner } from './features/pwa/OfflineBanner';
+import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
+import { useI18n } from './features/i18n';
 
 // Feature-level code splitting for heavy/secondary views
 const FlipLens = lazy(() => import('./pages/FlipLens').then((m) => ({ default: m.FlipLens })));

@@ -15,7 +15,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "validate:i18n": "tsx scripts/validateI18n.ts",
-    "validate:performance": "tsx scripts/validatePerformance.ts",
+    "validate:performance": "tsx scripts/validatePerformance.ts && tsx scripts/validatePerformanceReport.ts",
     "validate:dictionary": "tsx scripts/validateDictionary.ts",
     "validate:exams": "tsx scripts/validateExams.ts",
     "validate:placement": "tsx scripts/validatePlacement.ts",
