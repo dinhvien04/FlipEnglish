@@ -92,36 +92,40 @@ function parsePrecacheManifestFromSw(): { url: string; revision: string | null }
   }
   const swCode = fs.readFileSync(swJsPath, 'utf8');
 
-  // Match precacheAndRoute([ ... ]) - tolerant of multiline, trailing commas, and formatting
-  const precacheRegex = /workbox\.precacheAndRoute\(\s*(\[[\s\S]*?\])\s*,\s*\{?\s*\}?\s*\)/;
+  // Match [identifier].precacheAndRoute([ ... ]) - tolerant of minified identifiers, multiline, and trailing commas
+  const precacheRegex = /(?:workbox|\w+)\.precacheAndRoute\(\s*(\[[\s\S]*?\])\s*,\s*\{?\s*\}?\s*\)/;
   const match = precacheRegex.exec(swCode);
 
   let entries: { url: string; revision: string | null }[] = [];
 
+  // Regex matching both quoted ("url": "...") and unquoted (url:"...") object properties in minified/unminified sw.js
+  const entryRegex = /\{\s*["']?url["']?\s*:\s*["']([^"']+)["'](?:\s*,\s*["']?revision["']?\s*:\s*(["'][^"']*["']|null))?\s*\}/g;
+
   if (match) {
     try {
-      // Strip trailing commas before closing braces/brackets if any
-      const sanitizedJson = match[1].replace(/,\s*([\]}])/g, '$1');
-      entries = JSON.parse(sanitizedJson);
+      // Quote unquoted keys (url -> "url", revision -> "revision") and strip trailing commas
+      const jsonCandidate = match[1]
+        .replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":')
+        .replace(/,\s*([\]}])/g, '$1');
+      entries = JSON.parse(jsonCandidate);
     } catch {
-      // Fallback regex if standard JSON.parse encountered issues
-      const entryRegex = /\{\s*"url":\s*"([^"]+)"(?:\s*,\s*"revision":\s*("[^"]*"|null))?\s*\}/g;
       let entryMatch: RegExpExecArray | null;
       while ((entryMatch = entryRegex.exec(match[1])) !== null) {
         entries.push({
           url: entryMatch[1],
-          revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/"/g, ''),
+          revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/["']/g, ''),
         });
       }
     }
-  } else {
-    // Direct regex scan across entire sw.js if wrapper syntax changes
-    const entryRegex = /\{\s*"url":\s*"([^"]+)"(?:\s*,\s*"revision":\s*("[^"]*"|null))?\s*\}/g;
+  }
+
+  // If match was empty or produced 0 entries, scan full swCode
+  if (entries.length === 0) {
     let entryMatch: RegExpExecArray | null;
     while ((entryMatch = entryRegex.exec(swCode)) !== null) {
       entries.push({
         url: entryMatch[1],
-        revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/"/g, ''),
+        revision: entryMatch[2] === 'null' || !entryMatch[2] ? null : entryMatch[2].replace(/["']/g, ''),
       });
     }
   }
