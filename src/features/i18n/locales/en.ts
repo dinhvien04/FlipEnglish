@@ -601,7 +601,24 @@ export const enCatalog = {
   'continuity.actionContinue': 'Continue',
   'continuity.actionStartReview': 'Start Review',
   'continuity.actionStart': 'Start Task',
-  'continuity.actionStartLesson': 'Start Lesson',
-};
+    'continuity.actionStartLesson': 'Start Lesson',
+
+    // Progress Snapshot & Habit Continuity
+    'progress.snapshot.title': 'Learning Progress & Habit',
+    'progress.snapshot.streak': 'Daily Streak',
+    'progress.snapshot.streakDays': '{count} days',
+    'progress.snapshot.longestStreak': 'Best: {count} days',
+    'progress.snapshot.activeToday': "Today's Study Time",
+    'progress.snapshot.goalProgress': '{active} / {goal} min',
+    'progress.snapshot.goalComplete': 'Goal Met',
+    'progress.snapshot.changeGoal': 'Change Goal',
+    'progress.snapshot.level': 'CEFR Level',
+    'progress.snapshot.levelPlacementPending': 'Not set (Take check)',
+    'progress.snapshot.dueReviews': 'Due Reviews',
+    'progress.snapshot.reviewNow': 'Review Now',
+    'progress.snapshot.allCaughtUp': 'All caught up',
+    'progress.snapshot.masteredWords': 'Mastered Words',
+    'progress.snapshot.wordsLearned': '{mastered} / {total} mastered',
+  };
 
 export type TranslationKey = keyof typeof enCatalog;

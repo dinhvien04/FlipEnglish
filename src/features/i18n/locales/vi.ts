@@ -603,5 +603,22 @@ export const viCatalog: Record<TranslationKey, string> = {
   'continuity.actionContinue': 'Tiếp tục',
   'continuity.actionStartReview': 'Bắt đầu ôn tập',
   'continuity.actionStart': 'Bắt đầu',
-  'continuity.actionStartLesson': 'Học bài mới',
-};
+    'continuity.actionStartLesson': 'Học bài mới',
+
+    // Progress Snapshot & Habit Continuity
+    'progress.snapshot.title': 'Tiến độ học & Thói quen',
+    'progress.snapshot.streak': 'Chuỗi ngày học',
+    'progress.snapshot.streakDays': '{count} ngày',
+    'progress.snapshot.longestStreak': 'Kỷ lục: {count} ngày',
+    'progress.snapshot.activeToday': 'Thời gian học hôm nay',
+    'progress.snapshot.goalProgress': '{active} / {goal} phút',
+    'progress.snapshot.goalComplete': 'Đạt mục tiêu',
+    'progress.snapshot.changeGoal': 'Đổi mục tiêu',
+    'progress.snapshot.level': 'Trình độ CEFR',
+    'progress.snapshot.levelPlacementPending': 'Chưa đặt (Kiểm tra)',
+    'progress.snapshot.dueReviews': 'Từ cần ôn tập',
+    'progress.snapshot.reviewNow': 'Ôn tập ngay',
+    'progress.snapshot.allCaughtUp': 'Đã ôn tập hết',
+    'progress.snapshot.masteredWords': 'Từ đã thành thạo',
+    'progress.snapshot.wordsLearned': '{mastered} / {total} thành thạo',
+  };
