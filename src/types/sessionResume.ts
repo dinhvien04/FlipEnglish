@@ -2,16 +2,21 @@ import { AppView } from './index';
 import { ResolvedReviewItem, ReviewRating } from './review';
 
 export interface LearnResumeContext {
+  schemaVersion?: 1;
   lessonId: string;
   flashcardIndex: number;
   hasCompletedAll: boolean;
   isReviewMistakesMode: boolean;
+  totalWords?: number;
+  timestamp?: number;
 }
 
 export interface ReviewResumeContext {
+  schemaVersion?: 1;
   activeQueue: ResolvedReviewItem[];
   currentIndex: number;
   ratingBreakdown: Record<ReviewRating, number>;
+  timestamp?: number;
 }
 
 export type DictionaryReturnContext =
