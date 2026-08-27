@@ -28,8 +28,9 @@ npm run validate:review      # Verifies SRS interval algorithms (Again/Hard/Good
 
 # 8. AI Scenarios & Security
 npm run validate:conversation# Verifies Conversation Lab prompts, scenario metadata, and Zod schemas
+npm run validate:ai-gating   # Verifies 4-permutation AI configuration matrix & 503 gating
 npm run security:audit       # Audits production dependencies for vulnerabilities
-npm run test:security        # Runs security smoke test suite
+npm run test:security        # Runs security smoke test suite & AI gating matrix
 ```
 
 ## 2. Regression & Change Discipline

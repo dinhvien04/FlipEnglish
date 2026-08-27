@@ -21,11 +21,8 @@ import {
 import { DictionaryService } from './server/dictionary/dictionaryService';
 import { DictionaryRelationType } from './server/dictionary/dictionaryTypes';
 
-// Load .env only when NODE_ENV is not explicitly provided in environment
-if (!process.env.NODE_ENV) {
-  dotenv.config();
-} else {
-  // Load .env without overriding pre-set environment variables like NODE_ENV or PORT
+// Load .env only when NODE_ENV is development or test, never override environment variables
+if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ override: false });
 }
 
@@ -88,6 +85,19 @@ const PORT = resolvePort();
 const isProd = process.env.NODE_ENV === 'production';
 const nodeEnv = process.env.NODE_ENV || 'development';
 
+// Helper functions to check AI availability and configuration
+export function isAiFeaturesEnabled(): boolean {
+  return process.env.AI_FEATURES_ENABLED === 'true';
+}
+
+export function isAiConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '');
+}
+
+export function isAiAvailable(): boolean {
+  return isAiFeaturesEnabled() && isAiConfigured();
+}
+
 // Fail-Fast Production Startup Configuration Validation
 function validateProductionConfig(): void {
   if (isProd) {
@@ -107,11 +117,15 @@ function validateProductionConfig(): void {
       process.exit(1);
     }
 
-    if (process.env.GEMINI_API_KEY) {
-      console.log('[Config] Production startup: GEMINI_API_KEY is configured (Live AI features enabled).');
+    if (isAiAvailable()) {
+      console.log('[Config] Production startup: GEMINI_API_KEY is configured and AI_FEATURES_ENABLED=true (Live AI features enabled).');
+    } else if (isAiConfigured() && !isAiFeaturesEnabled()) {
+      console.log(
+        '[Config] Production startup notice: GEMINI_API_KEY is configured, but AI_FEATURES_ENABLED is not "true". Live AI features are disabled.'
+      );
     } else {
       console.warn(
-        '[Config] Production startup notice: GEMINI_API_KEY is not set. Core offline learning features will operate normally; live AI endpoints will return 503.'
+        '[Config] Production startup notice: Live AI features unavailable. Core offline learning features will operate normally; live AI endpoints will return 503.'
       );
     }
   }
@@ -684,6 +698,22 @@ function validateImageMagicBytes(buffer: Buffer, mime: string): boolean {
 }
 
 // ==========================================
+// AI Service Availability Middleware
+// Fail-closed 503 rejection when AI features are disabled or unconfigured
+// ==========================================
+const requireAiAvailable: express.RequestHandler = (req, res, next) => {
+  if (!isAiAvailable()) {
+    console.warn(`[Security AI-Gating] 503 blocked request to AI endpoint ${sanitizeForLog(req.path)} (ReqID: ${req.id})`);
+    res.status(503).json({
+      error: 'AI features are currently unavailable.',
+      requestId: req.id,
+    });
+    return;
+  }
+  next();
+};
+
+// ==========================================
 // 4. API Routes
 // ==========================================
 
@@ -691,7 +721,8 @@ function validateImageMagicBytes(buffer: Buffer, mime: string): boolean {
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    aiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    aiConfigured: isAiConfigured(),
+    aiEnabled: isAiAvailable(),
   });
 });
 
@@ -701,6 +732,7 @@ app.use('/api', apiLimiter);
 // 2. Gemini Targeted Practice Endpoint with Prompt Injection Boundary
 app.post(
   '/api/ai-practice',
+  requireAiAvailable,
   practiceLimiter,
   requireJsonContentType,
   jsonParserStandard,
@@ -824,6 +856,7 @@ Requirements for each question:
 // 3. Gemini Explain My Mistake Endpoint with Prompt Injection Boundary
 app.post(
   '/api/explain-mistake',
+  requireAiAvailable,
   mistakeLimiter,
   requireJsonContentType,
   jsonParserStandard,
@@ -907,6 +940,7 @@ Please provide a concise structured explanation:
 // 4. Gemini Vision FlipLens Endpoint with Bounded Output Tokens & Low Thinking
 app.post(
   '/api/analyze-photo',
+  requireAiAvailable,
   photoLimiter,
   requireJsonContentType,
   jsonParserPhoto,
@@ -1109,6 +1143,7 @@ Avoid duplicates and near-duplicate synonyms.`;
 // 5. Gemini AI Exam Analysis Endpoint with Prompt Injection Boundary
 app.post(
   '/api/analyze-exam',
+  requireAiAvailable,
   examLimiter,
   requireJsonContentType,
   jsonParserStandard,
@@ -1229,6 +1264,7 @@ Please provide structured diagnostic feedback:
 // 6. Gemini Conversation Turn Endpoint (Interactions API / generateContent fallback)
 app.post(
   '/api/conversation/turn',
+  requireAiAvailable,
   conversationTurnLimiter,
   requireJsonContentType,
   jsonParserStandard,
@@ -1402,6 +1438,7 @@ Respond in character as "${scenario.aiRole}". Provide structured feedback and re
 // 7. Gemini Conversation Evaluate Endpoint
 app.post(
   '/api/conversation/evaluate',
+  requireAiAvailable,
   conversationEvaluateLimiter,
   requireJsonContentType,
   jsonParserStandard,

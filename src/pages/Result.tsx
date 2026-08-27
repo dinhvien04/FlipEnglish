@@ -32,7 +32,7 @@ export const Result: React.FC<ResultProps> = ({
   onBackToHome,
 }) => {
   const { t } = useI18n();
-  const { aiConfigured } = useAiStatus();
+  const { aiEnabled } = useAiStatus();
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiQuestions, setAiQuestions] = useState<AIPracticeQuestion[] | null>(null);
@@ -193,8 +193,8 @@ export const Result: React.FC<ResultProps> = ({
 
         {/* Action Buttons */}
         <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {/* Gemini AI Targeted Practice Button (Only when there are mistake words and AI is configured) */}
-          {mistakeWords.length > 0 && aiConfigured && (
+          {/* Gemini AI Targeted Practice Button (Only when there are mistake words and AI is enabled) */}
+          {mistakeWords.length > 0 && aiEnabled && (
             <button
               id="result-ai-practice-btn"
               onClick={handleGenerateAiPractice}

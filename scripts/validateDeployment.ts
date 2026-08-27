@@ -194,6 +194,7 @@ async function validateDeployment() {
         NODE_ENV: 'production',
         PORT: String(testPort),
         GEMINI_API_KEY: 'test-runtime-key',
+        AI_FEATURES_ENABLED: 'true',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

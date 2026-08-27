@@ -59,8 +59,9 @@ npm run validate:exams    # Verify question pools and exam generation quotas
 npm run validate:study-plan # Verify daily plan state, storage, and transitions
 npm run validate:review   # Verify SRS scheduling intervals & persistence
 npm run validate:conversation # Verify AI scenario contracts & Zod schemas
+npm run validate:ai-gating    # Verify 4-permutation AI configuration matrix & 503 gating
 npm run security:audit    # Audit production dependencies
-npm run test:security     # Run security smoke tests
+npm run test:security     # Run security smoke tests & AI gating matrix
 ```
 
 ---

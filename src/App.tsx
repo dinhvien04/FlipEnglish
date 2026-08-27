@@ -75,7 +75,7 @@ function LazyViewFallback() {
 
 export default function App() {
   const { t } = useI18n();
-  const { aiConfigured } = useAiStatus();
+  const { aiEnabled } = useAiStatus();
   const [currentView, setCurrentView] = useState<AppView>(() => {
     return shouldShowOnboarding() ? 'onboarding' : 'today';
   });
@@ -156,12 +156,12 @@ export default function App() {
     }
   }, []);
 
-  // Guard against navigating into AI views when AI features are unconfigured
+  // Guard against navigating into AI views when AI features are disabled/unavailable
   useEffect(() => {
-    if (!aiConfigured && (currentView === 'flip-lens' || currentView.startsWith('conversation'))) {
+    if (!aiEnabled && (currentView === 'flip-lens' || currentView.startsWith('conversation'))) {
       setCurrentView('today');
     }
-  }, [aiConfigured, currentView]);
+  }, [aiEnabled, currentView]);
 
   // Scroll to top on view transition
   useEffect(() => {
@@ -788,8 +788,8 @@ export default function App() {
             onNavigateDictionary={() => handleNavigateDictionary()}
             onNavigateHome={handleNavigateHome}
             onNavigateReview={handleNavigateReview}
-            onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
-            onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
+            onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
+            onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
             onNavigateExamCenter={handleNavigateExamCenter}
             onNavigateHelp={handleNavigateHelp}
             currentView={currentView}
@@ -816,9 +816,9 @@ export default function App() {
               onNavigateCurriculum={handleNavigateHome}
               onNavigateReview={handleNavigateReview}
               onNavigatePlacement={handleStartPlacementIntro}
-              onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
+              onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
               onNavigateExams={handleNavigateExamCenter}
-              onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
+              onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
               onReopenOnboarding={handleOpenOnboarding}
             />
           )}
@@ -831,8 +831,8 @@ export default function App() {
               onNavigatePlacement={handleStartPlacementIntro}
               onNavigateQuickTest={handleStartQuickTestFromPlan}
               onNavigateCurriculum={handleNavigateHome}
-              onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
-              onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
+              onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
+              onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
               isStartingQuickTest={isStartingExam}
             />
           )}
@@ -852,7 +852,7 @@ export default function App() {
           {currentView === 'home' && (
             <Home
               onSelectLesson={handleSelectLesson}
-              onOpenFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
+              onOpenFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
               onOpenExamCenter={handleNavigateExamCenter}
               onNavigateReview={handleNavigateReview}
               onNavigateToday={handleNavigateToday}
@@ -1058,7 +1058,7 @@ export default function App() {
               FlipEnglish — Master English vocabulary one flip card at a time.
             </p>
             <p className="text-slate-400">
-              {aiConfigured
+              {aiEnabled
                 ? '72 Structured Lessons • CEFR A1—C2 • Practice Exams & AI Diagnostics'
                 : '72 Structured Lessons • CEFR A1—C2 • Practice Exams & Smart Review'}
             </p>

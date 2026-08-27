@@ -23,7 +23,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
   onStartAIPractice,
 }) => {
   const { t } = useI18n();
-  const { aiConfigured } = useAiStatus();
+  const { aiEnabled } = useAiStatus();
   const [filterMode, setFilterMode] = useState<'all' | 'incorrect' | 'correct'>('all');
   const [aiAnalysis, setAiAnalysis] = useState<AIExamAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -278,8 +278,8 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           </div>
         </div>
 
-        {/* AI Exam Diagnostic Analysis (Only when AI is configured) */}
-        {aiConfigured && (
+        {/* AI Exam Diagnostic Analysis (Only when AI is enabled) */}
+        {aiEnabled && (
           <div className="border-t border-slate-200 pt-6 space-y-4">
             {!aiAnalysis ? (
               <div className="bg-indigo-50/70 rounded-3xl p-6 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -509,7 +509,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                       </div>
                       <p className="leading-relaxed">{expandedExplanationMap[q.id]}</p>
                     </div>
-                  ) : aiConfigured ? (
+                  ) : aiEnabled ? (
                     <button
                       type="button"
                       id={`explain-mistake-btn-${q.id}`}
@@ -553,7 +553,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
         </button>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          {report.missedQuestions.length > 0 && onStartAIPractice && aiConfigured && (
+          {report.missedQuestions.length > 0 && onStartAIPractice && aiEnabled && (
             <button
               type="button"
               id="ai-practice-missed-words-btn"

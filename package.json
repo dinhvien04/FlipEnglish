@@ -25,9 +25,10 @@
     "validate:curriculum": "tsx scripts/validateCurriculum.ts",
     "validate:review": "tsx scripts/validateReview.ts",
     "validate:conversation": "tsx scripts/validateConversation.ts",
+    "validate:ai-gating": "tsx scripts/validateAiGating.ts",
     "validate:deployment": "tsx scripts/validateDeployment.ts",
     "security:audit": "npm audit --omit=dev --audit-level=high",
-    "test:security": "tsx scripts/securitySmokeTest.ts"
+    "test:security": "tsx scripts/securitySmokeTest.ts && tsx scripts/validateAiGating.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -61,6 +61,9 @@ jobs:
       - name: AI Conversation Lab Integrity Audit
         run: npm run validate:conversation
 
+      - name: AI Gating & Configuration Permutation Matrix Audit
+        run: npm run validate:ai-gating
+
       - name: Deterministic Dictionary Validation
         run: npm run validate:dictionary
 

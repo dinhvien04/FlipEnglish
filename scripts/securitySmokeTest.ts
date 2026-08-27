@@ -19,9 +19,9 @@ interface RequestOptions {
   body?: string;
 }
 
-function makeRequest(opts: RequestOptions): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }> {
+function makeRequest(opts: RequestOptions, baseUrl: string = BASE_URL): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }> {
   return new Promise((resolve, reject) => {
-    const url = new URL(opts.path, BASE_URL);
+    const url = new URL(opts.path, baseUrl);
     const req = http.request(
       url,
       {
@@ -97,6 +97,7 @@ async function runSecuritySmokeTests() {
         NODE_ENV: 'production',
         PORT: String(TEST_PORT),
         GEMINI_API_KEY: 'test-placeholder-key',
+        AI_FEATURES_ENABLED: 'true',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -120,6 +121,8 @@ async function runSecuritySmokeTests() {
     const healthBody = JSON.parse(health.body || '{}');
     assert(healthBody.status === 'ok', 'Health response status is "ok"');
     assert(typeof healthBody.aiConfigured === 'boolean', 'Health response contains boolean aiConfigured flag');
+    assert(typeof healthBody.aiEnabled === 'boolean', 'Health response contains boolean aiEnabled flag');
+    assert(healthBody.aiEnabled === true, 'Health response aiEnabled is true when AI_FEATURES_ENABLED=true and key present');
     assert(!healthBody.apiKey && !healthBody.key, 'Health response never exposes API key or secrets');
     assert(health.headers['x-content-type-options'] === 'nosniff', 'Header X-Content-Type-Options is nosniff');
     assert(!health.headers['x-powered-by'], 'Header X-Powered-By is stripped/absent');

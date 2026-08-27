@@ -1017,7 +1017,7 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             onAnswerSubmit={handleQuizAnswerSubmit}
             lessonTitle="My Photo Lesson"
             lessonLevel="A1-A2"
-            aiConfigured={true}
+            aiEnabled={true}
           />
         </div>
       )}

@@ -2,22 +2,28 @@ import { useState, useEffect, useCallback } from 'react';
 
 export interface AiStatus {
   aiConfigured: boolean;
+  aiEnabled: boolean;
   isLoading: boolean;
   checkAiStatus: () => Promise<boolean>;
+}
+
+interface CachedAiState {
+  aiConfigured: boolean;
+  aiEnabled: boolean;
 }
 
 /**
  * Global cache and subscriber set across component mounts to prevent redundant /api/health queries
  * and synchronize state updates immediately.
  */
-let cachedAiConfigured: boolean | null = null;
+let cachedAiState: CachedAiState | null = null;
 let inFlightCheck: Promise<boolean> | null = null;
-const subscribers = new Set<(isConfigured: boolean) => void>();
+const subscribers = new Set<(state: CachedAiState) => void>();
 
-function notifySubscribers(isConfigured: boolean) {
+function notifySubscribers(state: CachedAiState) {
   subscribers.forEach((cb) => {
     try {
-      cb(isConfigured);
+      cb(state);
     } catch {
       // Ignore listener error
     }
@@ -25,8 +31,10 @@ function notifySubscribers(isConfigured: boolean) {
 }
 
 export function useAiStatus(): AiStatus {
-  const [aiConfigured, setAiConfigured] = useState<boolean>(() => cachedAiConfigured ?? false);
-  const [isLoading, setIsLoading] = useState<boolean>(() => cachedAiConfigured === null);
+  const [statusState, setStatusState] = useState<CachedAiState>(
+    () => cachedAiState ?? { aiConfigured: false, aiEnabled: false }
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(() => cachedAiState === null);
 
   const checkAiStatus = useCallback(async (): Promise<boolean> => {
     if (typeof window === 'undefined') return false;
@@ -45,20 +53,25 @@ export function useAiStatus(): AiStatus {
         });
 
         if (!response.ok) {
-          cachedAiConfigured = false;
-          notifySubscribers(false);
+          const fallbackState: CachedAiState = { aiConfigured: false, aiEnabled: false };
+          cachedAiState = fallbackState;
+          notifySubscribers(fallbackState);
           return false;
         }
 
         const data = await response.json();
         const isConfigured = Boolean(data && data.aiConfigured === true);
-        cachedAiConfigured = isConfigured;
-        notifySubscribers(isConfigured);
-        return isConfigured;
+        const isEnabled = Boolean(data && data.aiEnabled === true);
+        const newState: CachedAiState = { aiConfigured: isConfigured, aiEnabled: isEnabled };
+
+        cachedAiState = newState;
+        notifySubscribers(newState);
+        return isEnabled;
       } catch {
-        // Offline / network failure -> treat AI as unconfigured safely
-        cachedAiConfigured = false;
-        notifySubscribers(false);
+        // Offline / network failure -> treat AI as unavailable safely
+        const fallbackState: CachedAiState = { aiConfigured: false, aiEnabled: false };
+        cachedAiState = fallbackState;
+        notifySubscribers(fallbackState);
         return false;
       } finally {
         inFlightCheck = null;
@@ -69,18 +82,18 @@ export function useAiStatus(): AiStatus {
   }, []);
 
   useEffect(() => {
-    const subscriber = (isConfigured: boolean) => {
-      setAiConfigured(isConfigured);
+    const subscriber = (state: CachedAiState) => {
+      setStatusState(state);
       setIsLoading(false);
     };
 
     subscribers.add(subscriber);
 
     // Initial check or populate from cache
-    if (cachedAiConfigured === null) {
+    if (cachedAiState === null) {
       checkAiStatus();
     } else {
-      setAiConfigured(cachedAiConfigured);
+      setStatusState(cachedAiState);
       setIsLoading(false);
     }
 
@@ -97,7 +110,8 @@ export function useAiStatus(): AiStatus {
   }, [checkAiStatus]);
 
   return {
-    aiConfigured,
+    aiConfigured: statusState.aiConfigured,
+    aiEnabled: statusState.aiEnabled,
     isLoading,
     checkAiStatus,
   };

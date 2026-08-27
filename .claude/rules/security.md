@@ -5,6 +5,7 @@
 - **Zero Client Secrets**: The frontend client bundle must NEVER contain API keys, service tokens, private certificates, or database credentials.
 - **Environment Isolation**:
   - `GEMINI_API_KEY` is loaded strictly on the server via `process.env.GEMINI_API_KEY` (`dotenv`).
+  - `AI_FEATURES_ENABLED` (`'true'` | `'false'`) controls whether Gemini product features and endpoints are active. When `AI_FEATURES_ENABLED !== 'true'` or `GEMINI_API_KEY` is missing, all Gemini endpoints fail closed with 503 and UI elements remain hidden.
   - Never prefix AI keys with `VITE_` or expose them to client build outputs.
   - Never commit `.env` or files containing live credentials.
 - **Claude / Memory Invariant**: Never store real passwords, authorization tokens, API keys, or private user data in `CLAUDE.md`, `.claude/rules/`, or persistent memory files.

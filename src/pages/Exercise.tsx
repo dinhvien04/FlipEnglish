@@ -25,7 +25,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
   onExitQuiz,
 }) => {
   const { t } = useI18n();
-  const { aiConfigured } = useAiStatus();
+  const { aiEnabled } = useAiStatus();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -127,7 +127,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
           totalQuestions={totalQuestions}
           lessonTitle={lesson.title}
           lessonLevel={lesson.level}
-          aiConfigured={aiConfigured}
+          aiEnabled={aiEnabled}
           onAnswerSubmit={handleAnswerSubmit}
         />
       </div>
