@@ -75,7 +75,7 @@ function LazyViewFallback() {
 
 export default function App() {
   const { t } = useI18n();
-  const { aiEnabled } = useAiStatus();
+  const { aiEnabled, isLoading: isAiStatusLoading } = useAiStatus();
   const [currentView, setCurrentView] = useState<AppView>(() => {
     return shouldShowOnboarding() ? 'onboarding' : 'today';
   });
@@ -158,10 +158,10 @@ export default function App() {
 
   // Guard against navigating into AI views when AI features are disabled/unavailable
   useEffect(() => {
-    if (!aiEnabled && (currentView === 'flip-lens' || currentView.startsWith('conversation'))) {
+    if (!isAiStatusLoading && !aiEnabled && (currentView === 'flip-lens' || currentView.startsWith('conversation'))) {
       setCurrentView('today');
     }
-  }, [aiEnabled, currentView]);
+  }, [aiEnabled, isAiStatusLoading, currentView]);
 
   // Scroll to top on view transition
   useEffect(() => {
@@ -703,14 +703,15 @@ export default function App() {
   };
 
   // Start AI Practice on missed words from exam
-  const handleStartAIPracticeFromExam = (words: VocabWord[]) => {
+  const handleStartAIPracticeFromExam = (words: VocabWord[], level?: CEFRLevel) => {
     if (words.length > 0) {
+      const targetLevel = level || examLevel;
       const tempLesson: Lesson = {
         id: 'exam-review-practice',
-        title: `Exam Practice — ${examLevel}`,
-        levelTitle: `${examLevel} Practice Reinforcement`,
+        title: `Exam Practice — ${targetLevel}`,
+        levelTitle: `${targetLevel} Practice Reinforcement`,
         description: 'Targeted reinforcement for questions and vocabulary missed during your exam.',
-        level: examLevel,
+        level: targetLevel,
         category: 'Vocabulary',
         imageUrl: words[0]?.imageUrl || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
         words: words,

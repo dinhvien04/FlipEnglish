@@ -12,7 +12,7 @@ interface ExamResultProps {
   onRetakeExam: () => void;
   onReturnToExamCenter: () => void;
   onSelectLesson: (lesson: Lesson) => void;
-  onStartAIPractice?: (words: VocabWord[]) => void;
+  onStartAIPractice?: (words: VocabWord[], level?: ExamResultReport['level']) => void;
 }
 
 export const ExamResultPage: React.FC<ExamResultProps> = ({
@@ -103,11 +103,14 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          word: prompt,
-          meaning: correctAns,
-          userAnswer: userAns,
+          level: report.level,
+          lesson: `Exam Review — ${report.title}`,
+          question: prompt,
+          selectedAnswer: userAns,
           correctAnswer: correctAns,
-          context: explanation,
+          targetWord: prompt,
+          meaning: explanation,
+          example: explanation,
         }),
       });
 
@@ -153,7 +156,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
     }
 
     if (wordsPool.length > 0) {
-      onStartAIPractice(wordsPool);
+      onStartAIPractice(wordsPool, report.level);
     }
   };
 

@@ -47,6 +47,9 @@ export const Result: React.FC<ResultProps> = ({
     setIsGeneratingAi(true);
     setAiError(null);
 
+    // Limit to max 10 words as enforced by server-side AiPracticeInputSchema
+    const boundedMistakeWords = mistakeWords.slice(0, 10);
+
     try {
       const response = await fetch('/api/ai-practice', {
         method: 'POST',
@@ -54,7 +57,7 @@ export const Result: React.FC<ResultProps> = ({
         body: JSON.stringify({
           lessonTitle: lesson.title,
           level: lesson.level,
-          mistakeWords: mistakeWords.map((w) => ({
+          mistakeWords: boundedMistakeWords.map((w) => ({
             word: w.word,
             meaning: w.meaning,
             example: w.example,

@@ -449,11 +449,11 @@ async function withGeminiConcurrency<T>(reqId: string, task: () => Promise<T>): 
 // Lazy-initialized Gemini client with official HTTP request timeout
 let aiClient: GoogleGenAI | null = null;
 function getGenAI(): GoogleGenAI {
+  if (!isAiAvailable()) {
+    throw new HttpError(503, 'AI features are currently unavailable.', 'AI is disabled or unconfigured');
+  }
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new HttpError(503, 'AI service configuration is currently unavailable.', 'GEMINI_API_KEY is not configured');
-    }
+    const apiKey = process.env.GEMINI_API_KEY!;
     aiClient = new GoogleGenAI({
       apiKey,
       httpOptions: {

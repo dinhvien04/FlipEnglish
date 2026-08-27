@@ -32,13 +32,17 @@ function makeRequest(
       url,
       {
         method: opts.method,
-        headers: opts.headers,
+        headers: {
+          Connection: 'close',
+          ...(opts.headers || {}),
+        },
         timeout: 8000,
       },
       (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => resolve({ statusCode: res.statusCode || 0, headers: res.headers, body: data }));
+        res.on('error', (err) => reject(err));
       }
     );
 
@@ -171,6 +175,9 @@ async function testPermutation(matrix: MatrixPermutation) {
     env: spawnEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+
+  serverProc.stdout?.resume();
+  serverProc.stderr?.resume();
 
   try {
     const ready = await waitForServerReady(matrix.port);

@@ -24,9 +24,9 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
   totalQuestions,
   onAnswerSubmit,
   lessonTitle = 'Vocabulary',
-  lessonLevel = 'A1-A2',
+  lessonLevel = 'A1',
   aiConfigured = false,
-  aiEnabled = aiConfigured,
+  aiEnabled = false,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [typedAnswer, setTypedAnswer] = useState<string>('');
@@ -126,12 +126,15 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
     setIsExplaining(true);
     setExplanationError(null);
 
+    const validCefrLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const normalizedLevel = validCefrLevels.includes(lessonLevel) ? lessonLevel : 'A1';
+
     try {
       const response = await fetch('/api/explain-mistake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          level: lessonLevel,
+          level: normalizedLevel,
           lesson: lessonTitle,
           question: question.prompt + (question.sentence ? ` ${question.sentence}` : ''),
           selectedAnswer: selectedAnswerText,

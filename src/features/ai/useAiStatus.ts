@@ -30,6 +30,17 @@ function notifySubscribers(state: CachedAiState) {
   });
 }
 
+function updateCachedState(newState: CachedAiState): void {
+  if (
+    cachedAiState === null ||
+    cachedAiState.aiConfigured !== newState.aiConfigured ||
+    cachedAiState.aiEnabled !== newState.aiEnabled
+  ) {
+    cachedAiState = newState;
+    notifySubscribers(newState);
+  }
+}
+
 export function useAiStatus(): AiStatus {
   const [statusState, setStatusState] = useState<CachedAiState>(
     () => cachedAiState ?? { aiConfigured: false, aiEnabled: false }
@@ -45,17 +56,20 @@ export function useAiStatus(): AiStatus {
     }
 
     inFlightCheck = (async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
       try {
         const response = await fetch('/api/health', {
           headers: {
             Accept: 'application/json',
           },
+          signal: controller.signal,
         });
 
         if (!response.ok) {
           const fallbackState: CachedAiState = { aiConfigured: false, aiEnabled: false };
-          cachedAiState = fallbackState;
-          notifySubscribers(fallbackState);
+          updateCachedState(fallbackState);
           return false;
         }
 
@@ -64,16 +78,15 @@ export function useAiStatus(): AiStatus {
         const isEnabled = Boolean(data && data.aiEnabled === true);
         const newState: CachedAiState = { aiConfigured: isConfigured, aiEnabled: isEnabled };
 
-        cachedAiState = newState;
-        notifySubscribers(newState);
+        updateCachedState(newState);
         return isEnabled;
       } catch {
-        // Offline / network failure -> treat AI as unavailable safely
+        // Offline / network failure / timeout -> treat AI as unavailable safely
         const fallbackState: CachedAiState = { aiConfigured: false, aiEnabled: false };
-        cachedAiState = fallbackState;
-        notifySubscribers(fallbackState);
+        updateCachedState(fallbackState);
         return false;
       } finally {
+        clearTimeout(timeoutId);
         inFlightCheck = null;
       }
     })();

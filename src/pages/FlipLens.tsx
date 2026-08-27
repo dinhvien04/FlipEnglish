@@ -17,6 +17,7 @@ import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
 import { getApiErrorMessage } from '../utils/apiError';
+import { useAiStatus } from '../features/ai/useAiStatus';
 
 interface FlipLensProps {
   onBackToHome: () => void;
@@ -33,6 +34,7 @@ type FlipLensStep =
   | 'result';
 
 export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
+  const { aiEnabled } = useAiStatus();
   const [step, setStep] = useState<FlipLensStep>('upload');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageData, setImageData] = useState<ProcessedImage | null>(null);
@@ -1016,8 +1018,8 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
             totalQuestions={quizQuestions.length}
             onAnswerSubmit={handleQuizAnswerSubmit}
             lessonTitle="My Photo Lesson"
-            lessonLevel="A1-A2"
-            aiEnabled={true}
+            lessonLevel="A1"
+            aiEnabled={aiEnabled}
           />
         </div>
       )}
