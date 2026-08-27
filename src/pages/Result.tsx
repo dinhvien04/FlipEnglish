@@ -6,6 +6,7 @@ import { SafeImage } from '../components/SafeImage';
 import { AIPracticeModal } from '../components/AIPracticeModal';
 import { getApiErrorMessage } from '../utils/apiError';
 import { useI18n } from '../features/i18n';
+import { useAiStatus } from '../features/ai/useAiStatus';
 
 interface ResultProps {
   lesson: Lesson;
@@ -31,6 +32,7 @@ export const Result: React.FC<ResultProps> = ({
   onBackToHome,
 }) => {
   const { t } = useI18n();
+  const { aiConfigured } = useAiStatus();
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiQuestions, setAiQuestions] = useState<AIPracticeQuestion[] | null>(null);
@@ -191,8 +193,8 @@ export const Result: React.FC<ResultProps> = ({
 
         {/* Action Buttons */}
         <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {/* Gemini AI Targeted Practice Button (Only when there are mistake words) */}
-          {mistakeWords.length > 0 && (
+          {/* Gemini AI Targeted Practice Button (Only when there are mistake words and AI is configured) */}
+          {mistakeWords.length > 0 && aiConfigured && (
             <button
               id="result-ai-practice-btn"
               onClick={handleGenerateAiPractice}

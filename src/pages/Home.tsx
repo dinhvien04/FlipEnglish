@@ -15,7 +15,7 @@ import { useI18n } from '../features/i18n';
 
 interface HomeProps {
   onSelectLesson: (lesson: Lesson) => void;
-  onOpenFlipLens: () => void;
+  onOpenFlipLens?: () => void;
   onOpenExamCenter?: () => void;
   onNavigateReview?: () => void;
   onNavigateToday?: () => void;
@@ -507,7 +507,7 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
       {/* Feature Entry Cards: Smart Review, FlipLens & Exam Center */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className={`grid grid-cols-1 md:grid-cols-2 ${onOpenFlipLens ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6`}>
         {/* Card 1: Smart Review */}
         <div className="relative overflow-hidden rounded-3xl bg-indigo-900 p-6 sm:p-7 text-white border border-indigo-700/50 shadow-lg shadow-indigo-950/20 flex flex-col justify-between space-y-6">
           <div className="relative z-10 space-y-2.5">
@@ -543,32 +543,34 @@ export const Home: React.FC<HomeProps> = ({
           )}
         </div>
 
-        {/* Card 2: FlipLens */}
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
-          <div className="relative z-10 space-y-2.5">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
-              <span>{t('ui.nav.fliplens')}</span>
+        {/* Card 2: FlipLens (Only when AI is configured) */}
+        {onOpenFlipLens && (
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6">
+            <div className="relative z-10 space-y-2.5">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
+                <span>{t('ui.nav.fliplens')}</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                {t('fliplens.title')}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {t('fliplens.subtitle')}
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              {t('fliplens.title')}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {t('fliplens.subtitle')}
-            </p>
-          </div>
 
-          <button
-            type="button"
-            id="home-try-fliplens-btn"
-            onClick={onOpenFlipLens}
-            className="self-start min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
-          >
-            {t('ui.nav.fliplens')}
-          </button>
-        </div>
+            <button
+              type="button"
+              id="home-try-fliplens-btn"
+              onClick={onOpenFlipLens}
+              className="self-start min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center"
+            >
+              {t('ui.nav.fliplens')}
+            </button>
+          </div>
+        )}
 
         {/* Card 3: Practice Exam Center */}
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6 md:col-span-2 lg:col-span-1">
+        <div className={`relative overflow-hidden rounded-3xl bg-slate-900 p-6 sm:p-7 text-white border border-slate-800 shadow-lg shadow-slate-950/20 flex flex-col justify-between space-y-6 ${onOpenFlipLens ? 'md:col-span-2 lg:col-span-1' : ''}`}>
           <div className="relative z-10 space-y-2.5">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
               <span>{t('ui.nav.exams')}</span>

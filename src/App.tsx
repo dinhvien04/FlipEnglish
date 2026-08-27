@@ -39,6 +39,7 @@ import {
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 import { useI18n } from './features/i18n';
+import { useAiStatus } from './features/ai/useAiStatus';
 
 // Feature-level code splitting for heavy/secondary views
 const FlipLens = lazy(() => import('./pages/FlipLens').then((m) => ({ default: m.FlipLens })));
@@ -74,6 +75,7 @@ function LazyViewFallback() {
 
 export default function App() {
   const { t } = useI18n();
+  const { aiConfigured } = useAiStatus();
   const [currentView, setCurrentView] = useState<AppView>(() => {
     return shouldShowOnboarding() ? 'onboarding' : 'today';
   });
@@ -153,6 +155,13 @@ export default function App() {
       setPendingResumePlacement(activePlacement);
     }
   }, []);
+
+  // Guard against navigating into AI views when AI features are unconfigured
+  useEffect(() => {
+    if (!aiConfigured && (currentView === 'flip-lens' || currentView.startsWith('conversation'))) {
+      setCurrentView('today');
+    }
+  }, [aiConfigured, currentView]);
 
   // Scroll to top on view transition
   useEffect(() => {
@@ -779,8 +788,8 @@ export default function App() {
             onNavigateDictionary={() => handleNavigateDictionary()}
             onNavigateHome={handleNavigateHome}
             onNavigateReview={handleNavigateReview}
-            onNavigateConversation={handleNavigateConversation}
-            onNavigateFlipLens={handleOpenFlipLens}
+            onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
+            onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
             onNavigateExamCenter={handleNavigateExamCenter}
             onNavigateHelp={handleNavigateHelp}
             currentView={currentView}
@@ -807,9 +816,9 @@ export default function App() {
               onNavigateCurriculum={handleNavigateHome}
               onNavigateReview={handleNavigateReview}
               onNavigatePlacement={handleStartPlacementIntro}
-              onNavigateConversation={handleNavigateConversation}
+              onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
               onNavigateExams={handleNavigateExamCenter}
-              onNavigateFlipLens={handleOpenFlipLens}
+              onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
               onReopenOnboarding={handleOpenOnboarding}
             />
           )}
@@ -822,8 +831,8 @@ export default function App() {
               onNavigatePlacement={handleStartPlacementIntro}
               onNavigateQuickTest={handleStartQuickTestFromPlan}
               onNavigateCurriculum={handleNavigateHome}
-              onNavigateConversation={handleNavigateConversation}
-              onNavigateFlipLens={handleOpenFlipLens}
+              onNavigateConversation={aiConfigured ? handleNavigateConversation : undefined}
+              onNavigateFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
               isStartingQuickTest={isStartingExam}
             />
           )}
@@ -843,7 +852,7 @@ export default function App() {
           {currentView === 'home' && (
             <Home
               onSelectLesson={handleSelectLesson}
-              onOpenFlipLens={handleOpenFlipLens}
+              onOpenFlipLens={aiConfigured ? handleOpenFlipLens : undefined}
               onOpenExamCenter={handleNavigateExamCenter}
               onNavigateReview={handleNavigateReview}
               onNavigateToday={handleNavigateToday}
@@ -1049,7 +1058,9 @@ export default function App() {
               FlipEnglish — Master English vocabulary one flip card at a time.
             </p>
             <p className="text-slate-400">
-              72 Structured Lessons • CEFR A1—C2 • Practice Exams & AI Diagnostics
+              {aiConfigured
+                ? '72 Structured Lessons • CEFR A1—C2 • Practice Exams & AI Diagnostics'
+                : '72 Structured Lessons • CEFR A1—C2 • Practice Exams & Smart Review'}
             </p>
           </div>
         </footer>

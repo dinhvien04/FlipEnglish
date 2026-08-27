@@ -3,7 +3,7 @@ import { useI18n } from '../features/i18n';
 
 interface FooterProps {
   onNavigateHome: () => void;
-  onNavigateFlipLens: () => void;
+  onNavigateFlipLens?: () => void;
   onNavigateExamCenter: () => void;
   onNavigateHelp?: () => void;
 }
@@ -37,13 +37,15 @@ export const Footer: React.FC<FooterProps> = ({
             >
               {t('ui.nav.curriculum')}
             </button>
-            <button
-              type="button"
-              onClick={onNavigateFlipLens}
-              className="hover:text-indigo-600 transition-colors cursor-pointer"
-            >
-              {t('ui.nav.fliplens')}
-            </button>
+            {onNavigateFlipLens && (
+              <button
+                type="button"
+                onClick={onNavigateFlipLens}
+                className="hover:text-indigo-600 transition-colors cursor-pointer"
+              >
+                {t('ui.nav.fliplens')}
+              </button>
+            )}
             <button
               type="button"
               onClick={onNavigateExamCenter}
@@ -65,7 +67,7 @@ export const Footer: React.FC<FooterProps> = ({
 
         <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-2xs text-slate-400">
           <p>© {new Date().getFullYear()} FlipEnglish. {t('ui.common.disclaimerCefr')}</p>
-          <p>Powered by modern web standards and Google Gemini AI.</p>
+          <p>Powered by modern web standards.</p>
         </div>
       </div>
     </footer>

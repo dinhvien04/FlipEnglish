@@ -5,6 +5,7 @@ import { QuizQuestionCard } from '../components/QuizQuestionCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { recordQuizMistake, batchAddLessonWordsToReview } from '../utils/reviewStorage';
 import { useI18n } from '../features/i18n';
+import { useAiStatus } from '../features/ai/useAiStatus';
 
 interface ExerciseProps {
   lesson: Lesson;
@@ -24,6 +25,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
   onExitQuiz,
 }) => {
   const { t } = useI18n();
+  const { aiConfigured } = useAiStatus();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -125,6 +127,7 @@ export const Exercise: React.FC<ExerciseProps> = ({
           totalQuestions={totalQuestions}
           lessonTitle={lesson.title}
           lessonLevel={lesson.level}
+          aiConfigured={aiConfigured}
           onAnswerSubmit={handleAnswerSubmit}
         />
       </div>

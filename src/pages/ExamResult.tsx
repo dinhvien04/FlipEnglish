@@ -5,6 +5,7 @@ import { LESSONS } from '../data/lessons';
 import { EXAM_DISCLAIMER } from '../data/exams/config';
 import { getApiErrorMessage } from '../utils/apiError';
 import { useI18n } from '../features/i18n';
+import { useAiStatus } from '../features/ai/useAiStatus';
 
 interface ExamResultProps {
   report: ExamResultReport;
@@ -22,6 +23,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
   onStartAIPractice,
 }) => {
   const { t } = useI18n();
+  const { aiConfigured } = useAiStatus();
   const [filterMode, setFilterMode] = useState<'all' | 'incorrect' | 'correct'>('all');
   const [aiAnalysis, setAiAnalysis] = useState<AIExamAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -276,87 +278,89 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           </div>
         </div>
 
-        {/* AI Exam Diagnostic Analysis */}
-        <div className="border-t border-slate-200 pt-6 space-y-4">
-          {!aiAnalysis ? (
-            <div className="bg-indigo-50/70 rounded-3xl p-6 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="space-y-1 text-center sm:text-left">
-                <div className="text-indigo-900 font-black text-sm sm:text-base">
-                  Gemini AI Exam Diagnostic
-                </div>
-                <p className="text-xs text-indigo-700 max-w-md">
-                  Get a personalized AI breakdown analyzing your mistake patterns, specific linguistic gaps, and customized study plan.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                id="request-ai-exam-analysis-btn"
-                onClick={handleRequestAIAnalysis}
-                disabled={isAnalyzing}
-                className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center justify-center"
-              >
-                {isAnalyzing ? 'Analyzing Exam...' : 'Analyze My Exam'}
-              </button>
-            </div>
-          ) : (
-            <div className="bg-indigo-50/80 rounded-3xl p-6 sm:p-8 border border-indigo-200 space-y-6 animate-fadeIn">
-              <div className="border-b border-indigo-200/80 pb-4">
-                <h3 className="text-base font-black text-slate-900">AI Diagnostic Report</h3>
-                <p className="text-2xs text-indigo-700">Powered by Gemini assessment intelligence</p>
-              </div>
-
-              {/* Summary */}
-              <div className="space-y-1">
-                <h4 className="text-2xs uppercase tracking-wider font-extrabold text-indigo-900">
-                  Diagnostic Overview
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
-                  {aiAnalysis.summary}
-                </p>
-              </div>
-
-              {/* Strengths & Weaknesses */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-2">
-                  <p className="text-2xs font-black uppercase text-emerald-700">Demonstrated Competencies</p>
-                  <ul className="space-y-1.5 text-xs text-slate-700">
-                    {aiAnalysis.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-emerald-600 font-bold">•</span>
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
+        {/* AI Exam Diagnostic Analysis (Only when AI is configured) */}
+        {aiConfigured && (
+          <div className="border-t border-slate-200 pt-6 space-y-4">
+            {!aiAnalysis ? (
+              <div className="bg-indigo-50/70 rounded-3xl p-6 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="text-indigo-900 font-black text-sm sm:text-base">
+                    Gemini AI Exam Diagnostic
+                  </div>
+                  <p className="text-xs text-indigo-700 max-w-md">
+                    Get a personalized AI breakdown analyzing your mistake patterns, specific linguistic gaps, and customized study plan.
+                  </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-2">
-                  <p className="text-2xs font-black uppercase text-amber-700">Priority Study Targets</p>
-                  <ul className="space-y-1.5 text-xs text-slate-700">
-                    {aiAnalysis.weaknesses.map((w, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-amber-600 font-bold">•</span>
-                        <span>{w}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <button
+                  type="button"
+                  id="request-ai-exam-analysis-btn"
+                  onClick={handleRequestAIAnalysis}
+                  disabled={isAnalyzing}
+                  className="w-full sm:w-auto min-h-12 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center justify-center"
+                >
+                  {isAnalyzing ? 'Analyzing Exam...' : 'Analyze My Exam'}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-indigo-50/80 rounded-3xl p-6 sm:p-8 border border-indigo-200 space-y-6 animate-fadeIn">
+                <div className="border-b border-indigo-200/80 pb-4">
+                  <h3 className="text-base font-black text-slate-900">AI Diagnostic Report</h3>
+                  <p className="text-2xs text-indigo-700">Powered by Gemini assessment intelligence</p>
+                </div>
+
+                {/* Summary */}
+                <div className="space-y-1">
+                  <h4 className="text-2xs uppercase tracking-wider font-extrabold text-indigo-900">
+                    Diagnostic Overview
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    {aiAnalysis.summary}
+                  </p>
+                </div>
+
+                {/* Strengths & Weaknesses */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-2">
+                    <p className="text-2xs font-black uppercase text-emerald-700">Demonstrated Competencies</p>
+                    <ul className="space-y-1.5 text-xs text-slate-700">
+                      {aiAnalysis.strengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <span className="text-emerald-600 font-bold">•</span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-2">
+                    <p className="text-2xs font-black uppercase text-amber-700">Priority Study Targets</p>
+                    <ul className="space-y-1.5 text-xs text-slate-700">
+                      {aiAnalysis.weaknesses.map((w, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <span className="text-amber-600 font-bold">•</span>
+                          <span>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Study Tip */}
+                <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-1">
+                  <p className="text-2xs font-black uppercase tracking-wider text-slate-900">High-Impact Study Strategy</p>
+                  <p className="text-xs text-slate-700 leading-relaxed">{aiAnalysis.studyTip}</p>
                 </div>
               </div>
+            )}
 
-              {/* Study Tip */}
-              <div className="bg-white rounded-2xl p-4 border border-indigo-100 space-y-1">
-                <p className="text-2xs font-black uppercase tracking-wider text-slate-900">High-Impact Study Strategy</p>
-                <p className="text-xs text-slate-700 leading-relaxed">{aiAnalysis.studyTip}</p>
-              </div>
-            </div>
-          )}
-
-          {analysisError && (
-            <p className="text-xs text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">
-              {analysisError}
-            </p>
-          )}
-        </div>
+            {analysisError && (
+              <p className="text-xs text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">
+                {analysisError}
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Recommended Lessons to Bridge Gaps */}
@@ -505,7 +509,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                       </div>
                       <p className="leading-relaxed">{expandedExplanationMap[q.id]}</p>
                     </div>
-                  ) : (
+                  ) : aiConfigured ? (
                     <button
                       type="button"
                       id={`explain-mistake-btn-${q.id}`}
@@ -523,7 +527,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                     >
                       {isExplainingThis ? 'Generating explanation...' : 'Explain My Mistake with Gemini'}
                     </button>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
@@ -549,7 +553,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
         </button>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          {report.missedQuestions.length > 0 && onStartAIPractice && (
+          {report.missedQuestions.length > 0 && onStartAIPractice && aiConfigured && (
             <button
               type="button"
               id="ai-practice-missed-words-btn"

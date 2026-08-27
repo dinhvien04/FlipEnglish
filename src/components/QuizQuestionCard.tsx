@@ -11,6 +11,7 @@ interface QuizQuestionCardProps {
   onAnswerSubmit: (isCorrect: boolean) => void;
   lessonTitle?: string;
   lessonLevel?: string;
+  aiConfigured?: boolean;
 }
 
 // Module-level in-memory cache to avoid repeated Gemini API requests during the session
@@ -23,6 +24,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
   onAnswerSubmit,
   lessonTitle = 'Vocabulary',
   lessonLevel = 'A1-A2',
+  aiConfigured = false,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [typedAnswer, setTypedAnswer] = useState<string>('');
@@ -511,8 +513,8 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
                 </p>
               )}
 
-              {/* Gemini Explain My Mistake Trigger Button (Only for incorrect answers) */}
-              {!isCorrect && !explanation && (
+              {/* Gemini Explain My Mistake Trigger Button (Only for incorrect answers and when AI is configured) */}
+              {!isCorrect && !explanation && aiConfigured && (
                 <div className="pt-2">
                   <button
                     type="button"

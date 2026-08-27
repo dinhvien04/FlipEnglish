@@ -7,9 +7,9 @@ interface HelpPageProps {
   onNavigateCurriculum: () => void;
   onNavigateReview: () => void;
   onNavigatePlacement: () => void;
-  onNavigateConversation: () => void;
+  onNavigateConversation?: () => void;
   onNavigateExams: () => void;
-  onNavigateFlipLens: () => void;
+  onNavigateFlipLens?: () => void;
   onReopenOnboarding: () => void;
 }
 
@@ -99,26 +99,34 @@ export const HelpPage: React.FC<HelpPageProps> = ({
       badge: 'Offline Ready',
       onClick: onNavigateExams,
     },
-    {
-      id: 'conversation',
-      title: t('help.conversation.title'),
-      titleEn: 'AI Conversation Lab',
-      desc: t('help.conversation.desc'),
-      action: t('help.conversation.action'),
-      badge: 'Cần Internet',
-      isAi: true,
-      onClick: onNavigateConversation,
-    },
-    {
-      id: 'fliplens',
-      title: t('help.fliplens.title'),
-      titleEn: 'FlipLens Visual Scanner',
-      desc: t('help.fliplens.desc'),
-      action: t('help.fliplens.action'),
-      badge: 'Cần Internet',
-      isAi: true,
-      onClick: onNavigateFlipLens,
-    },
+    ...(onNavigateConversation
+      ? [
+          {
+            id: 'conversation',
+            title: t('help.conversation.title'),
+            titleEn: 'AI Conversation Lab',
+            desc: t('help.conversation.desc'),
+            action: t('help.conversation.action'),
+            badge: 'Cần Internet',
+            isAi: true,
+            onClick: onNavigateConversation,
+          },
+        ]
+      : []),
+    ...(onNavigateFlipLens
+      ? [
+          {
+            id: 'fliplens',
+            title: t('help.fliplens.title'),
+            titleEn: 'FlipLens Visual Scanner',
+            desc: t('help.fliplens.desc'),
+            action: t('help.fliplens.action'),
+            badge: 'Cần Internet',
+            isAi: true,
+            onClick: onNavigateFlipLens,
+          },
+        ]
+      : []),
   ];
 
   return (
