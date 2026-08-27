@@ -1,5 +1,33 @@
 import { LearnResumeContext, ReviewResumeContext } from '../types/sessionResume';
 import { ResolvedReviewItem, ReviewRating } from '../types/review';
+import {
+  saveActiveLearnSession,
+  getActiveLearnSession,
+  clearActiveLearnSession,
+  saveActiveReviewSession,
+  getActiveReviewSession,
+  clearActiveReviewSession,
+} from '../features/continuity/sessionPersistence';
+import {
+  validateLearnResumeContext,
+  validateReviewResumeContext,
+  isSessionStale,
+  SESSION_MAX_AGE_MS,
+} from '../features/continuity/sessionPersistenceValidation';
+
+// Re-export persistence engine and validation helpers for clean consumer integration
+export {
+  saveActiveLearnSession,
+  getActiveLearnSession,
+  clearActiveLearnSession,
+  saveActiveReviewSession,
+  getActiveReviewSession,
+  clearActiveReviewSession,
+  validateLearnResumeContext,
+  validateReviewResumeContext,
+  isSessionStale,
+  SESSION_MAX_AGE_MS,
+};
 
 export interface NormalizedLearnResume {
   currentIndex: number;
