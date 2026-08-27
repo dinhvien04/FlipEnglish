@@ -181,3 +181,13 @@ export function normalizeReviewResumeContext(
     ratingBreakdown: normalizedBreakdown,
   };
 }
+
+export {
+  getActiveLearnSession,
+  saveActiveLearnSession,
+  clearActiveLearnSession,
+  getActiveReviewSession,
+  saveActiveReviewSession,
+  clearActiveReviewSession,
+} from './sessionPersistence';
+
