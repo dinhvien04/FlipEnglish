@@ -602,6 +602,29 @@ export const enCatalog = {
   'continuity.actionStartReview': 'Start Review',
   'continuity.actionStart': 'Start Task',
   'continuity.actionStartLesson': 'Start Lesson',
+
+  // Study Reminders UI
+  'reminders.banner.badge': 'Study Reminder',
+  'reminders.banner.title': 'Time for your daily English study',
+  'reminders.banner.desc': 'Keep your learning momentum going and reach your daily target ({time}).',
+  'reminders.banner.studyNow': 'Study Now',
+  'reminders.banner.dismiss': 'Dismiss',
+  'reminders.modal.title': 'Daily Study Reminders',
+  'reminders.modal.subtitle': 'Set your preferred daily study time to receive helpful learning prompts.',
+  'reminders.modal.enableToggle': 'Enable study reminders',
+  'reminders.modal.enableDesc': 'Receive an in-app reminder when your study time arrives and your daily goal is pending.',
+  'reminders.modal.timeLabel': 'Preferred Time (24h)',
+  'reminders.modal.hourLabel': 'Hour',
+  'reminders.modal.minuteLabel': 'Minute',
+  'reminders.modal.permissionTitle': 'Browser Notifications',
+  'reminders.modal.permissionDescGranted': 'Notifications are enabled for this browser.',
+  'reminders.modal.permissionDescDefault': 'Enable browser notifications to receive study alerts even when focusing on other tabs.',
+  'reminders.modal.permissionDescDenied': 'Notifications are blocked in your browser settings. You will still receive in-app reminders when the app is open.',
+  'reminders.modal.permissionDescUnsupported': 'Browser notifications are not supported on this device. In-app reminders will continue to work.',
+  'reminders.modal.requestPermission': 'Enable Browser Notifications',
+  'reminders.modal.capabilityNote': 'Note: In-app reminders trigger automatically when FlipEnglish is open. Web notifications require active browser permissions.',
+  'reminders.modal.cancel': 'Cancel',
+  'reminders.modal.save': 'Save Preferences',
 };
 
 export type TranslationKey = keyof typeof enCatalog;
