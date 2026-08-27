@@ -8,6 +8,7 @@ import { saveActiveExam, clearActiveExam, saveExamResultToHistory } from '../uti
 import { calculateExamResult } from '../utils/examScoring';
 import { recordQuizMistake } from '../utils/reviewStorage';
 import { resolveCurriculumItem, resolveCurriculumItemByText } from '../utils/curriculumIndex';
+import { recordMeaningfulLearningEvent } from '../features/streak/streakEngine';
 import { useI18n } from '../features/i18n';
 
 interface ExamSessionProps {
@@ -72,6 +73,16 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
     const report = calculateExamResult(finalSession);
     saveExamResultToHistory(report);
     clearActiveExam();
+
+    recordMeaningfulLearningEvent({
+      type: 'exam_submitted',
+      timestamp: Date.now(),
+      metadata: {
+        score: report.overallPercentage,
+        itemsCount: report.totalQuestions,
+        level: report.level,
+      },
+    });
 
     // Auto-feed missed vocabulary items into Smart Review
     for (const missed of report.missedQuestions) {

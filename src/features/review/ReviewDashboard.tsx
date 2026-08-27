@@ -18,6 +18,8 @@ import { ReviewSession } from './ReviewSession';
 import { ReviewResult } from './ReviewResult';
 import { ReviewResumeContext } from '../../types/sessionResume';
 import { normalizeReviewResumeContext } from '../../utils/sessionResume';
+import { recordMeaningfulLearningEvent } from '../streak/streakEngine';
+import { clearActiveReviewSession } from '../continuity/sessionPersistence';
 import { useI18n } from '../i18n';
 
 interface ReviewDashboardProps {
@@ -106,6 +108,14 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleFinishSession = (summary: ReviewSessionSummary) => {
+    recordMeaningfulLearningEvent({
+      type: 'review_batch_completed',
+      timestamp: Date.now(),
+      metadata: {
+        itemsCount: summary.totalReviewed,
+      },
+    });
+    clearActiveReviewSession();
     onSessionContextChange?.(null);
     setActiveQueue(null);
     setSessionSummary(summary);
@@ -113,6 +123,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleExitSession = () => {
+    clearActiveReviewSession();
     onSessionContextChange?.(null);
     setActiveQueue(null);
     refreshStats();

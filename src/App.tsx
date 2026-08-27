@@ -36,6 +36,15 @@ import {
   LearnResumeContext,
   ReviewResumeContext,
 } from './types/sessionResume';
+import { NextActionRecommendation } from './types/continuity';
+import {
+  saveActiveLearnSession,
+  clearActiveLearnSession,
+  saveActiveReviewSession,
+  clearActiveReviewSession,
+} from './features/continuity/sessionPersistence';
+import { recordMeaningfulLearningEvent } from './features/streak/streakEngine';
+import { recordActiveStudySeconds } from './features/progress/activeTimeEngine';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 import { useI18n } from './features/i18n';
@@ -163,9 +172,29 @@ export default function App() {
     }
   }, [aiEnabled, isAiStatusLoading, currentView]);
 
-  // Scroll to top on view transition
+  // Active Study Time Heartbeat (accumulates active seconds when learning or practicing)
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const ACTIVE_STUDY_VIEWS: AppView[] = [
+      'learn',
+      'exercise',
+      'review',
+      'exam-session',
+      'placement-session',
+      'conversation-session',
+      'flip-lens',
+    ];
+
+    if (!ACTIVE_STUDY_VIEWS.includes(currentView)) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      recordActiveStudySeconds(5);
+    }, 5000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [currentView]);
 
   // Curriculum & Main Navigation Handlers
@@ -289,6 +318,14 @@ export default function App() {
   };
 
   const handleFinishFlashcards = () => {
+    recordMeaningfulLearningEvent({
+      type: 'lesson_flashcards_completed',
+      timestamp: Date.now(),
+      metadata: {
+        lessonId: selectedLessonId || undefined,
+      },
+    });
+    clearActiveLearnSession();
     setResumedLearnContext(null);
     setCurrentView('exercise');
   };
@@ -300,6 +337,16 @@ export default function App() {
     mistakeWords: VocabWord[];
     totalQuestions: number;
   }) => {
+    recordMeaningfulLearningEvent({
+      type: 'quiz_completed',
+      timestamp: Date.now(),
+      metadata: {
+        lessonId: selectedLessonId || undefined,
+        score: results.score,
+        itemsCount: results.totalQuestions,
+      },
+    });
+    clearActiveLearnSession();
     setResumedLearnContext(null);
     setQuizResults(results);
     setMistakeWords(results.mistakeWords);
@@ -724,6 +771,88 @@ export default function App() {
     }
   };
 
+  // Continuity Action Handler: routes directly to target view and restores appropriate session context
+  const handleNavigateContinueAction = (recommendation: NextActionRecommendation) => {
+    switch (recommendation.priority) {
+      case 'active-exam': {
+        const active = getActiveExam();
+        if (active && active.status === 'active' && active.endsAt > Date.now()) {
+          setActiveExamSession(active);
+          setPendingResumeSession(null);
+          setCurrentView('exam-session');
+        } else {
+          handleNavigateExamCenter();
+        }
+        break;
+      }
+      case 'active-placement': {
+        const activePlacement = loadActivePlacement();
+        if (activePlacement && activePlacement.status === 'active') {
+          setActivePlacementSession(activePlacement);
+          setPendingResumePlacement(null);
+          setCurrentView('placement-session');
+        } else {
+          handleStartPlacementIntro();
+        }
+        break;
+      }
+      case 'active-learn': {
+        if (recommendation.actionPayload?.lessonId) {
+          const lesson = getLessonById(recommendation.actionPayload.lessonId);
+          if (lesson) {
+            setSelectedLessonId(lesson.id);
+            setTemporaryLesson(null);
+            setIsReviewMistakesMode(false);
+            setCurrentView('learn');
+          } else {
+            handleNavigateToday();
+          }
+        } else {
+          handleNavigateToday();
+        }
+        break;
+      }
+      case 'active-review':
+      case 'due-review': {
+        handleNavigateReview();
+        break;
+      }
+      case 'study-plan-task': {
+        if (recommendation.targetView === 'review') {
+          handleNavigateReview();
+        } else if (recommendation.targetView === 'placement-intro' || recommendation.targetView === 'placement-session') {
+          handleStartPlacementIntro();
+        } else if (recommendation.targetView === 'exam-intro' && recommendation.actionPayload?.level) {
+          handleStartQuickTestFromPlan(recommendation.actionPayload.level);
+        } else if (recommendation.actionPayload?.lessonId) {
+          const lesson = getLessonById(recommendation.actionPayload.lessonId);
+          if (lesson) {
+            handleSelectLesson(lesson);
+          } else {
+            handleNavigateHome();
+          }
+        } else {
+          handleNavigateToday();
+        }
+        break;
+      }
+      case 'next-curriculum-lesson':
+      default: {
+        if (recommendation.actionPayload?.lessonId) {
+          const lesson = getLessonById(recommendation.actionPayload.lessonId);
+          if (lesson) {
+            handleSelectLesson(lesson);
+          } else {
+            handleNavigateHome();
+          }
+        } else {
+          handleNavigateHome();
+        }
+        break;
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
       {/* Resume Pending Active Exam Modal */}
@@ -834,6 +963,7 @@ export default function App() {
               onNavigateCurriculum={handleNavigateHome}
               onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
               onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
+              onNavigateContinueAction={handleNavigateContinueAction}
               isStartingQuickTest={isStartingExam}
             />
           )}
@@ -859,6 +989,7 @@ export default function App() {
               onNavigateToday={handleNavigateToday}
               onStartPlacement={handleStartPlacementIntro}
               onViewPlacementResult={handleViewPlacementResult}
+              onNavigateContinueAction={handleNavigateContinueAction}
               initialLevelTab={homeLevelFilter || 'ALL'}
             />
           )}

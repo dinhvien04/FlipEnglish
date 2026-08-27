@@ -10,10 +10,15 @@ import {
 import { StudyPlanTaskCard } from './StudyPlanTaskCard';
 import { StudyPlanSettingsModal } from './StudyPlanSettings';
 import { Lesson, CEFRLevel } from '../../types';
+import { NextActionRecommendation } from '../../types/continuity';
 import { getLessonById } from '../../data/lessons';
 import { REVIEW_UPDATED_EVENT } from '../../utils/reviewStorage';
-import { PLACEMENT_UPDATED_EVENT } from '../placement/placementStorage';
+import { PLACEMENT_UPDATED_EVENT, getLatestPlacementResult } from '../placement/placementStorage';
 import { PWAInstallCard } from '../pwa/PWAInstallCard';
+import { ContinueLearningCard } from '../continuity/ContinueLearningCard';
+import { ProgressSnapshotCard } from '../progress/ProgressSnapshotCard';
+import { InAppReminderBanner } from '../reminders/InAppReminderBanner';
+import { StudyReminderModal } from '../reminders/StudyReminderModal';
 import { useI18n } from '../i18n';
 
 interface TodayPageProps {
@@ -24,6 +29,7 @@ interface TodayPageProps {
   onNavigateCurriculum: () => void;
   onNavigateConversation?: () => void;
   onNavigateFlipLens?: () => void;
+  onNavigateContinueAction?: (recommendation: NextActionRecommendation) => void;
   isStartingQuickTest?: boolean;
 }
 
@@ -35,6 +41,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
   onNavigateCurriculum,
   onNavigateConversation,
   onNavigateFlipLens,
+  onNavigateContinueAction,
   isStartingQuickTest = false,
 }) => {
   const { t, formatDate } = useI18n();
@@ -43,6 +50,7 @@ export const TodayPage: React.FC<TodayPageProps> = ({
     () => loadStudyPlanSettings().dailyMinutes
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRemindersOpen, setIsRemindersOpen] = useState(false);
   const [goalFeedbackMessage, setGoalFeedbackMessage] = useState<string | null>(null);
 
   const changeGoalButtonRef = useRef<HTMLButtonElement>(null);
@@ -110,6 +118,29 @@ export const TodayPage: React.FC<TodayPageProps> = ({
     }
   };
 
+  // Handle primary Continue Learning CTA
+  const handleContinueLearning = (recommendation: NextActionRecommendation) => {
+    if (onNavigateContinueAction) {
+      onNavigateContinueAction(recommendation);
+    } else {
+      // Fallback local resolution
+      if (recommendation.targetView === 'review') {
+        onNavigateReview();
+      } else if (recommendation.targetView === 'placement-session' || recommendation.targetView === 'placement-intro') {
+        onNavigatePlacement();
+      } else if (recommendation.actionPayload?.lessonId) {
+        const lesson = getLessonById(recommendation.actionPayload.lessonId);
+        if (lesson) {
+          onSelectLesson(lesson);
+        } else {
+          onNavigateCurriculum();
+        }
+      } else {
+        onNavigateCurriculum();
+      }
+    }
+  };
+
   // Handle task skipping
   const handleSkipTask = (taskId: string) => {
     updateTaskStatus(taskId, 'skipped');
@@ -153,8 +184,22 @@ export const TodayPage: React.FC<TodayPageProps> = ({
     day: 'numeric',
   });
 
+  const latestPlacement = getLatestPlacementResult();
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
+      {/* In-App Study Reminder Banner */}
+      <InAppReminderBanner onStudyNow={() => {
+        if (plan.tasks.length > 0) {
+          const firstPending = plan.tasks.find((t) => t.status === 'pending');
+          if (firstPending) {
+            handleStartTask(firstPending);
+            return;
+          }
+        }
+        onNavigateCurriculum();
+      }} />
+
       {/* Header Summary Banner */}
       <section className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -170,25 +215,38 @@ export const TodayPage: React.FC<TodayPageProps> = ({
             </p>
           </div>
 
-          {/* Daily Goal Control */}
-          <button
-            ref={changeGoalButtonRef}
-            type="button"
-            onClick={() => setIsSettingsOpen(true)}
-            className="min-h-11 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-2 self-start sm:self-auto"
-          >
-            {plan.dailyMinutes === preferredDailyMinutes ? (
-              <>
-                <span>{plan.dailyMinutes} min goal</span>
-                <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
-              </>
-            ) : (
-              <>
-                <span>{plan.dailyMinutes} min</span>
-                <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
-              </>
-            )}
-          </button>
+          {/* Daily Goal & Reminder Controls */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              ref={changeGoalButtonRef}
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="min-h-11 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-2"
+            >
+              {plan.dailyMinutes === preferredDailyMinutes ? (
+                <>
+                  <span>{plan.dailyMinutes} min goal</span>
+                  <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
+                </>
+              ) : (
+                <>
+                  <span>{plan.dailyMinutes} min</span>
+                  <span className="text-slate-400 font-normal">· {t('ui.common.change')}</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRemindersOpen(true)}
+              className="min-h-11 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              title={t('reminders.modal.title')}
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="hidden sm:inline">{t('reminders.banner.badge')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Goal Feedback Notice */}
@@ -237,6 +295,17 @@ export const TodayPage: React.FC<TodayPageProps> = ({
           </div>
         )}
       </section>
+
+      {/* Continuity Hero: One-Tap Continue Learning Card */}
+      <ContinueLearningCard onContinue={handleContinueLearning} />
+
+      {/* Progress & Habit Snapshot Card */}
+      <ProgressSnapshotCard
+        estimatedLevel={latestPlacement?.estimatedLevel}
+        dailyGoalMinutes={preferredDailyMinutes}
+        onNavigateToReview={onNavigateReview}
+        onNavigateToGoalSettings={() => setIsSettingsOpen(true)}
+      />
 
       {/* State A: Curriculum Complete & No Required Tasks State */}
       {isCurriculumCompleteState ? (
@@ -415,6 +484,13 @@ export const TodayPage: React.FC<TodayPageProps> = ({
         onClose={handleCloseSettings}
         onSave={handleSaveGoal}
       />
+
+      {/* Study Reminders Preferences Modal */}
+      <StudyReminderModal
+        isOpen={isRemindersOpen}
+        onClose={() => setIsRemindersOpen(false)}
+      />
     </div>
   );
 };
+

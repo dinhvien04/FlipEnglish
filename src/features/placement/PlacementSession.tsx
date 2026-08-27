@@ -16,6 +16,7 @@ import {
   clearActivePlacement,
   savePlacementResultToHistory,
 } from './placementStorage';
+import { recordMeaningfulLearningEvent } from '../streak/streakEngine';
 import { speakWord } from '../../utils/speech';
 import { useI18n } from '../i18n';
 
@@ -125,6 +126,15 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
     };
 
     const updatedStageResults = [...session.stageResults, stageResult];
+
+    recordMeaningfulLearningEvent({
+      type: 'placement_stage_completed',
+      timestamp: Date.now(),
+      metadata: {
+        score: stageResult.scorePercentage,
+        level: currentStage.level,
+      },
+    });
 
     // Check if this was the final stage (Stage 4, index PLACEMENT_STAGE_COUNT - 1)
     if (session.currentStageIndex >= PLACEMENT_STAGE_COUNT - 1) {

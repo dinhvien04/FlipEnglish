@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Lesson, AllProgress, CEFRLevel } from '../types';
-import { LESSONS } from '../data/lessons';
+import { NextActionRecommendation } from '../types/continuity';
+import { LESSONS, getLessonById } from '../data/lessons';
 import { getStoredProgress, getOverallStats } from '../utils/storage';
 import { getReviewDashboardStats, REVIEW_UPDATED_EVENT } from '../utils/reviewStorage';
 import { getLatestPlacementResult, PLACEMENT_UPDATED_EVENT } from '../features/placement/placementStorage';
@@ -11,6 +12,8 @@ import { CEFR_LEVELS_INFO } from '../data/curriculum/curriculumMeta';
 import { CourseShelf } from '../components/CourseShelf';
 import { LevelLibraryView } from '../components/LevelLibraryView';
 import { LessonCard } from '../components/LessonCard';
+import { ContinueLearningCard } from '../features/continuity/ContinueLearningCard';
+import { ProgressSnapshotCard } from '../features/progress/ProgressSnapshotCard';
 import { useI18n } from '../features/i18n';
 
 interface HomeProps {
@@ -22,6 +25,7 @@ interface HomeProps {
   onStartPlacement?: () => void;
   onViewPlacementResult?: () => void;
   onNavigateHelp?: () => void;
+  onNavigateContinueAction?: (recommendation: NextActionRecommendation) => void;
   initialLevelTab?: CEFRLevel | 'ALL';
 }
 
@@ -46,6 +50,7 @@ export const Home: React.FC<HomeProps> = ({
   onStartPlacement,
   onViewPlacementResult,
   onNavigateHelp,
+  onNavigateContinueAction,
   initialLevelTab = 'ALL',
 }) => {
   const { t, isBilingual } = useI18n();
@@ -177,6 +182,30 @@ export const Home: React.FC<HomeProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
+      {/* One-Tap Continue Learning Hero Card */}
+      <ContinueLearningCard
+        onContinue={(rec) => {
+          if (onNavigateContinueAction) {
+            onNavigateContinueAction(rec);
+          } else if (rec.actionPayload?.lessonId) {
+            const lesson = getLessonById(rec.actionPayload.lessonId);
+            if (lesson) onSelectLesson(lesson);
+          } else if (rec.targetView === 'today' && onNavigateToday) {
+            onNavigateToday();
+          } else if (rec.targetView === 'review' && onNavigateReview) {
+            onNavigateReview();
+          }
+        }}
+      />
+
+      {/* Progress & Habit Snapshot Card */}
+      <ProgressSnapshotCard
+        estimatedLevel={latestPlacement?.estimatedLevel}
+        dailyGoalMinutes={todayPlan.dailyMinutes}
+        onNavigateToReview={onNavigateReview}
+        onNavigateToGoalSettings={onNavigateToday}
+      />
+
       {/* Today's Daily Plan Entrance Widget */}
       {onNavigateToday && (
         <section className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-700/60 shadow-lg shadow-indigo-950/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
