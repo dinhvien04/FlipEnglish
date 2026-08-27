@@ -182,12 +182,5 @@ export function normalizeReviewResumeContext(
   };
 }
 
-export {
-  getActiveLearnSession,
-  saveActiveLearnSession,
-  clearActiveLearnSession,
-  getActiveReviewSession,
-  saveActiveReviewSession,
-  clearActiveReviewSession,
-} from './sessionPersistence';
+// Normalized helpers & continuity exports
 
