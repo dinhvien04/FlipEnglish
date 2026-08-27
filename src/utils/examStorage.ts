@@ -14,9 +14,9 @@ function isValidSessionObject(obj: any): obj is ExamSession {
   if (obj.schemaVersion !== 2) return false;
   if (typeof obj.id !== 'string' || obj.id.length === 0 || obj.id.length > 100) return false;
   if (!Array.isArray(obj.questions) || obj.questions.length === 0 || obj.questions.length > MAX_SESSION_QUESTIONS) return false;
-  if (!Array.isArray(obj.userAnswers)) return false;
+  if (!obj.answers || typeof obj.answers !== 'object' || Array.isArray(obj.answers)) return false;
   if (typeof obj.currentQuestionIndex !== 'number' || obj.currentQuestionIndex < 0 || obj.currentQuestionIndex >= obj.questions.length) return false;
-  if (typeof obj.timeRemainingSeconds !== 'number' || obj.timeRemainingSeconds < 0 || obj.timeRemainingSeconds > 36000) return false;
+  if (typeof obj.startedAt !== 'number' || typeof obj.endsAt !== 'number') return false;
 
   return true;
 }

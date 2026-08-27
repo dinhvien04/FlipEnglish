@@ -238,6 +238,12 @@ export function loadActivePlacement(): PlacementSession | null {
 }
 
 /**
+ * Alias for loadActivePlacement for consistency with getActiveExam
+ */
+export const getActivePlacement = loadActivePlacement;
+
+
+/**
  * Saves Active Placement Session safely to localStorage
  */
 export function saveActivePlacement(session: PlacementSession): void {
