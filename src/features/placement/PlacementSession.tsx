@@ -158,9 +158,29 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
         updatedStageResults
       );
 
-      // Save to history & clear active
-      const persistenceResult = savePlacementResultToHistory(finalReport);
-      clearActivePlacement();
+      // 1. Persist a terminal PlacementSession representation first (tombstone)
+      const completedSession: PlacementSession = {
+        ...session,
+        status: 'completed',
+        completedAt,
+        stageResults: updatedStageResults,
+        resultReport: finalReport,
+      };
+      const terminalStateSaved = saveActivePlacement(completedSession);
+
+      // 2. Save latest report and compact history
+      const reportPersistence = savePlacementResultToHistory(finalReport);
+
+      // 3. Attempt removal of active session key
+      const activeSessionCleared = clearActivePlacement();
+
+      const persistenceResult: PlacementPersistenceResult = {
+        latestSaved: reportPersistence.latestSaved,
+        historySaved: reportPersistence.historySaved,
+        terminalStateSaved,
+        activeSessionCleared,
+        success: reportPersistence.success,
+      };
 
       startTransition(() => {
         onFinishPlacement(finalReport, persistenceResult);

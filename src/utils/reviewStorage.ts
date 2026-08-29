@@ -162,14 +162,25 @@ export function loadReviewStorage(now: number = Date.now()): ReviewStorage {
 
     const recentLogs = sanitizeRecentLogs(parsed.recentLogs, now);
 
+    const rawExported = parsed.exportedReportIds;
+    const exportedReportIds: string[] = [];
+    if (Array.isArray(rawExported)) {
+      for (const id of rawExported.slice(0, 50)) {
+        if (typeof id === 'string' && id.trim().length > 0 && id.length <= 100) {
+          exportedReportIds.push(id.trim());
+        }
+      }
+    }
+
     return {
       schemaVersion: 1,
       items: sanitizedItems,
       recentLogs,
+      exportedReportIds,
     };
   } catch (err) {
     console.error('Failed to load review state from localStorage:', err);
-    return { schemaVersion: 1, items: {}, recentLogs: [] };
+    return { schemaVersion: 1, items: {}, recentLogs: [], exportedReportIds: [] };
   }
 }
 
@@ -185,11 +196,13 @@ export function saveReviewStorage(storage: ReviewStorage): boolean {
     }
 
     const prunedLogs = (storage.recentLogs || []).slice(0, MAX_LOG_ENTRIES);
+    const prunedExports = (storage.exportedReportIds || []).slice(0, 50);
 
     const safeStorage: ReviewStorage = {
       schemaVersion: 1,
       items: prunedItems,
       recentLogs: prunedLogs,
+      exportedReportIds: prunedExports,
     };
 
     const writeSuccess = safeSetLocalStorage(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
@@ -537,45 +550,75 @@ export function batchAddItemsToReview(
 }
 
 /**
+ * Batch adds all words in multiple lessons to Smart Review atomically in a single storage cycle.
+ */
+export function batchAddLessonsToReview(
+  lessonIds: string[],
+  now: number = Date.now()
+): ReviewBatchAddResult {
+  if (!Array.isArray(lessonIds) || lessonIds.length === 0) {
+    return { attempted: 0, added: 0, success: true };
+  }
+
+  const storage = loadReviewStorage(now);
+  let attemptedCount = 0;
+  let addedCount = 0;
+
+  for (const lessonId of lessonIds) {
+    const lesson = ALL_CURRICULUM_LESSONS.find((l) => l.id === lessonId);
+    if (!lesson) continue;
+
+    for (const word of lesson.words) {
+      attemptedCount++;
+      if (!storage.items[word.id]) {
+        storage.items[word.id] = createInitialReviewState(word.id, now, 0);
+        addedCount++;
+      }
+    }
+  }
+
+  if (addedCount > 0) {
+    const saved = saveReviewStorage(storage);
+    return { attempted: attemptedCount, added: saved ? addedCount : 0, success: saved };
+  }
+
+  return { attempted: attemptedCount, added: 0, success: true };
+}
+
+/**
  * Batch adds all words in a lesson to Smart Review (e.g. upon lesson or flashcard completion).
  */
 export function batchAddLessonWordsToReview(
   lessonId: string,
   now: number = Date.now()
 ): ReviewBatchAddResult {
-  const lesson = ALL_CURRICULUM_LESSONS.find((l) => l.id === lessonId);
-  if (!lesson) return { attempted: 0, added: 0, success: false };
-
-  const storage = loadReviewStorage();
-  let addedCount = 0;
-
-  for (const word of lesson.words) {
-    if (!storage.items[word.id]) {
-      storage.items[word.id] = createInitialReviewState(word.id, now, 0);
-      addedCount++;
-    }
-  }
-
-  if (addedCount > 0) {
-    const saved = saveReviewStorage(storage);
-    return { attempted: lesson.words.length, added: saved ? addedCount : 0, success: saved };
-  }
-
-  return { attempted: lesson.words.length, added: 0, success: true };
+  return batchAddLessonsToReview([lessonId], now);
 }
 
 /**
- * Batch exports missed item IDs into Smart Review atomically.
+ * Batch exports missed item IDs into Smart Review atomically with report-level idempotency.
  */
 export function exportMissedItemsToReview(
   itemIds: string[],
+  reportId?: string,
   now: number = Date.now()
 ): { attempted: number; persisted: number; failed: number; success: boolean } {
   if (!Array.isArray(itemIds) || itemIds.length === 0) {
     return { attempted: 0, persisted: 0, failed: 0, success: true };
   }
 
-  const storage = loadReviewStorage();
+  const storage = loadReviewStorage(now);
+
+  // Idempotency guard: If this reportId was already exported into reviewStorage, do not re-apply mistake signals
+  if (reportId && storage.exportedReportIds?.includes(reportId)) {
+    return {
+      attempted: itemIds.length,
+      persisted: itemIds.length,
+      failed: 0,
+      success: true,
+    };
+  }
+
   let validCount = 0;
   let updatedOrAdded = 0;
 
@@ -599,7 +642,14 @@ export function exportMissedItemsToReview(
     updatedOrAdded++;
   }
 
-  if (updatedOrAdded > 0) {
+  if (reportId) {
+    const list = storage.exportedReportIds || [];
+    if (!list.includes(reportId)) {
+      storage.exportedReportIds = [reportId, ...list].slice(0, 50);
+    }
+  }
+
+  if (updatedOrAdded > 0 || (reportId && !storage.exportedReportIds?.includes(reportId))) {
     const saved = saveReviewStorage(storage);
     return {
       attempted: itemIds.length,

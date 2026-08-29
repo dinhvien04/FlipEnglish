@@ -55,6 +55,7 @@ const ALLOWED_REVIEW_KEYS = new Set<string>([
   'activeQueue',
   'currentIndex',
   'ratingBreakdown',
+  'hasCompleted',
   'timestamp',
 ]);
 
@@ -471,6 +472,7 @@ export function validateReviewResumeContext(
 
   if (!hasOnlyAllowedKeys(raw, ALLOWED_REVIEW_KEYS)) return null;
   if (raw.schemaVersion !== undefined && raw.schemaVersion !== 1) return null;
+  if (raw.hasCompleted === true) return null; // Completed sessions must never be validated as active resume candidates
 
   if (!Array.isArray(raw.activeQueue) || raw.activeQueue.length === 0 || raw.activeQueue.length > 100) {
     return null;

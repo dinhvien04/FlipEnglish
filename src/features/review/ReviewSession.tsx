@@ -53,6 +53,10 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   const [currentIndex, setCurrentIndex] = useState<number>(getSafeInitialIndex);
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<ReviewRating, number>>(getSafeInitialBreakdown);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [persistenceError, setPersistenceError] = useState<{
+    rating: ReviewRating;
+    itemId: string;
+  } | null>(null);
 
   // Publish live review session state continuously (pure observation only)
   React.useEffect(() => {
@@ -67,9 +71,15 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   const handleRate = (rating: ReviewRating) => {
     if (!currentItem || isProcessing) return;
     setIsProcessing(true);
+    setPersistenceError(null);
 
-    // Apply spaced repetition rating to persistent state
-    applyReviewRatingToItem(currentItem.word.id, rating);
+    // Apply spaced repetition rating to persistent state - must commit before advance
+    const updated = applyReviewRatingToItem(currentItem.word.id, rating);
+    if (!updated) {
+      setIsProcessing(false);
+      setPersistenceError({ rating, itemId: currentItem.word.id });
+      return;
+    }
 
     const updatedBreakdown = {
       ...ratingBreakdown,
@@ -138,6 +148,40 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         total={total}
         label={t('review.session.cardProgress', { current: currentIndex + 1, total })}
       />
+
+      {/* Persistence Error Alert */}
+      {persistenceError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="bg-amber-50 border border-amber-200 text-amber-900 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
+        >
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-amber-950">
+              {t('review.session.saveError')}
+            </p>
+            <p className="text-2xs sm:text-xs text-amber-800">
+              {t('error.storageQuotaDesc')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleRate(persistenceError.rating)}
+              className="min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center"
+            >
+              {t('review.session.retryRating')}
+            </button>
+            <button
+              type="button"
+              onClick={onExit}
+              className="min-h-11 px-4 py-2 bg-white hover:bg-amber-100 text-amber-950 text-xs font-bold border border-amber-300 rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center"
+            >
+              {t('review.session.exitSession')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Review Card */}
       <ReviewCard

@@ -123,8 +123,10 @@ export const DictionaryEntryView: React.FC<DictionaryEntryViewProps> = ({
 
   const handleAddToReview = (match: CurriculumDictionaryMatch) => {
     if (!match.wordId) return;
-    ensureReviewItem(match.wordId);
-    setAddedReviewWordId(match.wordId);
+    const success = ensureReviewItem(match.wordId);
+    if (success) {
+      setAddedReviewWordId(match.wordId);
+    }
   };
 
   const hasCurriculumMatches = Array.isArray(entry.curriculumMatches) && entry.curriculumMatches.length > 0;

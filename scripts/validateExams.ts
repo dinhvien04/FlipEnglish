@@ -4,6 +4,7 @@ import {
   clearActiveExam,
   saveExamResultToHistory,
   getExamHistory,
+  clearExamHistory,
   getActiveExam,
   isValidSessionObject,
   isValidReportObject,
@@ -251,6 +252,19 @@ const corruptedReport3 = {
   ],
 };
 assert(isValidReportObject(corruptedReport3) === false, 'Rejects report with invalid sectionScore totals');
+
+// 8. Exam History Clear Durability & Fault-Injection Tests
+const clearHistorySuccess = clearExamHistory();
+assert(clearHistorySuccess === true, 'clearExamHistory returns true when removal succeeds');
+assert(getExamHistory().length === 0, 'Exam history is empty after clearExamHistory');
+
+// Simulate removal failure for clearExamHistory
+(global as any).localStorage.removeItem = () => {
+  throw new Error('SecurityError on remove history');
+};
+const clearHistoryFailure = clearExamHistory();
+assert(clearHistoryFailure === false, 'clearExamHistory returns false when storage removal fails without throwing');
+(global as any).localStorage.removeItem = originalRemoveItem;
 
 if (storageErrors > 0) {
   console.error(`\n❌ Storage Durability Tests Failed with ${storageErrors} errors.`);

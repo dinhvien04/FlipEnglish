@@ -747,6 +747,9 @@ export default function App() {
   };
 
   const handleViewPlacementResult = () => {
+    // Reset any transient failure state from previous attempts when viewing saved report
+    setPlacementPersistenceState(null);
+
     // 1. Use in-memory result report if present
     if (placementResultReport) {
       setCurrentView('placement-result');
@@ -1163,6 +1166,7 @@ export default function App() {
               <PlacementResultPage
                 report={placementResultReport}
                 initialPersistence={placementPersistenceState || undefined}
+                onPersistenceChange={setPlacementPersistenceState}
                 onRetake={handleStartPlacementIntro}
                 onStartCurriculum={handleStartCurriculumAtLevel}
                 onSelectLesson={handleSelectLesson}

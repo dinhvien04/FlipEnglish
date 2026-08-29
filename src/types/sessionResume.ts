@@ -16,6 +16,7 @@ export interface ReviewResumeContext {
   activeQueue: ResolvedReviewItem[];
   currentIndex: number;
   ratingBreakdown: Record<ReviewRating, number>;
+  hasCompleted?: boolean;
   timestamp?: number;
 }
 

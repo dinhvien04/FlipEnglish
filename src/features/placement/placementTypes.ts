@@ -78,6 +78,8 @@ export interface RecommendedLessonItem {
 export interface PlacementPersistenceResult {
   latestSaved: boolean;
   historySaved: boolean;
+  terminalStateSaved: boolean;
+  activeSessionCleared: boolean;
   success: boolean;
 }
 

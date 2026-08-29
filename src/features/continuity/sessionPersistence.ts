@@ -178,6 +178,12 @@ export function clearActiveReviewSession(): boolean {
       emitSessionUpdate();
       return true;
     }
+    // Fallback tombstone to ensure validateReviewResumeContext rejects it if removal fails
+    safeSetLocalStorage(
+      STORAGE_KEYS.REVIEW_SESSION_ACTIVE,
+      JSON.stringify({ schemaVersion: 1, hasCompleted: true, activeQueue: [], currentIndex: 0 })
+    );
+    emitSessionUpdate();
     return false;
   } catch (err) {
     console.error('Failed to clear active review session from localStorage:', err);

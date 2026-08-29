@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CEFRLevel } from '../types';
 import { ExamResultReport } from '../types/exam';
 import { getExamHistory, clearExamHistory } from '../utils/examStorage';
@@ -18,6 +18,12 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
   const { t } = useI18n();
   const [history, setHistory] = useState<ExamResultReport[]>(() => getExamHistory());
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<'ALL' | CEFRLevel>('ALL');
+  const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const clearTriggerBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -27,10 +33,64 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
     return () => window.removeEventListener('flipenglish_exam_history_updated', handleUpdate);
   }, []);
 
-  const handleClearHistory = () => {
-    if (window.confirm('Are you sure you want to clear all exam history?')) {
-      clearExamHistory();
+  // Focus management for modal
+  useEffect(() => {
+    if (showClearConfirmModal) {
+      const timer = setTimeout(() => {
+        cancelBtnRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    } else if (clearTriggerBtnRef.current) {
+      clearTriggerBtnRef.current.focus();
+    }
+  }, [showClearConfirmModal]);
+
+  // Accessibility: Focus trap & Escape key handling
+  useEffect(() => {
+    if (!showClearConfirmModal) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowClearConfirmModal(false);
+        setClearError(null);
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showClearConfirmModal]);
+
+  const handlePerformClearHistory = () => {
+    setClearError(null);
+    const success = clearExamHistory();
+    if (success) {
       setHistory([]);
+      setShowClearConfirmModal(false);
+    } else {
+      setClearError(t('exam.history.clearError'));
     }
   };
 
@@ -61,12 +121,16 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
 
         {history.length > 0 && (
           <button
+            ref={clearTriggerBtnRef}
             type="button"
             id="clear-exam-history-btn"
-            onClick={handleClearHistory}
+            onClick={() => {
+              setClearError(null);
+              setShowClearConfirmModal(true);
+            }}
             className="min-h-11 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto flex items-center justify-center"
           >
-            Clear History
+            {t('exam.history.clear')}
           </button>
         )}
       </div>
@@ -154,6 +218,65 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Clear Confirmation Modal */}
+      {showClearConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-history-modal-title"
+          aria-describedby="clear-history-modal-desc"
+        >
+          <div
+            ref={modalRef}
+            className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6"
+          >
+            <div>
+              <span className="text-2xs font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 px-2 py-0.5 rounded">
+                {t('exam.history.clear')}
+              </span>
+              <h3 id="clear-history-modal-title" className="text-xl font-black text-slate-900 mt-1">
+                {t('exam.history.clearConfirmTitle')}
+              </h3>
+            </div>
+
+            <p id="clear-history-modal-desc" className="text-xs text-slate-500 leading-relaxed">
+              {t('exam.history.clearConfirmDesc')}
+            </p>
+
+            {clearError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-xs font-bold text-rose-900" role="alert">
+                {clearError}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <button
+                ref={cancelBtnRef}
+                type="button"
+                id="cancel-clear-history-btn"
+                onClick={() => {
+                  setShowClearConfirmModal(false);
+                  setClearError(null);
+                }}
+                className="w-full sm:w-auto flex-1 min-h-11 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('exam.history.clearCancelBtn')}
+              </button>
+
+              <button
+                type="button"
+                id="confirm-clear-history-btn"
+                onClick={handlePerformClearHistory}
+                className="w-full sm:w-auto flex-1 min-h-11 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('exam.history.clearConfirmBtn')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

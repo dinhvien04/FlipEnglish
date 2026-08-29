@@ -252,16 +252,19 @@ export function getExamHistory(): ExamResultReport[] {
 }
 
 /**
- * Clear all exam history
+ * Clear all exam history. Returns boolean indicating success.
  */
-export function clearExamHistory(): void {
+export function clearExamHistory(): boolean {
   try {
     const removed = safeRemoveLocalStorage(EXAM_HISTORY_KEY);
     if (removed && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+      return true;
     }
+    return removed;
   } catch (err) {
     console.error('Failed to clear exam history', err);
+    return false;
   }
 }
 

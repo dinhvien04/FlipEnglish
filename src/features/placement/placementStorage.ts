@@ -392,7 +392,7 @@ export function markPlacementResultExportedToReview(reportId: string): boolean {
 }
 
 /**
- * Atomically exports placement missed items to Smart Review and records the export marker.
+ * Atomically exports placement missed items to Smart Review and records the export marker idempotently.
  */
 export function exportPlacementMissedToReview(
   reportId: string,
@@ -408,7 +408,7 @@ export function exportPlacementMissedToReview(
     };
   }
 
-  const exportRes = exportMissedItemsToReview(canonicalWordIds);
+  const exportRes = exportMissedItemsToReview(canonicalWordIds, reportId);
   let markerSaved = false;
   if (exportRes.success) {
     markerSaved = markPlacementResultExportedToReview(reportId);
@@ -445,9 +445,13 @@ export function loadPlacementHistory(): CompactPlacementHistoryItem[] {
 
 /**
  * Saves completed placement result report to history and saves dedicated latest report.
- * Returns a structured PlacementPersistenceResult with latestSaved, historySaved, and success status.
+ * Returns a structured report persistence object with latestSaved, historySaved, and overall success status.
  */
-export function savePlacementResultToHistory(report: PlacementResultReport): PlacementPersistenceResult {
+export function savePlacementResultToHistory(report: PlacementResultReport): {
+  latestSaved: boolean;
+  historySaved: boolean;
+  success: boolean;
+} {
   if (typeof window === 'undefined') {
     return { latestSaved: false, historySaved: false, success: false };
   }

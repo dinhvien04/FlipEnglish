@@ -46,14 +46,18 @@ export const ConversationResult: React.FC<ConversationResultProps> = ({
     });
 
     if (canonicalIds.length > 0) {
-      batchAddItemsToReview(canonicalIds);
-      setAddedItems(new Set(canonicalIds));
+      const res = batchAddItemsToReview(canonicalIds);
+      if (res.success) {
+        setAddedItems(new Set(canonicalIds));
+      }
     }
   };
 
   const handleAddSingleItem = (canonicalId: string) => {
-    ensureReviewItem(canonicalId);
-    setAddedItems((prev) => new Set([...prev, canonicalId]));
+    const success = ensureReviewItem(canonicalId);
+    if (success) {
+      setAddedItems((prev) => new Set([...prev, canonicalId]));
+    }
   };
 
   return (

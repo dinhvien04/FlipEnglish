@@ -17,6 +17,11 @@ interface PlacementResultProps {
     historySaved: boolean;
     success: boolean;
   };
+  onPersistenceChange?: (persistence: {
+    latestSaved: boolean;
+    historySaved: boolean;
+    success: boolean;
+  }) => void;
   onRetake: () => void;
   onStartCurriculum: (level: CEFRLevel) => void;
   onSelectLesson: (lesson: Lesson) => void;
@@ -26,6 +31,7 @@ interface PlacementResultProps {
 export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   report,
   initialPersistence,
+  onPersistenceChange,
   onRetake,
   onStartCurriculum,
   onSelectLesson,
@@ -93,6 +99,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
     const res = savePlacementResultToHistory(report);
     setPersistenceState(res);
     setRetryAttempted(true);
+    onPersistenceChange?.(res);
   };
 
   return (

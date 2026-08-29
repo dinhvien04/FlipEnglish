@@ -10,7 +10,7 @@ import {
   getDueReviewItems,
   getAllTrackedReviewItems,
   resetReviewStorage,
-  batchAddLessonWordsToReview,
+  batchAddLessonsToReview,
   REVIEW_UPDATED_EVENT,
   DEFAULT_SESSION_MAX_DUE,
 } from '../../utils/reviewStorage';
@@ -123,7 +123,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleExitSession = () => {
-    clearActiveReviewSession();
+    // Preserve active review session snapshot for Smart Next Action resume
     onSessionContextChange?.(null);
     setActiveQueue(null);
     refreshStats();
@@ -161,16 +161,19 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleAddA1Essentials = () => {
-    batchAddLessonWordsToReview('greetings');
-    batchAddLessonWordsToReview('family');
-    batchAddLessonWordsToReview('food-drink');
-    refreshStats();
+    const res = batchAddLessonsToReview(['greetings', 'family', 'food-drink']);
+    if (res.success) {
+      refreshStats();
+    }
   };
 
   const handleConfirmReset = () => {
-    resetReviewStorage();
+    const reviewCleared = resetReviewStorage();
+    const activeCleared = clearActiveReviewSession();
     setShowResetConfirm(false);
-    refreshStats();
+    if (reviewCleared && activeCleared) {
+      refreshStats();
+    }
   };
 
   // If in active session

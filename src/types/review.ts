@@ -28,6 +28,7 @@ export interface ReviewStorage {
   schemaVersion: 1;
   items: Record<string, ReviewItemState>;
   recentLogs?: ReviewLogEntry[];
+  exportedReportIds?: string[];
 }
 
 export interface ResolvedReviewItem {

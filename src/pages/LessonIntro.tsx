@@ -49,20 +49,24 @@ export const LessonIntro: React.FC<LessonIntroProps> = ({
   }, [lesson.words]);
 
   const handleToggleReview = (wordId: string) => {
-    toggleItemInReview(wordId);
-    setReviewStateMap((prev) => ({
-      ...prev,
-      [wordId]: !prev[wordId],
-    }));
+    const success = toggleItemInReview(wordId);
+    if (success) {
+      setReviewStateMap((prev) => ({
+        ...prev,
+        [wordId]: !prev[wordId],
+      }));
+    }
   };
 
   const handleAddAllToReview = () => {
-    batchAddLessonWordsToReview(lesson.id);
-    const map: Record<string, boolean> = {};
-    lesson.words.forEach((w) => {
-      map[w.id] = true;
-    });
-    setReviewStateMap(map);
+    const res = batchAddLessonWordsToReview(lesson.id);
+    if (res.success) {
+      const map: Record<string, boolean> = {};
+      lesson.words.forEach((w) => {
+        map[w.id] = true;
+      });
+      setReviewStateMap(map);
+    }
   };
 
   return (
