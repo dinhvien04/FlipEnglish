@@ -26,6 +26,13 @@ export interface ReviewSessionClearResult {
   resumeSafetyEstablished: boolean;
 }
 
+export interface ReviewCompletionPersistenceState {
+  ratingsPersisted: boolean;
+  resumeSafetyEstablished: boolean;
+  fullyCleaned: boolean;
+  success: boolean;
+}
+
 export type DictionaryReturnContext =
   | {
       source: 'learn';

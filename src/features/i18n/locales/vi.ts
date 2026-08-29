@@ -345,10 +345,13 @@ export const viCatalog: Record<TranslationKey, string> = {
   'review.session.ratingGood': 'Nhớ (3 ngày)',
   'review.session.ratingEasy': 'Dễ (7 ngày)',
   'review.session.saveError': 'Không thể lưu đánh giá ôn tập này. Thẻ chưa được chuyển tiếp.',
+  'review.session.snapshotWarning': 'Câu trả lời ôn tập đã được lưu, nhưng phiên này có thể không tiếp tục đúng thẻ này sau khi tải lại trang.',
   'review.session.retryRating': 'Thử lại',
   'review.session.exitSession': 'Thoát ôn tập',
   'review.result.completedTitle': 'Đã hoàn thành phiên ôn tập!',
   'review.result.reviewedCount': 'Bạn vừa ôn tập {count} từ vựng.',
+  'review.result.cleanupWarning': 'Kết quả ôn tập của bạn đã được lưu, nhưng FlipEnglish không thể dọn dẹp an toàn phiên đã lưu trên thiết bị này.',
+  'review.result.retryCleanup': 'Thử dọn dẹp lại',
   'review.result.backToDashboard': 'Về bảng tổng quan ôn tập',
 
   // Placement Check

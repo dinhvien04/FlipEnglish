@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ReviewSessionSummary } from '../../types/review';
+import { ReviewCompletionPersistenceState } from '../../types/sessionResume';
 import { getReviewDashboardStats } from '../../utils/reviewStorage';
 import { useI18n } from '../i18n';
 
 interface ReviewResultProps {
   summary: ReviewSessionSummary;
+  persistenceState?: ReviewCompletionPersistenceState | null;
+  onRetryCleanup?: () => void;
   onBackToReviewDashboard: () => void;
   onContinueCurriculum: () => void;
   onReviewRemaining: () => void;
@@ -12,19 +15,64 @@ interface ReviewResultProps {
 
 export const ReviewResult: React.FC<ReviewResultProps> = ({
   summary,
+  persistenceState,
+  onRetryCleanup,
   onBackToReviewDashboard,
   onContinueCurriculum,
   onReviewRemaining,
 }) => {
   const { t } = useI18n();
+  const [isRetrying, setIsRetrying] = useState(false);
   const stats = getReviewDashboardStats();
   const { ratingBreakdown, totalReviewed } = summary;
+
+  const isDegraded = persistenceState !== undefined && persistenceState !== null && !persistenceState.resumeSafetyEstablished;
+
+  const handleRetry = () => {
+    if (!onRetryCleanup || isRetrying) return;
+    setIsRetrying(true);
+    try {
+      onRetryCleanup();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   const successfulCount = (ratingBreakdown.good || 0) + (ratingBreakdown.easy || 0);
   const accuracyPct = totalReviewed > 0 ? Math.round((successfulCount / totalReviewed) * 100) : 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-8 animate-fadeIn">
+      {/* Degraded Persistence Warning */}
+      {isDegraded && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="bg-amber-50 border border-amber-200 text-amber-900 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
+        >
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-amber-950">
+              {t('review.result.cleanupWarning')}
+            </p>
+            <p className="text-2xs sm:text-xs text-amber-800">
+              {t('error.storageQuotaDesc')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {onRetryCleanup && (
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                className="min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center disabled:opacity-50"
+              >
+                {t('review.result.retryCleanup')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 text-center space-y-3 shadow-xs">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 font-extrabold text-xl mb-1">

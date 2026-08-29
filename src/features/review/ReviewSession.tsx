@@ -15,6 +15,7 @@ interface ReviewSessionProps {
   queue: ResolvedReviewItem[];
   initialIndex?: number;
   initialRatingBreakdown?: Record<ReviewRating, number>;
+  snapshotSaveFailed?: boolean;
   onFinishSession: (summary: ReviewSessionSummary) => void;
   onExit: () => void;
   onLookupWord?: (word: string, sessionState: ReviewSessionState) => void;
@@ -25,6 +26,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   queue,
   initialIndex = 0,
   initialRatingBreakdown,
+  snapshotSaveFailed = false,
   onFinishSession,
   onExit,
   onLookupWord,
@@ -148,6 +150,19 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         total={total}
         label={t('review.session.cardProgress', { current: currentIndex + 1, total })}
       />
+
+      {/* Non-blocking Snapshot Durability Warning */}
+      {snapshotSaveFailed && !persistenceError && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-slate-50 border border-slate-200 text-slate-700 p-3 sm:p-4 rounded-xl flex items-center gap-3 text-2xs sm:text-xs"
+        >
+          <span className="font-semibold text-slate-800">
+            {t('review.session.snapshotWarning')}
+          </span>
+        </div>
+      )}
 
       {/* Persistence Error Alert */}
       {persistenceError && (

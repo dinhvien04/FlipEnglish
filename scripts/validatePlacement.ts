@@ -737,6 +737,68 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
     const countSecond = historyAfterSecond.filter((h) => h.id === testReport.id).length;
     assert(countSecond === 1, 'Retry did not create duplicate placement history entries (idempotent)');
 
+    // 10. Placement Result & Session Lifecycle Matrix (P1 - P6)
+    console.log('\n--- 10. PLACEMENT RESULT & SESSION LIFECYCLE MATRIX (P1 - P6) ---');
+
+    // P1: Both saves fail -> persistenceState latestSaved=false, historySaved=false, success=false
+    (global as any).localStorage.setItem = () => {
+      throw new Error('QuotaExceededError');
+    };
+    const p1Res = savePlacementResultToHistory(testReport);
+    assert(p1Res.latestSaved === false && p1Res.historySaved === false && p1Res.success === false, 'P1: Both saves fail -> persistenceState.success is false');
+
+    // P2: Latest succeeds, history fails -> success is false, retry available
+    (global as any).localStorage.setItem = (key: string, val: string) => {
+      if (key === 'flipenglish_placement_latest_report_v1') {
+        mockStorage[key] = String(val);
+      } else {
+        throw new Error('QuotaExceededError on history');
+      }
+    };
+    const p2Res = savePlacementResultToHistory(testReport);
+    assert(p2Res.latestSaved === true && p2Res.historySaved === false && p2Res.success === false, 'P2: Latest succeeds, history fails -> persistenceState.success is false');
+
+    // P3: History succeeds, latest fails -> success is false
+    (global as any).localStorage.setItem = (key: string, val: string) => {
+      if (key === 'flipenglish_placement_history_v1') {
+        mockStorage[key] = String(val);
+      } else {
+        throw new Error('QuotaExceededError on latest');
+      }
+    };
+    const p3Res = savePlacementResultToHistory(testReport);
+    assert(p3Res.latestSaved === false && p3Res.historySaved === true && p3Res.success === false, 'P3: History succeeds, latest fails -> persistenceState.success is false');
+
+    // P4: Both succeed -> success is true
+    (global as any).localStorage.setItem = originalSetItem;
+    const p4Res = savePlacementResultToHistory(testReport);
+    assert(p4Res.latestSaved === true && p4Res.historySaved === true && p4Res.success === true, 'P4: Both succeed -> persistenceState.success is true');
+
+    // P5: Active clear fails -> verify completed session does NOT resurrect
+    const activeTestSession = {
+      ...baseValidSession,
+      status: 'completed' as const,
+      completedAt: Date.now(),
+    };
+    mockStorage['flipenglish_placement_active_v1'] = JSON.stringify(activeTestSession);
+    (global as any).localStorage.removeItem = () => {
+      throw new Error('SecurityError');
+    };
+    const p5ClearRes = clearActivePlacement();
+    assert(p5ClearRes === false, 'P5: clearActivePlacement returns false on storage error');
+    assert(loadActivePlacement() === null, 'P5: loadActivePlacement discards completed session and never resurrects');
+
+    // P6: Retry save on P2/P3 -> deduplicates history
+    (global as any).localStorage.removeItem = originalRemoveItem;
+    const p6Report = { ...testReport, id: 'placement-p6-idempotent-report' };
+    const p6FirstRes = savePlacementResultToHistory(p6Report);
+    assert(p6FirstRes.success === true, 'P6: Initial history save succeeds');
+    const p6RetryRes = savePlacementResultToHistory(p6Report);
+    assert(p6RetryRes.success === true, 'P6: Retry history save succeeds');
+    const p6History = loadPlacementHistory();
+    const p6Entries = p6History.filter((r) => r.id === 'placement-p6-idempotent-report');
+    assert(p6Entries.length === 1, 'P6: Deduplicated history: exactly 1 entry for report ID after retry');
+
     // Restore original mock functions
     (global as any).localStorage.setItem = originalSetItem;
     (global as any).localStorage.removeItem = originalRemoveItem;

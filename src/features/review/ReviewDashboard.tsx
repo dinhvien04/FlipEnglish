@@ -16,7 +16,7 @@ import {
 } from '../../utils/reviewStorage';
 import { ReviewSession } from './ReviewSession';
 import { ReviewResult } from './ReviewResult';
-import { ReviewResumeContext } from '../../types/sessionResume';
+import { ReviewResumeContext, ReviewCompletionPersistenceState } from '../../types/sessionResume';
 import { normalizeReviewResumeContext } from '../../utils/sessionResume';
 import { recordMeaningfulLearningEvent } from '../streak/streakEngine';
 import { clearActiveReviewSession, saveActiveReviewSession } from '../continuity/sessionPersistence';
@@ -50,6 +50,8 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     return null;
   });
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
+  const [completionPersistence, setCompletionPersistence] = useState<ReviewCompletionPersistenceState | null>(null);
+  const [snapshotSaveFailed, setSnapshotSaveFailed] = useState<boolean>(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
 
@@ -95,6 +97,8 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     const queue = getDueReviewItems(DEFAULT_SESSION_MAX_DUE);
     if (queue.length > 0) {
       setSessionSummary(null);
+      setCompletionPersistence(null);
+      setSnapshotSaveFailed(false);
       setActiveQueue(queue);
     }
   };
@@ -104,6 +108,8 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     const queue = getAllTrackedReviewItems(DEFAULT_SESSION_MAX_DUE);
     if (queue.length > 0) {
       setSessionSummary(null);
+      setCompletionPersistence(null);
+      setSnapshotSaveFailed(false);
       setActiveQueue(queue);
     }
   };
@@ -116,11 +122,35 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         itemsCount: summary.totalReviewed,
       },
     });
-    clearActiveReviewSession();
-    onSessionContextChange?.(null);
+    const clearResult = clearActiveReviewSession();
+    const persistenceState: ReviewCompletionPersistenceState = {
+      ratingsPersisted: true,
+      resumeSafetyEstablished: clearResult.resumeSafetyEstablished,
+      fullyCleaned: clearResult.removed,
+      success: clearResult.resumeSafetyEstablished,
+    };
+    setCompletionPersistence(persistenceState);
+
+    if (clearResult.resumeSafetyEstablished) {
+      onSessionContextChange?.(null);
+    }
     setActiveQueue(null);
     setSessionSummary(summary);
     refreshStats();
+  };
+
+  const handleRetryCleanup = () => {
+    const clearResult = clearActiveReviewSession();
+    const updatedState: ReviewCompletionPersistenceState = {
+      ratingsPersisted: true,
+      resumeSafetyEstablished: clearResult.resumeSafetyEstablished,
+      fullyCleaned: clearResult.removed,
+      success: clearResult.resumeSafetyEstablished,
+    };
+    setCompletionPersistence(updatedState);
+    if (clearResult.resumeSafetyEstablished) {
+      onSessionContextChange?.(null);
+    }
   };
 
   const handleExitSession = () => {
@@ -143,7 +173,12 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         ratingBreakdown: sessionState.ratingBreakdown,
       };
       onSessionContextChange?.(sessionData);
-      saveActiveReviewSession(sessionData);
+      const snapshotSaved = saveActiveReviewSession(sessionData);
+      if (!snapshotSaved) {
+        setSnapshotSaveFailed(true);
+      } else {
+        setSnapshotSaveFailed(false);
+      }
     },
     [activeQueue, onSessionContextChange]
   );
@@ -188,6 +223,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
         queue={activeQueue}
         initialIndex={normalizedResume?.currentIndex}
         initialRatingBreakdown={normalizedResume?.ratingBreakdown}
+        snapshotSaveFailed={snapshotSaveFailed}
         onFinishSession={handleFinishSession}
         onExit={handleExitSession}
         onLookupWord={onLookupWord ? handleLookup : undefined}
@@ -201,8 +237,11 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     return (
       <ReviewResult
         summary={sessionSummary}
+        persistenceState={completionPersistence}
+        onRetryCleanup={handleRetryCleanup}
         onBackToReviewDashboard={() => {
           setSessionSummary(null);
+          setCompletionPersistence(null);
           refreshStats();
         }}
         onContinueCurriculum={onNavigateToHome}

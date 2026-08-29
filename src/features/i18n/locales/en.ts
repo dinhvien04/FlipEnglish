@@ -343,10 +343,13 @@ export const enCatalog = {
   'review.session.ratingGood': 'Good (3d)',
   'review.session.ratingEasy': 'Easy (7d)',
   'review.session.saveError': "We couldn't save this review rating. Your card has not been advanced.",
+  'review.session.snapshotWarning': 'Your review answers are saved, but this session may not resume at the exact same card after a reload.',
   'review.session.retryRating': 'Try Again',
   'review.session.exitSession': 'Exit Review',
   'review.result.completedTitle': 'Review Session Completed!',
   'review.result.reviewedCount': 'You reviewed {count} vocabulary items.',
+  'review.result.cleanupWarning': 'Your review answers were saved, but FlipEnglish could not safely close the saved session on this device.',
+  'review.result.retryCleanup': 'Try Cleanup Again',
   'review.result.backToDashboard': 'Back to Review Dashboard',
 
   // Placement Check

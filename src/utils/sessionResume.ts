@@ -1,5 +1,6 @@
 import { LearnResumeContext, ReviewResumeContext } from '../types/sessionResume';
 import { ResolvedReviewItem, ReviewRating } from '../types/review';
+import { loadReviewStorage } from './reviewStorage';
 import {
   saveActiveLearnSession,
   getActiveLearnSession,
@@ -140,8 +141,9 @@ export function normalizeRatingBreakdown(
 
 /**
  * Validates and normalizes Review resume context.
- * Rejects invalid or empty queue, non-array queue, corrupt review items,
- * NaN/Infinity/float/out-of-bounds currentIndex.
+ * Reconciles with canonical ReviewStorage: if items at or before currentIndex were already rated
+ * at or after snapshot creation, currentIndex is advanced to prevent duplicate ratings.
+ * If all items were already rated, returns null to prevent session resurrection.
  */
 export function normalizeReviewResumeContext(
   resume: ReviewResumeContext | null | undefined
@@ -150,7 +152,8 @@ export function normalizeReviewResumeContext(
     return null;
   }
 
-  const { activeQueue, currentIndex, ratingBreakdown } = resume;
+  const { activeQueue, ratingBreakdown } = resume;
+  let { currentIndex } = resume;
 
   if (!Array.isArray(activeQueue) || activeQueue.length === 0) {
     return null;
@@ -171,6 +174,40 @@ export function normalizeReviewResumeContext(
     currentIndex >= total
   ) {
     return null;
+  }
+
+  // Stale snapshot reconciliation:
+  // If the item at currentIndex was already rated at or after the snapshot timestamp,
+  // advance currentIndex to the first unrated item in the queue to prevent duplicate ratings.
+  const snapshotTime =
+    typeof resume.timestamp === 'number' && Number.isFinite(resume.timestamp) && resume.timestamp > 0
+      ? resume.timestamp
+      : 0;
+
+  if (snapshotTime > 0) {
+    try {
+      const canonicalStorage = loadReviewStorage();
+      while (currentIndex < total) {
+        const currentItem = activeQueue[currentIndex];
+        const canonicalItem = canonicalStorage.items[currentItem.word.id];
+        if (
+          canonicalItem &&
+          typeof canonicalItem.lastReviewedAt === 'number' &&
+          canonicalItem.lastReviewedAt >= snapshotTime
+        ) {
+          currentIndex++;
+        } else {
+          break;
+        }
+      }
+
+      // If all items were already rated, the session is finished and must not resurrect
+      if (currentIndex >= total) {
+        return null;
+      }
+    } catch {
+      // Continue with structural index if storage check fails
+    }
   }
 
   const normalizedBreakdown = normalizeRatingBreakdown(ratingBreakdown);

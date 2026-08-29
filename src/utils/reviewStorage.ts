@@ -690,12 +690,14 @@ export function getLessonDueCount(lessonId: string, now: number = Date.now()): n
 /**
  * Resets Smart Review data without affecting lesson progress or exam scores.
  * Also clears the placement review exports secondary key so placement reports can be re-exported.
+ * Returns true only when BOTH required storage targets are successfully removed.
  */
 export function resetReviewStorage(): boolean {
   try {
-    const removed = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
-    safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
-    if (removed) {
+    const reviewRemoved = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
+    const markerRemoved = safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
+    const success = reviewRemoved && markerRemoved;
+    if (success) {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
       return true;
     }

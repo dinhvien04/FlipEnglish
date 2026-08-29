@@ -17,9 +17,18 @@ import {
   getReviewDashboardStats,
   resetReviewStorage,
   batchAddLessonWordsToReview,
+  exportMissedItemsToReview,
 } from '../src/utils/reviewStorage';
+import {
+  saveActiveReviewSession,
+  getActiveReviewSession,
+  clearActiveReviewSession,
+} from '../src/features/continuity/sessionPersistence';
+import { normalizeReviewResumeContext } from '../src/utils/sessionResume';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
-import { ReviewItemState } from '../src/types/review';
+import { ReviewItemState, ResolvedReviewItem } from '../src/types/review';
+import { ReviewResumeContext } from '../src/types/sessionResume';
+import { isPlacementResultExportedToReview } from '../src/features/placement/placementStorage';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -314,4 +323,209 @@ assert(applyFailed === null, 'applyReviewRatingToItem returns null when persiste
 // Restore localStorage.setItem
 localStorage.setItem = originalSetItem;
 
+// 12. Smart Review Transaction & Lifecycle Regression Matrix (R1 - R12)
+console.log('\nTest Suite 12: Smart Review Transaction & Lifecycle Regression Matrix (R1 - R12)');
+
+// R1: Rating save fails -> item remains unchanged in storage
+resetReviewStorage();
+ensureReviewItem('hello', T0);
+(localStorage as any).setItem = () => {
+  throw new Error('QuotaExceededError');
+};
+const r1Res = applyReviewRatingToItem('hello', 'good', T0);
+assert(r1Res === null, 'R1: applyReviewRatingToItem returns null on storage write failure');
+(localStorage as any).setItem = originalSetItem;
+const r1Storage = loadReviewStorage(T0);
+assert(r1Storage.items['hello'].lastRating === null, 'R1: Rating state unchanged in storage after failed save');
+assert(r1Storage.items['hello'].reviewCount === 0, 'R1: Review count not incremented on failed save');
+
+// R2: Rating save succeeds + snapshot save succeeds -> normal progression
+resetReviewStorage();
+ensureReviewItem('hello', T0);
+const r2Rated = applyReviewRatingToItem('hello', 'good', T0);
+assert(r2Rated !== null, 'R2: Domain rating successfully persists');
+const resolvedHelloItem = resolveCurriculumItem('hello');
+assert(Boolean(resolvedHelloItem), 'R2: Resolved hello exists in curriculum');
+const resolvedMotherItem = resolveCurriculumItem('mother');
+assert(Boolean(resolvedMotherItem), 'R2: Resolved mother exists in curriculum');
+const r2Queue: ResolvedReviewItem[] = [
+  {
+    state: r2Rated!,
+    word: resolvedHelloItem!.word,
+    lesson: resolvedHelloItem!.lesson,
+    level: resolvedHelloItem!.level,
+    isOverdue: false,
+    nextIntervals: { again: 10, hard: 1440, good: 4320, easy: 10080 },
+  },
+  {
+    state: createInitialReviewState('mother', T0),
+    word: resolvedMotherItem!.word,
+    lesson: resolvedMotherItem!.lesson,
+    level: resolvedMotherItem!.level,
+    isOverdue: false,
+    nextIntervals: { again: 10, hard: 1440, good: 4320, easy: 10080 },
+  },
+];
+const r2SnapshotSaved = saveActiveReviewSession({
+  activeQueue: r2Queue,
+  currentIndex: 1,
+  ratingBreakdown: { again: 0, hard: 0, good: 1, easy: 0 },
+});
+assert(r2SnapshotSaved === true, 'R2: Snapshot save succeeds');
+const r2LoadedSnapshot = getActiveReviewSession();
+assert(r2LoadedSnapshot !== null, 'R2: Active snapshot is retrievable');
+assert(r2LoadedSnapshot?.currentIndex === 1, 'R2: Snapshot reflects advanced index');
+
+// R3: Rating save succeeds + snapshot save fails + reload -> card NOT rated twice (reconciliation)
+resetReviewStorage();
+const nowT3 = Date.now();
+ensureReviewItem('mother', nowT3);
+// Initial snapshot pointing to index 0 (item 'mother')
+const r3Queue: ResolvedReviewItem[] = [
+  {
+    state: createInitialReviewState('mother', nowT3),
+    word: resolvedMotherItem!.word,
+    lesson: resolvedMotherItem!.lesson,
+    level: resolvedMotherItem!.level,
+    isOverdue: false,
+    nextIntervals: { again: 10, hard: 1440, good: 4320, easy: 10080 },
+  },
+];
+saveActiveReviewSession({
+  activeQueue: r3Queue,
+  currentIndex: 0,
+  ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+  timestamp: nowT3,
+});
+// User rates 'mother' GOOD at nowT3 + 1000
+const r3Rated = applyReviewRatingToItem('mother', 'good', nowT3 + 1000);
+assert(r3Rated !== null, 'R3: Domain rating applied to storage');
+// Snapshot update fails, so disk snapshot still has currentIndex: 0 and timestamp: nowT3
+// Simulate reload by retrieving disk snapshot and reconciling
+const r3StaleSnapshot = getActiveReviewSession(nowT3 + 1000);
+assert(r3StaleSnapshot !== null && r3StaleSnapshot.currentIndex === 0, 'R3: Raw snapshot still points to index 0');
+const r3Normalized = normalizeReviewResumeContext(r3StaleSnapshot);
+assert(r3Normalized === null, 'R3: Stale single-item session reconciled as completed (null) to prevent duplicate rating');
+
+// R4: Final rating succeeds + clear active review succeeds -> Result shown, no resume
+resetReviewStorage();
+saveActiveReviewSession({
+  activeQueue: r3Queue,
+  currentIndex: 0,
+  ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+});
+const r4ClearResult = clearActiveReviewSession();
+assert(r4ClearResult.removed === true, 'R4: Active session removed successfully');
+assert(r4ClearResult.resumeSafetyEstablished === true, 'R4: Resume safety established');
+assert(getActiveReviewSession() === null, 'R4: No active review session after clean clear');
+
+// R5: Final rating succeeds + remove fails + tombstone succeeds -> reload gives no resume
+resetReviewStorage();
+saveActiveReviewSession({
+  activeQueue: r3Queue,
+  currentIndex: 0,
+  ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+});
+const originalRemoveItem = localStorage.removeItem;
+(localStorage as any).removeItem = () => {
+  throw new Error('SecurityError on remove');
+};
+const r5ClearResult = clearActiveReviewSession();
+assert(r5ClearResult.removed === false, 'R5: Removal reported as false');
+assert(r5ClearResult.tombstoneSaved === true, 'R5: Tombstone saved successfully');
+assert(r5ClearResult.resumeSafetyEstablished === true, 'R5: Resume safety established via tombstone');
+assert(getActiveReviewSession() === null, 'R5: Tombstone rejected by getActiveReviewSession, no resume offered');
+(localStorage as any).removeItem = originalRemoveItem;
+
+// R6: Final rating succeeds + remove fails + tombstone fails -> resumeSafetyEstablished false, no fake event
+resetReviewStorage();
+saveActiveReviewSession({
+  activeQueue: r3Queue,
+  currentIndex: 0,
+  ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+});
+(localStorage as any).removeItem = () => {
+  throw new Error('SecurityError on remove');
+};
+(localStorage as any).setItem = () => {
+  throw new Error('QuotaExceededError on tombstone');
+};
+mockWindowEvents.length = 0;
+const r6ClearResult = clearActiveReviewSession();
+assert(r6ClearResult.removed === false, 'R6: Removal failed');
+assert(r6ClearResult.tombstoneSaved === false, 'R6: Tombstone failed');
+assert(r6ClearResult.resumeSafetyEstablished === false, 'R6: resumeSafetyEstablished is false');
+assert(!mockWindowEvents.includes('flipenglish_continuity_session_updated_v1'), 'R6: No fake update event dispatched on double failure');
+(localStorage as any).removeItem = originalRemoveItem;
+(localStorage as any).setItem = originalSetItem;
+
+// R7: Cleanup retry -> does not mutate ReviewStorage items
+resetReviewStorage();
+ensureReviewItem('hello', T0);
+applyReviewRatingToItem('hello', 'good', T0);
+const r7Before = loadReviewStorage(T0);
+const r7ReviewCount = r7Before.items['hello'].reviewCount;
+const r7ClearRetry = clearActiveReviewSession();
+assert(r7ClearRetry.resumeSafetyEstablished === true, 'R7: Cleanup retry establishes safety');
+const r7After = loadReviewStorage(T0);
+assert(r7After.items['hello'].reviewCount === r7ReviewCount, 'R7: Cleanup retry does NOT re-rate or increment reviewCount');
+
+// R8: Review Reset: both removals succeed -> returns true
+resetReviewStorage();
+localStorage.setItem('flipenglish_review_v1', JSON.stringify({ schemaVersion: 1, items: {} }));
+localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-1']));
+const r8Reset = resetReviewStorage();
+assert(r8Reset === true, 'R8: resetReviewStorage returns true when both targets removed');
+assert(localStorage.getItem('flipenglish_review_v1') === null, 'R8: review storage key removed');
+assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R8: placement export marker key removed');
+
+// R9: Review Reset: secondary marker remove fails -> returns false
+localStorage.setItem('flipenglish_review_v1', JSON.stringify({ schemaVersion: 1, items: {} }));
+localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-1']));
+(localStorage as any).removeItem = (key: string) => {
+  if (key === 'flipenglish_placement_review_exports_v1') {
+    throw new Error('SecurityError on secondary marker');
+  }
+  delete mockStorage[key];
+};
+const r9Reset = resetReviewStorage();
+assert(r9Reset === false, 'R9: resetReviewStorage returns false when secondary marker removal fails');
+(localStorage as any).removeItem = originalRemoveItem;
+
+// R10: Retry reset after R9 -> succeeds idempotently
+const r10Reset = resetReviewStorage();
+assert(r10Reset === true, 'R10: Retry reset succeeds idempotently');
+assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R10: Secondary marker removed on retry');
+
+// R11: export Placement R1 -> Reset Review -> revisit R1 -> user can export again
+resetReviewStorage();
+const r11Export = exportMissedItemsToReview(['hello', 'family'], 'report-r11', T0);
+assert(r11Export.success === true, 'R11: Placement export succeeds');
+assert(isPlacementResultExportedToReview('report-r11') === true, 'R11: Report marked as exported');
+resetReviewStorage();
+assert(isPlacementResultExportedToReview('report-r11') === false, 'R11: After review reset, report is NOT marked as exported');
+const r11ReExport = exportMissedItemsToReview(['hello', 'family'], 'report-r11', T0);
+assert(r11ReExport.success === true, 'R11: Placement report can be cleanly exported again');
+
+// R12: Legacy export marker migration & idempotency -> no duplicate lapse signal
+resetReviewStorage();
+// Seed legacy key directly
+localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['legacy-report-1']));
+assert(isPlacementResultExportedToReview('legacy-report-1') === true, 'R12: Legacy export key recognized');
+// Exporting the same legacy report should be idempotent and not add lapse count twice
+ensureReviewItem('hello', T0);
+const r12FirstStorage = loadReviewStorage(T0);
+const r12LapseBefore = r12FirstStorage.items['hello'].lapseCount;
+// Export with already-exported reportId in ReviewStorage
+const r12StorageWithReport = {
+  ...r12FirstStorage,
+  exportedReportIds: ['legacy-report-1'],
+};
+saveReviewStorage(r12StorageWithReport);
+const r12ReExportRes = exportMissedItemsToReview(['hello'], 'legacy-report-1', T0);
+assert(r12ReExportRes.success === true, 'R12: Idempotent export returns success');
+const r12AfterStorage = loadReviewStorage(T0);
+assert(r12AfterStorage.items['hello'].lapseCount === r12LapseBefore, 'R12: No duplicate lapse signal applied');
+
 console.log('\n✅ All FlipEnglish Smart Review tests and scheduler invariants passed successfully!');
+
