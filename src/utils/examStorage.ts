@@ -94,8 +94,10 @@ export function saveExamResultToHistory(report: ExamResultReport): void {
       0,
       MAX_HISTORY_ITEMS
     );
-    safeSetLocalStorage(EXAM_HISTORY_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+    const writeSuccess = safeSetLocalStorage(EXAM_HISTORY_KEY, JSON.stringify(updated));
+    if (writeSuccess) {
+      window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+    }
   } catch (err) {
     console.error('Failed to save exam result to history', err);
   }

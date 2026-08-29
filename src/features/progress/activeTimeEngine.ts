@@ -1,19 +1,44 @@
 import { ActiveTimeRecord } from '../../types/progress';
 import { getStoredActiveTime, saveActiveTime } from './activeTimeStorage';
 
+let lastUserInteractionTime = Date.now();
+const MAX_IDLE_TIMEOUT_MS = 60 * 1000; // 60 seconds of inactivity cutoff
+
+/**
+ * Tracks learner interaction (pointer, touch, keydown, scroll) to prevent phantom accumulation
+ * on unattended visible tabs.
+ */
+export function recordUserInteraction(): void {
+  lastUserInteractionTime = Date.now();
+}
+
+/**
+ * Checks if user is currently active (interacted within idle timeout threshold).
+ */
+export function isUserActive(cutoffMs: number = MAX_IDLE_TIMEOUT_MS): boolean {
+  return Date.now() - lastUserInteractionTime < cutoffMs;
+}
+
 /**
  * Records active study seconds for today.
- * Gated by page visibility: only accumulates when document.visibilityState === 'visible'.
+ * Gated by page visibility AND user activity/interaction.
  *
  * @param seconds Number of active seconds to accumulate.
  * @param referenceDate Optional reference date for testing / simulation.
+ * @param bypassActivityGate Optional flag for deterministic unit testing.
  */
 export function recordActiveStudySeconds(
   seconds: number,
-  referenceDate?: Date
+  referenceDate?: Date,
+  bypassActivityGate: boolean = false
 ): ActiveTimeRecord {
   // Gated by page visibility in browser environments
   if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+    return getStoredActiveTime(referenceDate);
+  }
+
+  // Gated by user interaction cutoff (unless explicitly bypassed in unit test)
+  if (!bypassActivityGate && !isUserActive()) {
     return getStoredActiveTime(referenceDate);
   }
 

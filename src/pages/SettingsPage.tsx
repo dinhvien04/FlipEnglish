@@ -89,16 +89,50 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     };
   }, []);
 
-  // Modal accessibility: Escape key dismiss, focus trapping, autofocus
+  // Modal accessibility: Escape key dismiss, focus trapping, autofocus & focus restoration
+  const triggerElementRef = useRef<HTMLElement | null>(null);
+
+  const openModal = (modalType: 'reset-learning' | 'clear-vocab' | 'erase-all') => {
+    triggerElementRef.current = document.activeElement as HTMLElement | null;
+    setActiveModal(modalType);
+  };
+
   useEffect(() => {
     if (!activeModal) {
       setTypedConfirmation('');
+      if (triggerElementRef.current) {
+        triggerElementRef.current.focus();
+        triggerElementRef.current = null;
+      }
       return;
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isProcessing) {
         setActiveModal(null);
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
 
@@ -415,7 +449,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
           <button
             type="button"
-            onClick={() => setActiveModal('reset-learning')}
+            onClick={() => openModal('reset-learning')}
             className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer shrink-0"
           >
             {t('settings.data.resetProgressBtn')}
@@ -434,7 +468,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
           <button
             type="button"
-            onClick={() => setActiveModal('clear-vocab')}
+            onClick={() => openModal('clear-vocab')}
             className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer shrink-0"
           >
             {t('settings.data.clearVocabBtn')}
@@ -460,7 +494,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => setActiveModal('erase-all')}
+              onClick={() => openModal('erase-all')}
               className="min-h-11 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs sm:text-sm font-bold transition-colors shadow-xs cursor-pointer shrink-0"
             >
               {t('settings.data.eraseAllBtn')}

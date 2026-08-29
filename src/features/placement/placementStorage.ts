@@ -255,8 +255,10 @@ export function saveActivePlacement(session: PlacementSession): void {
   if (typeof window === 'undefined') return;
   try {
     if (!validatePlacementSession(session)) return;
-    safeSetLocalStorage(ACTIVE_PLACEMENT_KEY, JSON.stringify(session));
-    emitPlacementUpdate();
+    const writeSuccess = safeSetLocalStorage(ACTIVE_PLACEMENT_KEY, JSON.stringify(session));
+    if (writeSuccess) {
+      emitPlacementUpdate();
+    }
   } catch (err) {
     // Storage quota or serialization issue
   }
@@ -268,8 +270,10 @@ export function saveActivePlacement(session: PlacementSession): void {
 export function clearActivePlacement(): void {
   if (typeof window === 'undefined') return;
   try {
-    safeRemoveLocalStorage(ACTIVE_PLACEMENT_KEY);
-    emitPlacementUpdate();
+    const removeSuccess = safeRemoveLocalStorage(ACTIVE_PLACEMENT_KEY);
+    if (removeSuccess) {
+      emitPlacementUpdate();
+    }
   } catch (err) {
     // ignore
   }
@@ -282,8 +286,10 @@ export function saveLatestPlacementReport(report: PlacementResultReport): void {
   if (typeof window === 'undefined') return;
   try {
     if (!validatePlacementResultReport(report)) return;
-    safeSetLocalStorage(PLACEMENT_LATEST_REPORT_KEY, JSON.stringify(report));
-    emitPlacementUpdate();
+    const writeSuccess = safeSetLocalStorage(PLACEMENT_LATEST_REPORT_KEY, JSON.stringify(report));
+    if (writeSuccess) {
+      emitPlacementUpdate();
+    }
   } catch (err) {
     // ignore
   }

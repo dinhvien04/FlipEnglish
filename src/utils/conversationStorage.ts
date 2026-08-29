@@ -121,8 +121,10 @@ export function saveConversationSummary(summary: Omit<SavedConversationSummary, 
       history: updatedHistory,
     };
 
-    safeSetLocalStorage(CONVERSATION_STORAGE_KEY, JSON.stringify(safeStorage));
-    window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
+    const writeSuccess = safeSetLocalStorage(CONVERSATION_STORAGE_KEY, JSON.stringify(safeStorage));
+    if (writeSuccess) {
+      window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
+    }
   } catch (err) {
     console.error('Failed to save conversation summary to localStorage:', err);
   }
@@ -133,8 +135,10 @@ export function saveConversationSummary(summary: Omit<SavedConversationSummary, 
  */
 export function clearConversationHistory(): void {
   try {
-    safeRemoveLocalStorage(CONVERSATION_STORAGE_KEY);
-    window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
+    const removeSuccess = safeRemoveLocalStorage(CONVERSATION_STORAGE_KEY);
+    if (removeSuccess) {
+      window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
+    }
   } catch (err) {
     console.error('Failed to clear conversation history:', err);
   }

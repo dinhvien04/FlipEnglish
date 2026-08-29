@@ -89,9 +89,13 @@ export function recordMeaningfulLearningEvent(
       newCurrentStreak = 1;
       streakIncremented = true;
     } else {
-      // Case 5: Clock skew / past date (dayDiff <= 0) - preserve current streak
-      newCurrentStreak = Math.max(1, currentStreakRecord.currentStreak);
-      streakIncremented = false;
+      // Case 5: Clock rollback / westbound timezone travel / out-of-order event (dayDiff < 0)
+      // Do NOT rewind watermark date and do NOT double-count meaningful days.
+      return {
+        streak: currentStreakRecord,
+        isNewActiveDay: false,
+        streakIncremented: false,
+      };
     }
   }
 

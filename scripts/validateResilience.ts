@@ -80,14 +80,22 @@ console.log('--- Starting FlipEnglish Resilience & Error Hardening Validation Su
 console.log('\n[Suite 1] Testing API Error Normalization Architecture...');
 {
   // 1.1 Offline detection with navigator.onLine === false
-  (globalThis as any).navigator = { onLine: false };
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { onLine: false },
+    configurable: true,
+    writable: true,
+  });
   const offlineExplicitErr = classifyApiError(new TypeError('Failed to fetch'));
   assert.strictEqual(offlineExplicitErr.kind, 'offline');
   assert.strictEqual(offlineExplicitErr.retryable, true);
   assert.strictEqual(offlineExplicitErr.userMessageKey, 'error.networkOffline');
 
   // 1.2 Connection lost while online
-  (globalThis as any).navigator = { onLine: true };
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { onLine: true },
+    configurable: true,
+    writable: true,
+  });
   const connectionLostErr = classifyApiError(new TypeError('Failed to fetch'));
   assert.strictEqual(connectionLostErr.kind, 'offline');
   assert.strictEqual(connectionLostErr.retryable, true);

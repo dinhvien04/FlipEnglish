@@ -40,8 +40,10 @@ export function saveActiveLearnSession(context: LearnResumeContext): void {
       return;
     }
 
-    safeSetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(validated));
-    emitSessionUpdate();
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(validated));
+    if (writeSuccess) {
+      emitSessionUpdate();
+    }
   } catch (err) {
     console.error('Failed to save active learn session to localStorage:', err);
   }
@@ -110,8 +112,10 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
       return;
     }
 
-    safeSetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(validated));
-    emitSessionUpdate();
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(validated));
+    if (writeSuccess) {
+      emitSessionUpdate();
+    }
   } catch (err) {
     console.error('Failed to save active review session to localStorage:', err);
   }

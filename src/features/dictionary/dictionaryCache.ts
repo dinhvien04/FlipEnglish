@@ -405,3 +405,32 @@ export async function clearAllCachedEntriesFromDb(): Promise<boolean> {
   });
 }
 
+/**
+ * Clears all metadata records from IndexedDB.
+ */
+export async function clearAllMetadataFromDb(): Promise<boolean> {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    return true; // No IndexedDB in current environment
+  }
+
+  const db = await getDb();
+  if (!db) return false;
+
+  return new Promise((resolve) => {
+    try {
+      if (!db.objectStoreNames.contains(STORE_META)) {
+        resolve(true);
+        return;
+      }
+      const tx = db.transaction(STORE_META, 'readwrite');
+      const store = tx.objectStore(STORE_META);
+      store.clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+

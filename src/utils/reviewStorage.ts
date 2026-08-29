@@ -190,8 +190,10 @@ export function saveReviewStorage(storage: ReviewStorage): void {
       recentLogs: prunedLogs,
     };
 
-    safeSetLocalStorage(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
-    window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+    const writeSuccess = safeSetLocalStorage(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
+    if (writeSuccess) {
+      window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+    }
   } catch (err) {
     console.error('Failed to save review state to localStorage:', err);
   }

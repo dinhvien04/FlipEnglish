@@ -19,7 +19,7 @@ import { ReviewResult } from './ReviewResult';
 import { ReviewResumeContext } from '../../types/sessionResume';
 import { normalizeReviewResumeContext } from '../../utils/sessionResume';
 import { recordMeaningfulLearningEvent } from '../streak/streakEngine';
-import { clearActiveReviewSession } from '../continuity/sessionPersistence';
+import { clearActiveReviewSession, saveActiveReviewSession } from '../continuity/sessionPersistence';
 import { useI18n } from '../i18n';
 
 interface ReviewDashboardProps {
@@ -133,13 +133,16 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     (sessionState: { currentIndex: number; ratingBreakdown: Record<ReviewRating, number> }) => {
       if (!activeQueue || activeQueue.length === 0) {
         onSessionContextChange?.(null);
+        clearActiveReviewSession();
         return;
       }
-      onSessionContextChange?.({
+      const sessionData = {
         activeQueue,
         currentIndex: sessionState.currentIndex,
         ratingBreakdown: sessionState.ratingBreakdown,
-      });
+      };
+      onSessionContextChange?.(sessionData);
+      saveActiveReviewSession(sessionData);
     },
     [activeQueue, onSessionContextChange]
   );

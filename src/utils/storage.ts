@@ -89,10 +89,12 @@ export const saveLessonProgress = (lessonId: string, score: number): LessonProgr
       pruned[k] = all[k];
     }
 
-    safeSetLocalStorage(STORAGE_KEY, JSON.stringify(pruned));
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEY, JSON.stringify(pruned));
 
-    // Dispatch a storage event so components can update if needed
-    window.dispatchEvent(new Event('flipenglish_progress_updated'));
+    // Dispatch a storage event only when persistence succeeds
+    if (writeSuccess) {
+      window.dispatchEvent(new Event('flipenglish_progress_updated'));
+    }
 
     return updated;
   } catch (err) {

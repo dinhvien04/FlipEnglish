@@ -27,6 +27,8 @@
     "validate:conversation": "tsx scripts/validateConversation.ts",
     "validate:ai-gating": "tsx scripts/validateAiGating.ts",
     "validate:data-management": "tsx scripts/validateDataManagement.ts",
+    "validate:continuity": "tsx scripts/validateContinuityEngines.ts",
+    "validate:smart-next-action": "tsx scripts/validateSmartNextAction.ts",
     "validate:resilience": "tsx scripts/validateResilience.ts",
     "validate:deployment": "tsx scripts/validateDeployment.ts",
     "security:audit": "npm audit --omit=dev --audit-level=high",

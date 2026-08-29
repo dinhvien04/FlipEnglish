@@ -7,6 +7,11 @@ import { LearnResumeContext } from '../types/sessionResume';
 import { normalizeLearnResumeContext } from '../utils/sessionResume';
 import { useI18n } from '../features/i18n';
 
+import {
+  saveActiveLearnSession,
+  clearActiveLearnSession,
+} from '../features/continuity/sessionPersistence';
+
 interface LearnProps {
   lesson: Lesson;
   wordsToLearn: VocabWord[];
@@ -43,14 +48,26 @@ export const Learn: React.FC<LearnProps> = ({
     return initialResume ? initialResume.hasCompletedAll : false;
   });
 
-  // Keep parent session context in sync for header navigations
+  // Keep parent session context in sync for header navigations and persist active session
   useEffect(() => {
-    onSessionContextChange?.({
+    const sessionData = {
       lessonId: lesson.id,
       flashcardIndex: currentIndex,
       hasCompletedAll,
       isReviewMistakesMode,
-    });
+    };
+    onSessionContextChange?.(sessionData);
+
+    if (!hasCompletedAll) {
+      saveActiveLearnSession({
+        lessonId: lesson.id,
+        flashcardIndex: currentIndex,
+        hasCompletedAll,
+        isReviewMistakesMode,
+      });
+    } else {
+      clearActiveLearnSession();
+    }
   }, [lesson.id, currentIndex, hasCompletedAll, isReviewMistakesMode, onSessionContextChange]);
 
   // Signal consumption to App after initial client-side mount (one-shot)

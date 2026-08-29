@@ -79,6 +79,12 @@ jobs:
       - name: Data Management & Storage Reset Engine Audit
         run: npm run validate:data-management
 
+      - name: Continuity & Streak Engines Audit
+        run: npm run validate:continuity
+
+      - name: Smart Next Action Priority Engine Audit
+        run: npm run validate:smart-next-action
+
       - name: Production Dependency Security Audit
         run: npm run security:audit
 

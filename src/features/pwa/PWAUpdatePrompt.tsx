@@ -61,7 +61,7 @@ export const PWAUpdatePrompt: React.FC = () => {
       <div
         role="alert"
         aria-live="assertive"
-        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl border border-slate-700 space-y-3 animate-slideUp"
+        className="fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl border border-slate-700 space-y-3 animate-slideUp"
       >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export const PWAUpdatePrompt: React.FC = () => {
       <div
         role="status"
         aria-live="polite"
-        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl border border-slate-700 space-y-2 animate-slideUp"
+        className="fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-2xl border border-slate-700 space-y-2 animate-slideUp"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5">

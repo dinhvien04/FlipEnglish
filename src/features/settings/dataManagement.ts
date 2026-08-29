@@ -1,6 +1,6 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS, DATA_MANAGEMENT_EVENTS } from '../../constants/storageKeys';
 import { safeRemoveLocalStorage } from '../../utils/storageHealth';
-import { clearAllSavedWordsFromDb, clearAllCachedEntriesFromDb } from '../dictionary/dictionaryCache';
+import { clearAllSavedWordsFromDb, clearAllCachedEntriesFromDb, clearAllMetadataFromDb } from '../dictionary/dictionaryCache';
 
 export type DataResetScope = 'learning' | 'vocabulary' | 'all';
 
@@ -44,6 +44,7 @@ export const FLIPENGLISH_PREFERENCE_STORAGE_KEYS: readonly string[] = [
   STORAGE_KEYS.STUDY_PLAN_SETTINGS,
   STORAGE_KEYS.REMINDERS,
   STORAGE_KEYS.LOCALE,
+  STORAGE_KEYS.LOCALE_LEGACY,
   STORAGE_KEYS.ONBOARDING,
   STORAGE_KEYS.AI_FEATURES_ENABLED,
   STORAGE_KEYS.PWA_INSTALL_DISMISSED,
@@ -144,7 +145,8 @@ export function resetLearningProgress(): DataManagementResult {
   const { removedKeys, failedKeys } = removeKeysSafely(FLIPENGLISH_LEARNING_STORAGE_KEYS);
   const success = failedKeys.length === 0;
 
-  if (success) {
+  // Always emit events for successfully removed keys to prevent in-memory state drift
+  if (removedKeys.length > 0) {
     emitResetEvents('learning');
   }
 
@@ -179,7 +181,8 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
 
   const success = failedKeys.length === 0 && idbSuccess;
 
-  if (success) {
+  // Always emit events for successfully removed domains
+  if (removedKeys.length > 0) {
     emitResetEvents('vocabulary');
   }
 
@@ -193,7 +196,7 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
 
 /**
  * 3. Erase All FlipEnglish Data (Factory Reset)
- * Removes: Every FlipEnglish-owned key in localStorage and all IndexedDB stores.
+ * Removes: Every FlipEnglish-owned key in localStorage and all IndexedDB stores (savedWords, entries, metadata).
  * Never calls localStorage.clear() to avoid wiping unrelated origin storage.
  */
 export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
@@ -201,6 +204,7 @@ export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
 
   let idbSavedSuccess = true;
   let idbEntriesSuccess = true;
+  let idbMetaSuccess = true;
 
   try {
     idbSavedSuccess = await clearAllSavedWordsFromDb();
@@ -226,9 +230,22 @@ export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
     failedKeys.push('indexeddb_entries');
   }
 
-  const success = failedKeys.length === 0 && idbSavedSuccess && idbEntriesSuccess;
+  try {
+    idbMetaSuccess = await clearAllMetadataFromDb();
+    if (!idbMetaSuccess) {
+      failedKeys.push('indexeddb_metadata');
+    } else {
+      removedKeys.push('indexeddb_metadata');
+    }
+  } catch {
+    idbMetaSuccess = false;
+    failedKeys.push('indexeddb_metadata');
+  }
 
-  if (success) {
+  const success = failedKeys.length === 0 && idbSavedSuccess && idbEntriesSuccess && idbMetaSuccess;
+
+  // Always emit events for successfully removed domains
+  if (removedKeys.length > 0) {
     emitResetEvents('all');
   }
 

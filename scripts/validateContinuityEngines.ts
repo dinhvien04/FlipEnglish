@@ -201,6 +201,13 @@ assert(resMissed.streak.longestStreak === 3, 'Longest streak remains monotonical
 assert(resMissed.streak.totalMeaningfulDays === 4, 'Total meaningful days increments to 4');
 assert(resMissed.streak.lastActiveDateKey === '2026-08-29', 'Active date key updated to 2026-08-29');
 
+// Clock-rollback / timezone westward travel (DayDiff < 0)
+const resRollback = recordMeaningfulLearningEvent(quizEvent, new Date('2026-08-28T12:00:00'));
+assert(resRollback.isNewActiveDay === false, 'Clock rollback event is NOT a new active day');
+assert(resRollback.streakIncremented === false, 'Clock rollback does not increment streak');
+assert(resRollback.streak.lastActiveDateKey === '2026-08-29', 'Watermark date key is NOT rewound');
+assert(resRollback.streak.totalMeaningfulDays === 4, 'Total meaningful days is NOT double-counted on rollback');
+
 // Status getter helper
 const currentStatus = getStreakStatus();
 assert(currentStatus.currentStreak === 1, 'getStreakStatus matches storage');

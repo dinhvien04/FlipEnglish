@@ -44,9 +44,12 @@ import {
   clearActiveLearnSession,
   saveActiveReviewSession,
   clearActiveReviewSession,
+  getActiveLearnSession,
+  getActiveReviewSession,
 } from './features/continuity/sessionPersistence';
 import { recordMeaningfulLearningEvent } from './features/streak/streakEngine';
-import { recordActiveStudySeconds } from './features/progress/activeTimeEngine';
+import { recordActiveStudySeconds, recordUserInteraction } from './features/progress/activeTimeEngine';
+import { DATA_MANAGEMENT_EVENTS } from './constants/storageKeys';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 import { useI18n } from './features/i18n';
@@ -166,6 +169,24 @@ export default function App() {
     if (activePlacement && activePlacement.status === 'active') {
       setPendingResumePlacement(activePlacement);
     }
+
+    // Listen for data resets to purge in-memory transient sessions immediately
+    const handleDataReset = () => {
+      setPendingResumeSession(null);
+      setPendingResumePlacement(null);
+      setActiveExamSession(null);
+      setActivePlacementSession(null);
+      setQuizResults(null);
+      setResumedLearnContext(null);
+      setResumedReviewContext(null);
+      setSelectedLessonId(null);
+      setTemporaryLesson(null);
+    };
+
+    window.addEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+    return () => {
+      window.removeEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+    };
   }, []);
 
   // Guard against navigating into AI views when AI features are disabled/unavailable
@@ -174,6 +195,23 @@ export default function App() {
       setCurrentView('today');
     }
   }, [aiEnabled, isAiStatusLoading, currentView]);
+
+  // User Interaction Tracking for Active Study Time Gating
+  useEffect(() => {
+    const handleActivity = () => {
+      recordUserInteraction();
+    };
+
+    window.addEventListener('pointerdown', handleActivity, { passive: true });
+    window.addEventListener('keydown', handleActivity, { passive: true });
+    window.addEventListener('touchstart', handleActivity, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+    };
+  }, []);
 
   // Active Study Time Heartbeat (accumulates active seconds when learning or practicing)
   useEffect(() => {
@@ -808,12 +846,26 @@ export default function App() {
         break;
       }
       case 'active-learn': {
+        const savedSession = getActiveLearnSession();
+        if (savedSession && savedSession.lessonId) {
+          const lesson = getLessonById(savedSession.lessonId);
+          if (lesson) {
+            setSelectedLessonId(lesson.id);
+            setTemporaryLesson(null);
+            setIsReviewMistakesMode(savedSession.isReviewMistakesMode);
+            setResumedLearnContext(savedSession);
+            setCurrentView('learn');
+            break;
+          }
+        }
+
         if (recommendation.actionPayload?.lessonId) {
           const lesson = getLessonById(recommendation.actionPayload.lessonId);
           if (lesson) {
             setSelectedLessonId(lesson.id);
             setTemporaryLesson(null);
             setIsReviewMistakesMode(false);
+            setResumedLearnContext(null);
             setCurrentView('learn');
           } else {
             handleNavigateToday();
@@ -823,7 +875,21 @@ export default function App() {
         }
         break;
       }
-      case 'active-review':
+      case 'active-review': {
+        const savedSession = getActiveReviewSession();
+        if (savedSession && savedSession.activeQueue && savedSession.activeQueue.length > 0) {
+          setSelectedLessonId(null);
+          setTemporaryLesson(null);
+          setIsReviewMistakesMode(false);
+          setQuizResults(null);
+          setResumedLearnContext(null);
+          setResumedReviewContext(savedSession);
+          setCurrentView('review');
+          break;
+        }
+        handleNavigateReview();
+        break;
+      }
       case 'due-review': {
         handleNavigateReview();
         break;
@@ -1013,6 +1079,7 @@ export default function App() {
               onOpenExamCenter={handleNavigateExamCenter}
               onNavigateReview={handleNavigateReview}
               onNavigateToday={handleNavigateToday}
+              onNavigateHelp={handleNavigateHelp}
               onStartPlacement={handleStartPlacementIntro}
               onViewPlacementResult={handleViewPlacementResult}
               onNavigateContinueAction={handleNavigateContinueAction}

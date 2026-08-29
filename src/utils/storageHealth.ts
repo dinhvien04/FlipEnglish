@@ -71,17 +71,24 @@ function emitHealthUpdate(): void {
 }
 
 /**
- * Records a successful storage write and resets unhealthy state.
+ * Records a successful storage write and resets unhealthy state only if the write
+ * resolved the failed key or was a dedicated health probe.
  */
 export function recordStorageSuccess(key: string): void {
   if (!currentHealth.isHealthy) {
-    currentHealth = {
-      isHealthy: true,
-      lastFailureType: null,
-      lastFailedKey: null,
-      failedWriteAttempts: 0,
-    };
-    emitHealthUpdate();
+    if (
+      currentHealth.lastFailedKey === null ||
+      currentHealth.lastFailedKey === key ||
+      key === 'flipenglish_storage_health_probe'
+    ) {
+      currentHealth = {
+        isHealthy: true,
+        lastFailureType: null,
+        lastFailedKey: null,
+        failedWriteAttempts: 0,
+      };
+      emitHealthUpdate();
+    }
   }
 }
 
