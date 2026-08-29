@@ -354,3 +354,54 @@ export async function isWordSavedInDb(normalizedWord: string): Promise<boolean> 
     }
   });
 }
+
+/**
+ * Clears all saved vocabulary entries from IndexedDB.
+ */
+export async function clearAllSavedWordsFromDb(): Promise<boolean> {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    return true; // No IndexedDB in current environment (e.g. Node test script or restricted browser)
+  }
+
+  const db = await getDb();
+  if (!db) return false;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_SAVED, 'readwrite');
+      const store = tx.objectStore(STORE_SAVED);
+      store.clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Clears all cached dictionary entry definitions from IndexedDB.
+ */
+export async function clearAllCachedEntriesFromDb(): Promise<boolean> {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    return true; // No IndexedDB in current environment
+  }
+
+  const db = await getDb();
+  if (!db) return false;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_ENTRIES, 'readwrite');
+      const store = tx.objectStore(STORE_ENTRIES);
+      store.clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+

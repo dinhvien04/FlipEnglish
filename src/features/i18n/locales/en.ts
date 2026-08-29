@@ -14,6 +14,8 @@ export const enCatalog = {
   'ui.nav.examsDesc': 'Practice & Diagnostics',
   'ui.nav.fliplens': 'FlipLens',
   'ui.nav.fliplensDesc': 'Visual AI Scanner',
+  'ui.nav.settings': 'Settings',
+  'ui.nav.settingsDesc': 'Preferences & Data',
   'ui.nav.help': 'Help & Guide',
   'ui.nav.helpDesc': 'Feature Walkthrough',
   'ui.nav.menu': 'Menu',
@@ -664,6 +666,58 @@ export const enCatalog = {
   'reminders.modal.capabilityNote': 'Note: In-app reminders trigger automatically when FlipEnglish is open. Web notifications require active browser permissions.',
   'reminders.modal.cancel': 'Cancel',
   'reminders.modal.save': 'Save Preferences',
+
+  // Settings & Data Management
+  'settings.title': 'Settings & Preferences',
+  'settings.subtitle': 'Manage your language preferences, daily study targets, reminders, and local storage data.',
+  'settings.section.language': 'Language & Presentation',
+  'settings.section.languageDesc': 'Set how instructions, explanations, and navigation options are presented.',
+  'settings.section.study': 'Daily Goals & Reminders',
+  'settings.section.studyDesc': 'Configure your daily learning target and notification schedules.',
+  'settings.section.data': 'Data & Progress Management',
+  'settings.section.dataDesc': 'Safely manage or clear your local learning records and dictionary entries stored on this browser.',
+  'settings.storage.status': 'Local Storage Status',
+  'settings.storage.statusHealthy': 'Healthy & Operating Normally',
+  'settings.storage.statusQuotaWarning': 'High Storage Utilization',
+  'settings.storage.statusDegraded': 'Storage Restricted / In-Memory Mode',
+  'settings.storage.devicePrivate': 'All learning records, scores, and dictionary entries remain strictly local to your browser.',
+
+  // Data actions
+  'settings.data.resetProgressTitle': 'Reset Learning Progress',
+  'settings.data.resetProgressDesc': 'Resets all lesson progress, scores, Smart Review SRS state, exam attempts, placement check records, study streaks, active study time, and daily study plans. Keeps your saved vocabulary, reminders, and language settings.',
+  'settings.data.resetProgressBtn': 'Reset Learning Progress',
+
+  'settings.data.clearVocabTitle': 'Clear Saved Vocabulary',
+  'settings.data.clearVocabDesc': 'Clears all words saved to your personal Wordbook / Dictionary and your recent search history. Keeps your lesson progress, SRS reviews, exams, and streak intact.',
+  'settings.data.clearVocabBtn': 'Clear Saved Vocabulary',
+
+  'settings.data.eraseAllTitle': 'Erase All FlipEnglish Data',
+  'settings.data.eraseAllDesc': 'Permanently purges all learning progress, saved vocabulary, exams, placement tests, study habits, custom reminders, and preferences from this browser. Restores FlipEnglish to initial state.',
+  'settings.data.eraseAllBtn': 'Erase All Data',
+  'settings.data.dangerZone': 'Danger Zone',
+
+  // Confirmation Modals
+  'settings.modal.resetProgressTitle': 'Reset Learning Progress?',
+  'settings.modal.resetProgressMessage': 'Are you sure you want to reset your learning progress? This will clear all completed lessons, quiz scores, spaced repetition reviews, exam history, streaks, and active time.',
+  'settings.modal.resetProgressPreserve': 'Your saved vocabulary and language settings will NOT be affected.',
+  'settings.modal.resetProgressConfirm': 'Yes, Reset Progress',
+
+  'settings.modal.clearVocabTitle': 'Clear Saved Vocabulary?',
+  'settings.modal.clearVocabMessage': 'Are you sure you want to remove all saved words from your Wordbook and search history? This action cannot be undone.',
+  'settings.modal.clearVocabPreserve': 'Your lesson progress, quiz scores, reviews, and study streak will remain unchanged.',
+  'settings.modal.clearVocabConfirm': 'Yes, Clear Vocabulary',
+
+  'settings.modal.eraseAllTitle': 'Erase All FlipEnglish Data?',
+  'settings.modal.eraseAllMessage': 'This is a complete factory reset for FlipEnglish on this browser. All progress, scores, reviews, saved words, search history, streak, active time, reminders, and settings will be permanently erased.',
+  'settings.modal.eraseAllTypePrompt': 'To confirm, please type {keyword} below:',
+  'settings.modal.eraseAllConfirm': 'Erase Everything',
+  'settings.modal.cancel': 'Cancel',
+
+  // Feedback banners & notifications
+  'settings.toast.resetProgressSuccess': 'Learning progress has been successfully reset.',
+  'settings.toast.clearVocabSuccess': 'Saved vocabulary and search history have been cleared.',
+  'settings.toast.eraseAllSuccess': 'All FlipEnglish data has been erased successfully.',
+  'settings.toast.actionFailed': 'Could not complete the requested data operation. Please try again.',
 };
 
 export type TranslationKey = keyof typeof enCatalog;

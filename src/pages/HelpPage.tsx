@@ -10,6 +10,7 @@ interface HelpPageProps {
   onNavigateConversation?: () => void;
   onNavigateExams: () => void;
   onNavigateFlipLens?: () => void;
+  onNavigateSettings?: () => void;
   onReopenOnboarding: () => void;
 }
 
@@ -22,6 +23,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
   onNavigateConversation,
   onNavigateExams,
   onNavigateFlipLens,
+  onNavigateSettings,
   onReopenOnboarding,
 }) => {
   const { mode, setMode, t, isBilingual } = useI18n();
@@ -124,6 +126,19 @@ export const HelpPage: React.FC<HelpPageProps> = ({
             badge: 'Cần Internet',
             isAi: true,
             onClick: onNavigateFlipLens,
+          },
+        ]
+      : []),
+    ...(onNavigateSettings
+      ? [
+          {
+            id: 'settings',
+            title: t('settings.title'),
+            titleEn: 'Settings & Data Management',
+            desc: t('settings.subtitle'),
+            action: t('ui.nav.settings'),
+            badge: 'Offline Ready',
+            onClick: onNavigateSettings,
           },
         ]
       : []),

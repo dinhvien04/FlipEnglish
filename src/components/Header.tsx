@@ -12,6 +12,7 @@ interface HeaderProps {
   onNavigateConversation?: () => void;
   onNavigateFlipLens?: () => void;
   onNavigateExamCenter?: () => void;
+  onNavigateSettings?: () => void;
   onNavigateHelp?: () => void;
   currentView: string;
 }
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateConversation,
   onNavigateFlipLens,
   onNavigateExamCenter,
+  onNavigateSettings,
   onNavigateHelp,
   currentView,
 }) => {
@@ -236,6 +238,20 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               {t('ui.nav.fliplens')}
+            </button>
+          )}
+
+          {onNavigateSettings && (
+            <button
+              id="header-nav-settings"
+              onClick={onNavigateSettings}
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all cursor-pointer ${
+                currentView === 'settings'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              {t('ui.nav.settings')}
             </button>
           )}
 
@@ -482,6 +498,21 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-xs text-indigo-500 font-semibold shrink-0">
                   {t('ui.nav.fliplensDesc')}
                 </span>
+              </button>
+            )}
+
+            {onNavigateSettings && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onNavigateSettings)}
+                className={`w-full min-h-12 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                  currentView === 'settings'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span className="min-w-0 truncate">{t('ui.nav.settings')}</span>
+                <span className="text-xs text-slate-400 shrink-0">{t('ui.nav.settingsDesc')}</span>
               </button>
             )}
 

@@ -16,6 +16,8 @@ export const viCatalog: Record<TranslationKey, string> = {
   'ui.nav.examsDesc': 'Kiểm tra kiến thức',
   'ui.nav.fliplens': 'Học từ hình ảnh',
   'ui.nav.fliplensDesc': 'Khám phá từ trong ảnh',
+  'ui.nav.settings': 'Cài đặt',
+  'ui.nav.settingsDesc': 'Tùy chọn & Dữ liệu',
   'ui.nav.help': 'Hướng dẫn',
   'ui.nav.helpDesc': 'Cách dùng FlipEnglish',
   'ui.nav.menu': 'Menu',
@@ -666,4 +668,56 @@ export const viCatalog: Record<TranslationKey, string> = {
   'reminders.modal.capabilityNote': 'Lưu ý: Lời nhắc trong ứng dụng hiển thị khi bạn đang mở FlipEnglish. Thông báo trình duyệt cần quyền cấp phép từ trình duyệt.',
   'reminders.modal.cancel': 'Hủy',
   'reminders.modal.save': 'Lưu cài đặt',
+
+  // Settings & Data Management
+  'settings.title': 'Cài đặt & Tùy chọn',
+  'settings.subtitle': 'Quản lý tùy chọn ngôn ngữ, mục tiêu học tập hàng ngày, lịch nhắc nhở và dữ liệu lưu trữ.',
+  'settings.section.language': 'Ngôn ngữ & Hiển thị',
+  'settings.section.languageDesc': 'Tùy chỉnh cách các hướng dẫn, giải thích và menu được hiển thị.',
+  'settings.section.study': 'Mục tiêu ngày & Nhắc nhở',
+  'settings.section.studyDesc': 'Cài đặt mục tiêu học tập hàng ngày và lịch thông báo nhắc học.',
+  'settings.section.data': 'Quản lý Dữ liệu & Tiến trình',
+  'settings.section.dataDesc': 'Quản lý hoặc đặt lại an toàn các hồ sơ học tập và từ điển được lưu trên trình duyệt này.',
+  'settings.storage.status': 'Trạng thái bộ nhớ cục bộ',
+  'settings.storage.statusHealthy': 'Bình thường & Ổn định',
+  'settings.storage.statusQuotaWarning': 'Dung lượng lưu trữ gần đầy',
+  'settings.storage.statusDegraded': 'Bộ nhớ bị hạn chế / Chế độ tạm thời',
+  'settings.storage.devicePrivate': 'Tất cả kết quả học tập, điểm số và từ vựng lưu trữ hoàn toàn riêng tư trên trình duyệt của bạn.',
+
+  // Data actions
+  'settings.data.resetProgressTitle': 'Đặt lại tiến trình học tập',
+  'settings.data.resetProgressDesc': 'Xóa toàn bộ tiến độ bài học, điểm số, trạng thái Ôn tập thông minh (SRS), lịch sử thi, bài kiểm tra trình độ, chuỗi ngày học, thời gian học và kế hoạch ngày. Giữ nguyên từ vựng đã lưu, nhắc nhở và cài đặt ngôn ngữ.',
+  'settings.data.resetProgressBtn': 'Đặt lại tiến trình học',
+
+  'settings.data.clearVocabTitle': 'Xóa sổ từ vựng đã lưu',
+  'settings.data.clearVocabDesc': 'Xóa tất cả các từ đã lưu trong Sổ từ / Từ điển cá nhân và lịch sử tìm kiếm gần đây. Giữ nguyên tiến độ bài học, ôn tập SRS, bài thi và chuỗi học.',
+  'settings.data.clearVocabBtn': 'Xóa sổ từ vựng',
+
+  'settings.data.eraseAllTitle': 'Xóa toàn bộ dữ liệu FlipEnglish',
+  'settings.data.eraseAllDesc': 'Xóa vĩnh viễn toàn bộ tiến trình học tập, sổ từ vựng, bài thi, kiểm tra trình độ, thói quen học, nhắc nhở và cài đặt trên trình duyệt này. Đưa FlipEnglish về trạng thái ban đầu.',
+  'settings.data.eraseAllBtn': 'Xóa toàn bộ dữ liệu',
+  'settings.data.dangerZone': 'Khu vực nguy hiểm',
+
+  // Confirmation Modals
+  'settings.modal.resetProgressTitle': 'Đặt lại tiến trình học tập?',
+  'settings.modal.resetProgressMessage': 'Bạn có chắc chắn muốn đặt lại tiến trình học tập? Thao tác này sẽ xóa toàn bộ bài học đã hoàn thành, điểm trắc nghiệm, lịch ôn tập thông minh, lịch sử làm bài thi, chuỗi học và thời gian học.',
+  'settings.modal.resetProgressPreserve': 'Sổ từ vựng đã lưu và cài đặt ngôn ngữ của bạn sẽ KHÔNG bị ảnh hưởng.',
+  'settings.modal.resetProgressConfirm': 'Đồng ý đặt lại tiến trình',
+
+  'settings.modal.clearVocabTitle': 'Xóa sổ từ vựng đã lưu?',
+  'settings.modal.clearVocabMessage': 'Bạn có chắc chắn muốn xóa tất cả các từ đã lưu trong Sổ từ vựng và lịch sử tra cứu? Thao tác này không thể hoàn tác.',
+  'settings.modal.clearVocabPreserve': 'Tiến độ bài học, điểm trắc nghiệm, ôn tập SRS và chuỗi học của bạn vẫn được giữ nguyên.',
+  'settings.modal.clearVocabConfirm': 'Đồng ý xóa từ vựng',
+
+  'settings.modal.eraseAllTitle': 'Xóa toàn bộ dữ liệu FlipEnglish?',
+  'settings.modal.eraseAllMessage': 'Đây là thao tác khôi phục cài đặt gốc toàn bộ ứng dụng FlipEnglish trên trình duyệt này. Mọi tiến trình, điểm số, ôn tập, sổ từ vựng, lịch sử tra cứu, chuỗi học, thời gian học, nhắc nhở và cài đặt sẽ bị xóa vĩnh viễn.',
+  'settings.modal.eraseAllTypePrompt': 'Để xác nhận, vui lòng nhập chữ {keyword} vào ô bên dưới:',
+  'settings.modal.eraseAllConfirm': 'Xóa tất cả dữ liệu',
+  'settings.modal.cancel': 'Hủy',
+
+  // Feedback banners & notifications
+  'settings.toast.resetProgressSuccess': 'Đã đặt lại tiến trình học tập thành công.',
+  'settings.toast.clearVocabSuccess': 'Đã xóa sổ từ vựng và lịch sử tìm kiếm thành công.',
+  'settings.toast.eraseAllSuccess': 'Đã xóa toàn bộ dữ liệu FlipEnglish thành công.',
+  'settings.toast.actionFailed': 'Không thể hoàn thành thao tác dữ liệu. Vui lòng thử lại.',
 };

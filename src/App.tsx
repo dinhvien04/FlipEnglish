@@ -68,6 +68,7 @@ const PlacementIntro = lazy(() => import('./features/placement/PlacementIntro').
 const PlacementSessionPage = lazy(() => import('./features/placement/PlacementSession').then((m) => ({ default: m.PlacementSessionPage })));
 const PlacementResultPage = lazy(() => import('./features/placement/PlacementResult').then((m) => ({ default: m.PlacementResultPage })));
 const DictionaryPage = lazy(() => import('./features/dictionary/DictionaryPage').then((m) => ({ default: m.DictionaryPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
 
 function LazyViewFallback() {
@@ -389,6 +390,14 @@ export default function App() {
     setIsReviewMistakesMode(false);
     setQuizResults(null);
     setCurrentView('help');
+  };
+
+  const handleNavigateSettings = () => {
+    setSelectedLessonId(null);
+    setTemporaryLesson(null);
+    setIsReviewMistakesMode(false);
+    setQuizResults(null);
+    setCurrentView('settings');
   };
 
   const handleOpenOnboarding = () => {
@@ -924,6 +933,7 @@ export default function App() {
             onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
             onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
             onNavigateExamCenter={handleNavigateExamCenter}
+            onNavigateSettings={handleNavigateSettings}
             onNavigateHelp={handleNavigateHelp}
             currentView={currentView}
           />
@@ -952,8 +962,19 @@ export default function App() {
               onNavigateConversation={aiEnabled ? handleNavigateConversation : undefined}
               onNavigateExams={handleNavigateExamCenter}
               onNavigateFlipLens={aiEnabled ? handleOpenFlipLens : undefined}
+              onNavigateSettings={handleNavigateSettings}
               onReopenOnboarding={handleOpenOnboarding}
             />
+          )}
+
+          {/* Settings & Preferences View */}
+          {currentView === 'settings' && (
+            <ErrorBoundary featureName="Settings" showHomeButton onGoHome={handleNavigateToday}>
+              <SettingsPage
+                onNavigateToday={handleNavigateToday}
+                onNavigateCurriculum={handleNavigateHome}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Today's Study Plan View */}

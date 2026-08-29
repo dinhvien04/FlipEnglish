@@ -169,6 +169,7 @@ export type AppView =
   | 'today'
   | 'dictionary'
   | 'home'
+  | 'settings'
   | 'help'
   | 'onboarding'
   | 'lesson-intro'

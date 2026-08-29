@@ -76,6 +76,9 @@ jobs:
       - name: Resilience & Failure Handling Hardening Audit
         run: npm run validate:resilience
 
+      - name: Data Management & Storage Reset Engine Audit
+        run: npm run validate:data-management
+
       - name: Production Dependency Security Audit
         run: npm run security:audit
 
