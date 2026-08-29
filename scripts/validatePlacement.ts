@@ -636,17 +636,17 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
       confidence: 'Strong evidence',
       confidenceReason: 'Consistent performance across adaptive stages.',
       totalQuestions: 24,
-      correctCount: 18,
-      overallPercentage: 75,
+      correctCount: 16,
+      overallPercentage: 67,
       skillScores: {
-        vocabulary: { skill: 'vocabulary', attempted: 6, correct: 5, percentage: 83, weightedScore: 83 },
-        'use-of-english': { skill: 'use-of-english', attempted: 6, correct: 5, percentage: 83, weightedScore: 83 },
+        vocabulary: { skill: 'vocabulary', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+        'use-of-english': { skill: 'use-of-english', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
         reading: { skill: 'reading', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
         listening: { skill: 'listening', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
       },
       stagePath: [
-        { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 5, scorePercentage: 83, routingDecision: 'same', nextLevel: 'B1' },
-        { stageIndex: 1, level: 'B1', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 5, scorePercentage: 83, routingDecision: 'same', nextLevel: 'B1' },
+        { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+        { stageIndex: 1, level: 'B1', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
         { stageIndex: 2, level: 'B1', questionIds: ['q13','q14','q15','q16','q17','q18'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
         { stageIndex: 3, level: 'B1', questionIds: ['q19','q20','q21','q22','q23','q24'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
       ],
@@ -658,35 +658,84 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
     (global as any).localStorage.setItem = () => {
       throw new Error('QuotaExceededError');
     };
-    const saveActiveResult = (await import('../src/features/placement/placementStorage')).saveActivePlacement(baseValidSession as any);
+    const {
+      saveActivePlacement,
+      savePlacementResultToHistory,
+      clearActivePlacement,
+      loadActivePlacement,
+      loadPlacementHistory,
+    } = await import('../src/features/placement/placementStorage');
+
+    const saveActiveResult = saveActivePlacement(baseValidSession as any);
     assert(saveActiveResult === false, 'Fault Injection: saveActivePlacement returns false on storage quota error without throwing');
 
-    // Case 2: Save placement result to history fails gracefully on write error
-    const saveHistoryResult = (await import('../src/features/placement/placementStorage')).savePlacementResultToHistory(testReport);
-    assert(saveHistoryResult === false, 'Fault Injection: savePlacementResultToHistory returns false on storage quota error');
+    // Case 2a: Matrix Permutation - latestSaved=false, historySaved=false -> success=false
+    const resBothFailed = savePlacementResultToHistory(testReport);
+    assert(resBothFailed.latestSaved === false, 'Matrix 1: latestSaved is false when both fail');
+    assert(resBothFailed.historySaved === false, 'Matrix 1: historySaved is false when both fail');
+    assert(resBothFailed.success === false, 'Matrix 1: overall success is false when both fail');
+
+    // Case 2b: Matrix Permutation - latestSaved=true, historySaved=false -> success MUST BE false
+    (global as any).localStorage.setItem = (key: string, val: string) => {
+      if (key === 'flipenglish_placement_latest_report_v1') {
+        mockStorage[key] = String(val);
+      } else if (key === 'flipenglish_placement_history_v1') {
+        throw new Error('QuotaExceededError on history');
+      }
+    };
+    const resLatestOnly = savePlacementResultToHistory(testReport);
+    assert(resLatestOnly.latestSaved === true, 'Matrix 2: latestSaved is true');
+    assert(resLatestOnly.historySaved === false, 'Matrix 2: historySaved is false');
+    assert(resLatestOnly.success === false, 'Matrix 2: success MUST be false when history write fails (no false success UI)');
+
+    // Case 2c: Matrix Permutation - latestSaved=false, historySaved=true -> success MUST BE false
+    (global as any).localStorage.setItem = (key: string, val: string) => {
+      if (key === 'flipenglish_placement_latest_report_v1') {
+        throw new Error('QuotaExceededError on latest');
+      } else if (key === 'flipenglish_placement_history_v1') {
+        mockStorage[key] = String(val);
+      }
+    };
+    const resHistoryOnly = savePlacementResultToHistory(testReport);
+    assert(resHistoryOnly.latestSaved === false, 'Matrix 3: latestSaved is false');
+    assert(resHistoryOnly.historySaved === true, 'Matrix 3: historySaved is true');
+    assert(resHistoryOnly.success === false, 'Matrix 3: success MUST be false when latest write fails');
+
+    // Case 2d: Matrix Permutation - latestSaved=true, historySaved=true -> success is true
+    (global as any).localStorage.setItem = originalSetItem;
+    const resBothOk = savePlacementResultToHistory(testReport);
+    assert(resBothOk.latestSaved === true, 'Matrix 4: latestSaved is true');
+    assert(resBothOk.historySaved === true, 'Matrix 4: historySaved is true');
+    assert(resBothOk.success === true, 'Matrix 4: success is true when both succeed');
 
     // Case 3: Clear active placement fails gracefully on removal error
-    (global as any).localStorage.setItem = originalSetItem;
     (global as any).localStorage.removeItem = () => {
       throw new Error('SecurityError');
     };
-    const clearActiveResult = (await import('../src/features/placement/placementStorage')).clearActivePlacement();
+    const clearActiveResult = clearActivePlacement();
     assert(clearActiveResult === false, 'Fault Injection: clearActivePlacement returns false on removal error without throwing');
 
-    // Case 4: Idempotent history saving prevents duplicate entries on retry
+    // Case 5: Completed placement cleanup failure -> verify completed session is NOT offered as resumable
     (global as any).localStorage.removeItem = originalRemoveItem;
-    const { savePlacementResultToHistory: saveHistoryOk, loadPlacementHistory } = await import('../src/features/placement/placementStorage');
-    const firstSave = saveHistoryOk(testReport);
-    assert(firstSave === true, 'Successful initial placement history write');
+    const completedSession = {
+      ...baseValidSession,
+      status: 'completed' as const,
+      completedAt: Date.now(),
+    };
+    (global as any).localStorage.setItem('flipenglish_placement_active_v1', JSON.stringify(completedSession));
+    const loadedCompleted = loadActivePlacement();
+    assert(loadedCompleted === null, 'Completed placement session left in active storage key is rejected and cleared, never offered as resumable');
+
+    // Case 6: Idempotent history saving prevents duplicate entries on retry
     const historyAfterFirst = loadPlacementHistory();
     const countFirst = historyAfterFirst.filter((h) => h.id === testReport.id).length;
     assert(countFirst === 1, 'Report appears once in placement history');
 
-    const secondSave = saveHistoryOk(testReport); // Retry
-    assert(secondSave === true, 'Successful retry placement history write');
+    const retryRes = savePlacementResultToHistory(testReport); // Retry
+    assert(retryRes.success === true, 'Successful retry placement history write');
     const historyAfterSecond = loadPlacementHistory();
     const countSecond = historyAfterSecond.filter((h) => h.id === testReport.id).length;
-    assert(countSecond === 1, 'Retry did not create duplicate placement history entries');
+    assert(countSecond === 1, 'Retry did not create duplicate placement history entries (idempotent)');
 
     // Restore original mock functions
     (global as any).localStorage.setItem = originalSetItem;

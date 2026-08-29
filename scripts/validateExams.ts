@@ -5,6 +5,8 @@ import {
   saveExamResultToHistory,
   getExamHistory,
   getActiveExam,
+  isValidSessionObject,
+  isValidReportObject,
 } from '../src/utils/examStorage';
 import { ExamResultReport, ExamSession } from '../src/types/exam';
 
@@ -129,7 +131,7 @@ const mockExamReport: ExamResultReport = {
 const originalSetItem = (global as any).localStorage.setItem;
 const originalRemoveItem = (global as any).localStorage.removeItem;
 
-// 1. Fault Injection: Active Exam save failure
+// 1. Fault Injection: Active Exam save failure during exam
 (global as any).localStorage.setItem = () => {
   throw new Error('QuotaExceededError');
 };
@@ -159,7 +161,28 @@ const clearActiveOk = clearActiveExam();
 assert(clearActiveOk === true, 'clearActiveExam succeeds and removes active session');
 assert(getActiveExam() === null, 'Active session is null after clearing');
 
-// 5. Idempotent Retry & Duplicate Submission Protection
+// 5. Fault Injection: History success + clear failure -> verify reload does NOT resurrect completed exam
+// When history save succeeds, but clearActiveExam fails, getActiveExam() must detect that the session has already been submitted to history and return null
+const completedSession: ExamSession = {
+  ...mockExamSession,
+  id: 'test-session-completed',
+  status: 'submitted',
+};
+const completedReport: ExamResultReport = {
+  ...mockExamReport,
+  id: 'test-report-completed',
+  sessionId: 'test-session-completed',
+};
+saveExamResultToHistory(completedReport);
+// Simulate clear failure by writing active key directly (or failing to remove it)
+saveActiveExam(completedSession);
+const resurrectedSession = getActiveExam();
+assert(
+  resurrectedSession === null,
+  'getActiveExam() prevents completed/submitted session from resurrecting even if clearActiveExam failed'
+);
+
+// 6. Idempotent Retry & Duplicate Submission Protection
 const firstHistorySave = saveExamResultToHistory(mockExamReport);
 assert(firstHistorySave === true, 'saveExamResultToHistory successfully records report');
 const history1 = getExamHistory();
@@ -169,6 +192,65 @@ const retryHistorySave = saveExamResultToHistory(mockExamReport);
 assert(retryHistorySave === true, 'Retry saveExamResultToHistory returns true');
 const history2 = getExamHistory();
 assert(history2.filter((h) => h.id === mockExamReport.id).length === 1, 'Retry did not generate duplicate history entries');
+
+// 7. Structural Bounds Validation (reject malicious, corrupted, or out-of-bounds payloads)
+const corruptedSession1 = {
+  ...mockExamSession,
+  schemaVersion: 1, // Invalid schemaVersion
+};
+assert(isValidSessionObject(corruptedSession1) === false, 'Rejects session with invalid schemaVersion');
+
+const corruptedSession2 = {
+  ...mockExamSession,
+  endsAt: mockExamSession.startedAt - 1000, // endsAt <= startedAt
+};
+assert(isValidSessionObject(corruptedSession2) === false, 'Rejects session with endsAt <= startedAt');
+
+const corruptedSession3 = {
+  ...mockExamSession,
+  currentQuestionIndex: 99, // Out of bounds
+};
+assert(isValidSessionObject(corruptedSession3) === false, 'Rejects session with currentQuestionIndex out of bounds');
+
+const corruptedSession4 = {
+  ...mockExamSession,
+  answers: { 'non-existent-q-id': 'some-answer' }, // Answer for unknown question ID
+};
+assert(isValidSessionObject(corruptedSession4) === false, 'Rejects session with answers for unknown question IDs');
+
+const corruptedSession5 = {
+  ...mockExamSession,
+  flaggedQuestionIds: ['non-existent-q-id'], // Flag for unknown question ID
+};
+assert(isValidSessionObject(corruptedSession5) === false, 'Rejects session with flaggedQuestionIds for unknown question IDs');
+
+const corruptedReport1 = {
+  ...mockExamReport,
+  correctCount: 5,
+  totalQuestions: 2, // correctCount > totalQuestions
+};
+assert(isValidReportObject(corruptedReport1) === false, 'Rejects report with correctCount > totalQuestions');
+
+const corruptedReport2 = {
+  ...mockExamReport,
+  overallPercentage: 150, // overallPercentage > 100
+};
+assert(isValidReportObject(corruptedReport2) === false, 'Rejects report with overallPercentage > 100');
+
+const corruptedReport3 = {
+  ...mockExamReport,
+  sectionScores: [
+    {
+      sectionId: 'sec-1',
+      sectionTitle: 'Vocabulary',
+      sectionType: 'vocabulary',
+      total: 5,
+      correct: 10, // correct > total
+      percentage: 200,
+    },
+  ],
+};
+assert(isValidReportObject(corruptedReport3) === false, 'Rejects report with invalid sectionScore totals');
 
 if (storageErrors > 0) {
   console.error(`\n❌ Storage Durability Tests Failed with ${storageErrors} errors.`);

@@ -22,6 +22,7 @@ export const STORAGE_HEALTH_EVENT = 'flipenglish_storage_health_changed';
 
 const failedWriteKeys = new Set<string>();
 const failedReadKeys = new Set<string>();
+const failedRemoveKeys = new Set<string>();
 
 let currentHealth: StorageHealthState = {
   isHealthy: true,
@@ -33,6 +34,19 @@ let currentHealth: StorageHealthState = {
   failedKeys: [],
   failedWriteAttempts: 0,
 };
+
+function getCombinedFailedKeys(): string[] {
+  return Array.from(new Set([...failedWriteKeys, ...failedReadKeys, ...failedRemoveKeys]));
+}
+
+function computeIsHealthy(isAccessible: boolean): boolean {
+  return (
+    isAccessible &&
+    failedWriteKeys.size === 0 &&
+    failedReadKeys.size === 0 &&
+    failedRemoveKeys.size === 0
+  );
+}
 
 /**
  * Categorizes a storage error into deterministic types (QuotaExceeded, SecurityError, etc.)
@@ -87,17 +101,17 @@ function emitHealthUpdate(): void {
  * Records a successful storage operation.
  * - If key is the diagnostic probe (or operation is 'probe'), updates isStorageAccessible = true
  *   without erasing genuine unresolved application failures.
- * - For read success, reconciles read accessibility and removes the key from failedReadKeys,
- *   without falsely clearing keys that failed on write/remove.
- * - For write/remove success, removes the key from failedWriteKeys and failedReadKeys.
+ * - For read success, reconciles read accessibility and removes the key from failedReadKeys ONLY.
+ * - For write success, removes the key from failedWriteKeys ONLY.
+ * - For remove success, removes the key from failedRemoveKeys ONLY.
  */
 export function recordStorageSuccess(
   key: string,
   operation: StorageOperationType = 'write'
 ): void {
   if (key === 'flipenglish_storage_health_probe' || operation === 'probe') {
-    const combinedFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
-    const isHealthyNow = combinedFailedKeys.length === 0;
+    const combinedFailedKeys = getCombinedFailedKeys();
+    const isHealthyNow = computeIsHealthy(true);
     currentHealth = {
       ...currentHealth,
       isStorageAccessible: true,
@@ -116,29 +130,14 @@ export function recordStorageSuccess(
 
   if (operation === 'read') {
     failedReadKeys.delete(key);
-    const remainingKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
-    const nowHealthy = remainingKeys.length === 0;
-
-    currentHealth = {
-      ...currentHealth,
-      isStorageAccessible: true,
-      isHealthy: nowHealthy,
-      isWarningDismissed: nowHealthy ? false : currentHealth.isWarningDismissed,
-      lastFailureType: nowHealthy ? null : currentHealth.lastFailureType,
-      lastFailureOperation: nowHealthy ? null : currentHealth.lastFailureOperation,
-      lastFailedKey: nowHealthy ? null : remainingKeys[remainingKeys.length - 1] ?? null,
-      failedKeys: remainingKeys,
-      failedWriteAttempts: nowHealthy ? 0 : currentHealth.failedWriteAttempts,
-    };
-    emitHealthUpdate();
-    return;
+  } else if (operation === 'write') {
+    failedWriteKeys.delete(key);
+  } else if (operation === 'remove') {
+    failedRemoveKeys.delete(key);
   }
 
-  // Write or Remove success
-  failedWriteKeys.delete(key);
-  failedReadKeys.delete(key);
-  const remainingFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
-  const nowHealthy = remainingFailedKeys.length === 0;
+  const remainingFailedKeys = getCombinedFailedKeys();
+  const nowHealthy = computeIsHealthy(true);
 
   currentHealth = {
     ...currentHealth,
@@ -167,11 +166,13 @@ export function recordStorageFailure(
 
   if (operation === 'read') {
     failedReadKeys.add(key);
-  } else if (operation === 'write' || operation === 'remove') {
+  } else if (operation === 'write') {
     failedWriteKeys.add(key);
+  } else if (operation === 'remove') {
+    failedRemoveKeys.add(key);
   }
 
-  const updatedFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
+  const updatedFailedKeys = getCombinedFailedKeys();
   const isNewKey = !currentHealth.failedKeys.includes(key);
   const isMaterialChange =
     isNewKey ||

@@ -9,6 +9,7 @@ import {
   CompactPlacementHistoryItem,
   PlacementSkill,
   PlacementConfidence,
+  PlacementPersistenceResult,
 } from './placementTypes';
 import { isValidPlacementQuestion } from './placementValidation';
 import { routeNextLevel } from './placementEngine';
@@ -221,6 +222,10 @@ export function loadActivePlacement(): PlacementSession | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (validatePlacementSession(parsed)) {
+      if (parsed.status !== 'active') {
+        clearActivePlacement();
+        return null;
+      }
       return parsed;
     }
     clearActivePlacement();
@@ -358,11 +363,14 @@ export function isPlacementResultExportedToReview(reportId: string): boolean {
   }
 }
 
+import { exportMissedItemsToReview } from '../../utils/reviewStorage';
+import { ReviewExportResult } from '../../types/review';
+
 /**
  * Marks a placement report ID as exported to Smart Review (max 20 stored)
  */
-export function markPlacementResultExportedToReview(reportId: string): void {
-  if (typeof window === 'undefined' || !reportId) return;
+export function markPlacementResultExportedToReview(reportId: string): boolean {
+  if (typeof window === 'undefined' || !reportId) return false;
   try {
     const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
     let list: string[] = [];
@@ -375,11 +383,44 @@ export function markPlacementResultExportedToReview(reportId: string): void {
     if (!list.includes(reportId)) {
       list.unshift(reportId);
       list = list.slice(0, MAX_EXPORTED_REPORTS);
-      safeSetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
+      return safeSetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
     }
+    return true;
   } catch (err) {
-    // ignore
+    return false;
   }
+}
+
+/**
+ * Atomically exports placement missed items to Smart Review and records the export marker.
+ */
+export function exportPlacementMissedToReview(
+  reportId: string,
+  canonicalWordIds: string[]
+): ReviewExportResult {
+  if (isPlacementResultExportedToReview(reportId)) {
+    return {
+      attempted: canonicalWordIds.length,
+      persisted: canonicalWordIds.length,
+      failed: 0,
+      exportMarkerSaved: true,
+      success: true,
+    };
+  }
+
+  const exportRes = exportMissedItemsToReview(canonicalWordIds);
+  let markerSaved = false;
+  if (exportRes.success) {
+    markerSaved = markPlacementResultExportedToReview(reportId);
+  }
+
+  return {
+    attempted: exportRes.attempted,
+    persisted: exportRes.persisted,
+    failed: exportRes.failed,
+    exportMarkerSaved: markerSaved,
+    success: exportRes.success && markerSaved,
+  };
 }
 
 /**
@@ -404,43 +445,54 @@ export function loadPlacementHistory(): CompactPlacementHistoryItem[] {
 
 /**
  * Saves completed placement result report to history and saves dedicated latest report.
- * Returns boolean indicating whether storage write succeeded.
+ * Returns a structured PlacementPersistenceResult with latestSaved, historySaved, and success status.
  */
-export function savePlacementResultToHistory(report: PlacementResultReport): boolean {
-  if (typeof window === 'undefined') return false;
+export function savePlacementResultToHistory(report: PlacementResultReport): PlacementPersistenceResult {
+  if (typeof window === 'undefined') {
+    return { latestSaved: false, historySaved: false, success: false };
+  }
   try {
-    const reportSaved = saveLatestPlacementReport(report);
+    const latestSaved = saveLatestPlacementReport(report);
 
-    const history = loadPlacementHistory();
-    const matchedWeakWordIds = report.missedTargetItems
-      .map((m) => m.wordId)
-      .filter((id): id is string => Boolean(id));
+    let historySaved = false;
+    try {
+      const history = loadPlacementHistory();
+      const matchedWeakWordIds = report.missedTargetItems
+        .map((m) => m.wordId)
+        .filter((id): id is string => Boolean(id));
 
-    const compactItem: CompactPlacementHistoryItem = {
-      id: report.id,
-      date: report.date,
-      completedAt: report.completedAt,
-      estimatedLevel: report.estimatedLevel,
-      overallPercentage: report.overallPercentage,
-      confidence: report.confidence,
-      stagePathLevels: report.stagePath.map((s) => s.level),
-      recommendedLessonIds: report.recommendedLessons.map((r) => r.lessonId),
-      matchedWeakWordIds: Array.from(new Set(matchedWeakWordIds)),
-    };
+      const compactItem: CompactPlacementHistoryItem = {
+        id: report.id,
+        date: report.date,
+        completedAt: report.completedAt,
+        estimatedLevel: report.estimatedLevel,
+        overallPercentage: report.overallPercentage,
+        confidence: report.confidence,
+        stagePathLevels: report.stagePath.map((s) => s.level),
+        recommendedLessonIds: report.recommendedLessons.map((r) => r.lessonId),
+        matchedWeakWordIds: Array.from(new Set(matchedWeakWordIds)),
+      };
 
-    const newHistory = [compactItem, ...history.filter((h) => h.id !== compactItem.id)].slice(
-      0,
-      MAX_HISTORY_ITEMS
-    );
+      const newHistory = [compactItem, ...history.filter((h) => h.id !== compactItem.id)].slice(
+        0,
+        MAX_HISTORY_ITEMS
+      );
 
-    const writeSuccess = safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
-    if (writeSuccess) {
-      emitPlacementUpdate();
-      return true;
+      historySaved = safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
+      if (historySaved) {
+        emitPlacementUpdate();
+      }
+    } catch {
+      historySaved = false;
     }
-    return reportSaved;
+
+    return {
+      latestSaved,
+      historySaved,
+      success: latestSaved && historySaved,
+    };
   } catch (err) {
-    return false;
+    return { latestSaved: false, historySaved: false, success: false };
   }
 }
 

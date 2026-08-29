@@ -10,6 +10,10 @@ import { saveExamResultToHistory } from '../utils/examStorage';
 
 interface ExamResultProps {
   report: ExamResultReport;
+  initialPersistence?: {
+    resultSaved: boolean;
+    activeSessionCleared: boolean;
+  };
   onRetakeExam: () => void;
   onReturnToExamCenter: () => void;
   onSelectLesson: (lesson: Lesson) => void;
@@ -18,6 +22,7 @@ interface ExamResultProps {
 
 export const ExamResultPage: React.FC<ExamResultProps> = ({
   report,
+  initialPersistence,
   onRetakeExam,
   onReturnToExamCenter,
   onSelectLesson,
@@ -32,7 +37,12 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
   const [expandedExplanationMap, setExpandedExplanationMap] = useState<Record<string, string>>({});
   const [explainingQuestionId, setExplainingQuestionId] = useState<string | null>(null);
 
-  const [isPersisted, setIsPersisted] = useState<boolean>(report.isPersisted !== false);
+  const [isPersisted, setIsPersisted] = useState<boolean>(() => {
+    if (initialPersistence !== undefined) {
+      return initialPersistence.resultSaved;
+    }
+    return true;
+  });
   const [retrySavedSuccess, setRetrySavedSuccess] = useState<boolean>(false);
 
   const durationMin = Math.floor(report.durationSpentSeconds / 60);
@@ -192,7 +202,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
           <button
             type="button"
             onClick={handleRetrySave}
-            className="shrink-0 min-h-10 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            className="shrink-0 min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center"
           >
             {t('exam.result.retrySave')}
           </button>
@@ -573,7 +583,7 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
                         )
                       }
                       disabled={isExplainingThis}
-                      className="min-h-10 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50/50 border border-indigo-200 px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
+                      className="min-h-11 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white hover:bg-indigo-50/50 border border-indigo-200 px-3.5 py-2 rounded-xl shadow-2xs transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
                     >
                       {isExplainingThis ? 'Generating explanation...' : 'Explain My Mistake with Gemini'}
                     </button>

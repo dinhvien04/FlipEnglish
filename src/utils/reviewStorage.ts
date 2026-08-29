@@ -6,6 +6,8 @@ import {
   ResolvedReviewItem,
   ReviewDashboardStats,
   ReviewLogEntry,
+  ReviewExportResult,
+  ReviewBatchAddResult,
 } from '../types/review';
 import {
   clampInterval,
@@ -174,7 +176,7 @@ export function loadReviewStorage(now: number = Date.now()): ReviewStorage {
 /**
  * Saves review storage to localStorage and emits an update event.
  */
-export function saveReviewStorage(storage: ReviewStorage): void {
+export function saveReviewStorage(storage: ReviewStorage): boolean {
   try {
     const safeKeys = Object.keys(storage.items).slice(0, MAX_TRACKED_ITEMS);
     const prunedItems: Record<string, ReviewItemState> = {};
@@ -193,9 +195,12 @@ export function saveReviewStorage(storage: ReviewStorage): void {
     const writeSuccess = safeSetLocalStorage(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
     if (writeSuccess) {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+      return true;
     }
+    return false;
   } catch (err) {
     console.error('Failed to save review state to localStorage:', err);
+    return false;
   }
 }
 
@@ -409,37 +414,40 @@ export function ensureReviewItem(itemId: string, now: number = Date.now()): Revi
 
   const newState = createInitialReviewState(itemId, now, 0);
   storage.items[itemId] = newState;
-  saveReviewStorage(storage);
-  return newState;
+  const saved = saveReviewStorage(storage);
+  return saved ? newState : null;
 }
 
 /**
  * Manually adds or removes an item from Smart Review (Toggle).
  */
-export function toggleItemInReview(itemId: string, now: number = Date.now()): boolean {
-  if (!itemId) return false;
+export function toggleItemInReview(
+  itemId: string,
+  now: number = Date.now()
+): { success: boolean; inReview: boolean } {
+  if (!itemId) return { success: false, inReview: false };
   const resolved = resolveCurriculumItem(itemId);
-  if (!resolved) return false;
+  if (!resolved) return { success: false, inReview: false };
 
   const storage = loadReviewStorage();
   if (storage.items[itemId]) {
     delete storage.items[itemId];
-    saveReviewStorage(storage);
-    return false;
+    const saved = saveReviewStorage(storage);
+    return { success: saved, inReview: !saved };
   } else {
     storage.items[itemId] = createInitialReviewState(itemId, now, 0);
-    saveReviewStorage(storage);
-    return true;
+    const saved = saveReviewStorage(storage);
+    return { success: saved, inReview: saved };
   }
 }
 
 /**
  * Records a mistake signal from an interactive quiz or exam.
  */
-export function recordQuizMistake(itemId: string, now: number = Date.now()): void {
-  if (!itemId) return;
+export function recordQuizMistake(itemId: string, now: number = Date.now()): boolean {
+  if (!itemId) return false;
   const resolved = resolveCurriculumItem(itemId);
-  if (!resolved) return;
+  if (!resolved) return false;
 
   const storage = loadReviewStorage();
   const current = storage.items[itemId];
@@ -453,7 +461,7 @@ export function recordQuizMistake(itemId: string, now: number = Date.now()): voi
     storage.items[itemId] = initial;
   }
 
-  saveReviewStorage(storage);
+  return saveReviewStorage(storage);
 }
 
 /**
@@ -484,19 +492,25 @@ export function applyReviewRatingToItem(
     storage.recentLogs = storage.recentLogs.slice(-MAX_LOG_ENTRIES);
   }
 
-  saveReviewStorage(storage);
-  return updated;
+  const saved = saveReviewStorage(storage);
+  return saved ? updated : null;
 }
 
 /**
  * Batch adds specific item IDs to Smart Review (e.g. upon reviewing mistake items).
  * Ensures only valid canonical curriculum items are added.
  */
-export function batchAddItemsToReview(itemIds: string[], now: number = Date.now()): number {
-  if (!Array.isArray(itemIds) || itemIds.length === 0) return 0;
+export function batchAddItemsToReview(
+  itemIds: string[],
+  now: number = Date.now()
+): ReviewBatchAddResult {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    return { attempted: 0, added: 0, success: true };
+  }
 
   const storage = loadReviewStorage();
   let addedCount = 0;
+  let validCount = 0;
 
   for (const rawId of itemIds) {
     if (typeof rawId !== 'string') continue;
@@ -506,6 +520,7 @@ export function batchAddItemsToReview(itemIds: string[], now: number = Date.now(
     // Verify it exists in canonical curriculum
     const resolved = resolveCurriculumItem(itemId);
     if (!resolved) continue;
+    validCount++;
 
     if (!storage.items[itemId]) {
       storage.items[itemId] = createInitialReviewState(itemId, now, 0);
@@ -514,18 +529,22 @@ export function batchAddItemsToReview(itemIds: string[], now: number = Date.now(
   }
 
   if (addedCount > 0) {
-    saveReviewStorage(storage);
+    const saved = saveReviewStorage(storage);
+    return { attempted: itemIds.length, added: saved ? addedCount : 0, success: saved };
   }
 
-  return addedCount;
+  return { attempted: itemIds.length, added: 0, success: true };
 }
 
 /**
  * Batch adds all words in a lesson to Smart Review (e.g. upon lesson or flashcard completion).
  */
-export function batchAddLessonWordsToReview(lessonId: string, now: number = Date.now()): number {
+export function batchAddLessonWordsToReview(
+  lessonId: string,
+  now: number = Date.now()
+): ReviewBatchAddResult {
   const lesson = ALL_CURRICULUM_LESSONS.find((l) => l.id === lessonId);
-  if (!lesson) return 0;
+  if (!lesson) return { attempted: 0, added: 0, success: false };
 
   const storage = loadReviewStorage();
   let addedCount = 0;
@@ -538,10 +557,64 @@ export function batchAddLessonWordsToReview(lessonId: string, now: number = Date
   }
 
   if (addedCount > 0) {
-    saveReviewStorage(storage);
+    const saved = saveReviewStorage(storage);
+    return { attempted: lesson.words.length, added: saved ? addedCount : 0, success: saved };
   }
 
-  return addedCount;
+  return { attempted: lesson.words.length, added: 0, success: true };
+}
+
+/**
+ * Batch exports missed item IDs into Smart Review atomically.
+ */
+export function exportMissedItemsToReview(
+  itemIds: string[],
+  now: number = Date.now()
+): { attempted: number; persisted: number; failed: number; success: boolean } {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    return { attempted: 0, persisted: 0, failed: 0, success: true };
+  }
+
+  const storage = loadReviewStorage();
+  let validCount = 0;
+  let updatedOrAdded = 0;
+
+  for (const rawId of itemIds) {
+    if (typeof rawId !== 'string') continue;
+    const itemId = rawId.trim();
+    if (!itemId) continue;
+
+    const resolved = resolveCurriculumItem(itemId);
+    if (!resolved) continue;
+    validCount++;
+
+    const current = storage.items[itemId];
+    if (current) {
+      storage.items[itemId] = recordMistakeSignal(current, now);
+    } else {
+      const initial = createInitialReviewState(itemId, now, 10);
+      initial.lapseCount = 1;
+      storage.items[itemId] = initial;
+    }
+    updatedOrAdded++;
+  }
+
+  if (updatedOrAdded > 0) {
+    const saved = saveReviewStorage(storage);
+    return {
+      attempted: itemIds.length,
+      persisted: saved ? updatedOrAdded : 0,
+      failed: saved ? itemIds.length - validCount : itemIds.length,
+      success: saved,
+    };
+  }
+
+  return {
+    attempted: itemIds.length,
+    persisted: 0,
+    failed: itemIds.length - validCount,
+    success: true,
+  };
 }
 
 /**
@@ -565,13 +638,16 @@ export function getLessonDueCount(lessonId: string, now: number = Date.now()): n
 /**
  * Resets Smart Review data without affecting lesson progress or exam scores.
  */
-export function resetReviewStorage(): void {
+export function resetReviewStorage(): boolean {
   try {
     const removed = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
     if (removed) {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+      return true;
     }
+    return false;
   } catch (err) {
     console.error('Failed to reset review storage:', err);
+    return false;
   }
 }

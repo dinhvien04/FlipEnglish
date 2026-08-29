@@ -288,4 +288,30 @@ batchAddLessonWordsToReview('greetings', T0);
 const allTracked = getAllTrackedReviewItems(20, T0);
 assert(allTracked.length <= 20, 'getAllTrackedReviewItems is bounded by maxCount');
 
+// 11. Storage Fault Injection & Observability Tests
+console.log('\nTest Suite 11: Storage Fault Injection & Mutation Observability');
+resetReviewStorage();
+
+// Normal save succeeds
+const normalSaveRes = saveReviewStorage({ schemaVersion: 1, items: {} });
+assert(normalSaveRes === true, 'saveReviewStorage returns true on successful write');
+
+// Simulate QuotaExceededError
+const originalSetItem = localStorage.setItem;
+(localStorage as any).setItem = () => {
+  throw new Error('QuotaExceededError: LocalStorage quota exceeded');
+};
+
+const failedSave = saveReviewStorage({ schemaVersion: 1, items: {} });
+assert(failedSave === false, 'saveReviewStorage returns false on QuotaExceededError');
+
+const ensureFailed = ensureReviewItem('hello', T0);
+assert(ensureFailed === null, 'ensureReviewItem returns null when persistence fails');
+
+const applyFailed = applyReviewRatingToItem('hello', 'good', T0);
+assert(applyFailed === null, 'applyReviewRatingToItem returns null when persistence fails');
+
+// Restore localStorage.setItem
+localStorage.setItem = originalSetItem;
+
 console.log('\n✅ All FlipEnglish Smart Review tests and scheduler invariants passed successfully!');

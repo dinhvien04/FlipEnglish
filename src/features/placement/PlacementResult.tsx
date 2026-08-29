@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { PlacementResultReport, RecommendedLessonItem } from './placementTypes';
 import { CEFRLevel, Lesson } from '../../types';
-import { recordQuizMistake } from '../../utils/reviewStorage';
 import { LESSONS } from '../../data/lessons';
 import { resolveCurriculumItem } from '../../utils/curriculumIndex';
 import {
   isPlacementResultExportedToReview,
-  markPlacementResultExportedToReview,
+  exportPlacementMissedToReview,
   savePlacementResultToHistory,
 } from './placementStorage';
 import { useI18n } from '../i18n';
 
 interface PlacementResultProps {
   report: PlacementResultReport;
+  initialPersistence?: {
+    latestSaved: boolean;
+    historySaved: boolean;
+    success: boolean;
+  };
   onRetake: () => void;
   onStartCurriculum: (level: CEFRLevel) => void;
   onSelectLesson: (lesson: Lesson) => void;
@@ -21,6 +25,7 @@ interface PlacementResultProps {
 
 export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   report,
+  initialPersistence,
   onRetake,
   onStartCurriculum,
   onSelectLesson,
@@ -31,9 +36,26 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   const [addedWordsCount, setAddedWordsCount] = useState<number | null>(
     isAlreadyExported ? -1 : null
   );
+  const [exportError, setExportError] = useState<boolean>(false);
 
-  const [isPersisted, setIsPersisted] = useState<boolean>(report.isPersisted !== false);
-  const [retrySavedSuccess, setRetrySavedSuccess] = useState<boolean>(false);
+  const [persistenceState, setPersistenceState] = useState<{
+    latestSaved: boolean;
+    historySaved: boolean;
+    success: boolean;
+  }>(() => {
+    if (initialPersistence !== undefined) {
+      return initialPersistence;
+    }
+    // Viewing existing/history report or default
+    return {
+      latestSaved: true,
+      historySaved: true,
+      success: true,
+    };
+  });
+  const [retryAttempted, setRetryAttempted] = useState<boolean>(false);
+
+  const isFullyPersisted = persistenceState.success;
 
   const levelBadgeClass: Record<CEFRLevel, { bg: string; text: string; border: string }> = {
     A1: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
@@ -58,29 +80,24 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
 
   // Add missed canonical items to Smart Review idempotently
   const handleAddMissedToReview = () => {
-    if (isPlacementResultExportedToReview(report.id)) {
-      setAddedWordsCount(-1);
-      return;
+    setExportError(false);
+    const result = exportPlacementMissedToReview(report.id, canonicalWeakIds);
+    if (result.success) {
+      setAddedWordsCount(result.persisted);
+    } else {
+      setExportError(true);
     }
-
-    for (const wordId of canonicalWeakIds) {
-      recordQuizMistake(wordId);
-    }
-    markPlacementResultExportedToReview(report.id);
-    setAddedWordsCount(canonicalWeakIds.length);
   };
 
   const handleRetrySave = () => {
-    const success = savePlacementResultToHistory(report);
-    if (success) {
-      setIsPersisted(true);
-      setRetrySavedSuccess(true);
-    }
+    const res = savePlacementResultToHistory(report);
+    setPersistenceState(res);
+    setRetryAttempted(true);
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
-      {!isPersisted && (
+      {!isFullyPersisted && (
         <div
           role="status"
           aria-live="polite"
@@ -97,14 +114,14 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
           <button
             type="button"
             onClick={handleRetrySave}
-            className="shrink-0 min-h-10 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            className="shrink-0 min-h-11 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center"
           >
             {t('placement.result.retrySave')}
           </button>
         </div>
       )}
 
-      {retrySavedSuccess && (
+      {retryAttempted && isFullyPersisted && (
         <div
           role="status"
           aria-live="polite"
@@ -287,14 +304,21 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                id="add-placement-missed-btn"
-                onClick={handleAddMissedToReview}
-                className="min-h-12 px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
-              >
-                {t('placement.result.exportToReview')} ({canonicalWeakIds.length})
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  id="add-placement-missed-btn"
+                  onClick={handleAddMissedToReview}
+                  className="min-h-12 px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+                >
+                  {t('placement.result.exportToReview')} ({canonicalWeakIds.length})
+                </button>
+                {exportError && (
+                  <span className="text-2xs font-bold text-rose-600">
+                    {t('error.storageWarningDesc')}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </section>

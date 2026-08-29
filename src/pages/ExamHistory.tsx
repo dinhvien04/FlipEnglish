@@ -64,7 +64,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
             type="button"
             id="clear-exam-history-btn"
             onClick={handleClearHistory}
-            className="min-h-10 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto flex items-center justify-center"
+            className="min-h-11 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto flex items-center justify-center"
           >
             Clear History
           </button>

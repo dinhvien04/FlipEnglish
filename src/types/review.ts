@@ -57,3 +57,17 @@ export interface ReviewSessionSummary {
   reviewedItems: ResolvedReviewItem[];
   finishedAt: number;
 }
+
+export interface ReviewExportResult {
+  attempted: number;
+  persisted: number;
+  failed: number;
+  exportMarkerSaved: boolean;
+  success: boolean;
+}
+
+export interface ReviewBatchAddResult {
+  attempted: number;
+  added: number;
+  success: boolean;
+}

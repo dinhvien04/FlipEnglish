@@ -110,7 +110,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
         type="button"
         id="exam-review-submit-btn"
         onClick={onRequestReview}
-        className="w-full mt-auto py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider shadow-2xs transition-all cursor-pointer active:scale-98"
+        className="w-full mt-auto min-h-11 py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
       >
         Review & Submit
       </button>

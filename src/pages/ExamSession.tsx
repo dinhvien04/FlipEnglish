@@ -13,7 +13,7 @@ import { useI18n } from '../features/i18n';
 
 interface ExamSessionProps {
   initialSession: ExamSession;
-  onFinishExam: (resultReport: ExamResultReport) => void;
+  onFinishExam: (resultReport: ExamResultReport, persistenceStatus?: { resultSaved: boolean; activeSessionCleared: boolean }) => void;
 }
 
 export const ExamSessionPage: React.FC<ExamSessionProps> = ({
@@ -76,10 +76,13 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
       submittedAt: Date.now(),
     };
 
+    // Update active storage session status to submitted first so even if clearActiveExam fails,
+    // getActiveExam() will reject it as inactive
+    saveActiveExam(finalSession);
+
     const report = calculateExamResult(finalSession);
-    const persisted = saveExamResultToHistory(report);
-    report.isPersisted = persisted;
-    clearActiveExam();
+    const resultSaved = saveExamResultToHistory(report);
+    const activeSessionCleared = clearActiveExam();
 
     recordMeaningfulLearningEvent({
       type: 'exam_submitted',
@@ -104,7 +107,7 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
       }
     }
 
-    onFinishExam(report);
+    onFinishExam(report, { resultSaved, activeSessionCleared });
   }, [session, onFinishExam]);
 
   // Handle timer expiry (auto-submit)

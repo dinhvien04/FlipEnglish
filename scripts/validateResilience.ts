@@ -196,7 +196,57 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
   assert.strictEqual(getStorageHealth().isWarningDismissed, false);
   assert.strictEqual(getStorageHealth().failedKeys.length, 0);
 
-  // 2.7 Safe Remove
+  // 2.7 Regression tests: Exact operation-level reconciliation matrix
+  // Test: Read fail -> Read success resolves read fail
+  const keyA = 'key_read_only';
+  recordStorageFailure(keyA, new Error('read err'), 'read');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyA), true);
+  recordStorageSuccess(keyA, 'read');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyA), false);
+
+  // Test: Write fail -> Read success does NOT resolve write fail
+  const keyB = 'key_write_read';
+  recordStorageFailure(keyB, new Error('write err'), 'write');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyB), true);
+  recordStorageSuccess(keyB, 'read');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyB), true, 'Read success must NOT resolve write fail');
+  assert.strictEqual(getStorageHealth().isHealthy, false);
+
+  // Test: Remove fail -> Write success does NOT resolve remove fail
+  const keyC = 'key_remove_write';
+  recordStorageFailure(keyC, new Error('remove err'), 'remove');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyC), true);
+  recordStorageSuccess(keyC, 'write');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyC), true, 'Write success must NOT resolve remove fail');
+
+  // Test: Remove fail -> Remove success resolves remove fail
+  recordStorageSuccess(keyC, 'remove');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyC), false, 'Remove success resolves remove fail');
+
+  // Test: Write fail + Remove fail on same key -> resolving write leaves remove fail intact
+  const keyD = 'key_dual_fail';
+  recordStorageFailure(keyD, new Error('write err'), 'write');
+  recordStorageFailure(keyD, new Error('remove err'), 'remove');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyD), true);
+  recordStorageSuccess(keyD, 'write');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyD), true, 'Dual fail key still unresolved after write success');
+  recordStorageSuccess(keyD, 'remove');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(keyD), false, 'Dual fail key resolved after remove success');
+
+  // Clean up keyB to restore health
+  recordStorageSuccess(keyB, 'write');
+  assert.strictEqual(getStorageHealth().isHealthy, true);
+
+  // Test: Probe success while real failures exist keeps isHealthy = false
+  const keyE = 'key_probe_test';
+  recordStorageFailure(keyE, new Error('fail'), 'write');
+  recordStorageSuccess('flipenglish_storage_health_probe', 'probe');
+  assert.strictEqual(getStorageHealth().isStorageAccessible, true);
+  assert.strictEqual(getStorageHealth().isHealthy, false, 'Probe success must keep isHealthy=false when real failure exists');
+  recordStorageSuccess(keyE, 'write');
+  assert.strictEqual(getStorageHealth().isHealthy, true);
+
+  // 2.8 Safe Remove
   safeRemoveLocalStorage(testKey);
   assert.strictEqual(safeGetLocalStorage(testKey), null);
 

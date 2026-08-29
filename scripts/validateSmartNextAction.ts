@@ -53,7 +53,10 @@ const activeExamSession = {
       sectionType: 'vocabulary',
       kind: 'multiple-choice',
       prompt: 'test prompt',
-      options: [{ id: 'opt1', text: 'A' }],
+      options: [
+        { id: 'opt1', text: 'A' },
+        { id: 'opt2', text: 'B' },
+      ],
       correctAnswer: 'A',
     },
     {
@@ -63,7 +66,10 @@ const activeExamSession = {
       sectionType: 'vocabulary',
       kind: 'multiple-choice',
       prompt: 'test prompt 2',
-      options: [{ id: 'opt2', text: 'B' }],
+      options: [
+        { id: 'opt1', text: 'A' },
+        { id: 'opt2', text: 'B' },
+      ],
       correctAnswer: 'B',
     },
   ],

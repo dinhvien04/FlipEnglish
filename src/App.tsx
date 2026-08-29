@@ -112,11 +112,20 @@ export default function App() {
   const [examLevel, setExamLevel] = useState<CEFRLevel>('B2');
   const [activeExamSession, setActiveExamSession] = useState<ExamSession | null>(null);
   const [examResultReport, setExamResultReport] = useState<ExamResultReport | null>(null);
+  const [examPersistenceState, setExamPersistenceState] = useState<{
+    resultSaved: boolean;
+    activeSessionCleared: boolean;
+  } | null>(null);
   const [pendingResumeSession, setPendingResumeSession] = useState<ExamSession | null>(null);
 
   // Placement States
   const [activePlacementSession, setActivePlacementSession] = useState<PlacementSession | null>(null);
   const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
+  const [placementPersistenceState, setPlacementPersistenceState] = useState<{
+    latestSaved: boolean;
+    historySaved: boolean;
+    success: boolean;
+  } | null>(null);
   const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
   const [placementStartError, setPlacementStartError] = useState<string | null>(null);
   const [isStartingPlacement, setIsStartingPlacement] = useState<boolean>(false);
@@ -198,6 +207,7 @@ export default function App() {
         setSelectedLessonId(null);
         setTemporaryLesson(null);
         setExamResultReport(null);
+        setExamPersistenceState(null);
         setPlacementResultReport(null);
         setSelectedScenario(null);
         setConversationTurns([]);
@@ -695,8 +705,16 @@ export default function App() {
     }
   };
 
-  const handleFinishPlacementSession = (report: PlacementResultReport) => {
+  const handleFinishPlacementSession = (
+    report: PlacementResultReport,
+    persistenceResult?: { latestSaved: boolean; historySaved: boolean; success: boolean }
+  ) => {
     setPlacementResultReport(report);
+    if (persistenceResult) {
+      setPlacementPersistenceState(persistenceResult);
+    } else {
+      setPlacementPersistenceState(null);
+    }
     setActivePlacementSession(null);
     setPendingResumePlacement(null);
     setCurrentView('placement-result');
@@ -799,8 +817,16 @@ export default function App() {
     }
   };
 
-  const handleFinishExamSession = (report: ExamResultReport) => {
+  const handleFinishExamSession = (
+    report: ExamResultReport,
+    persistenceStatus?: { resultSaved: boolean; activeSessionCleared: boolean }
+  ) => {
     setExamResultReport(report);
+    if (persistenceStatus) {
+      setExamPersistenceState(persistenceStatus);
+    } else {
+      setExamPersistenceState(null);
+    }
     setActiveExamSession(null);
     setCurrentView('exam-result');
   };
@@ -815,6 +841,7 @@ export default function App() {
 
   const handleViewResultReport = (report: ExamResultReport) => {
     setExamResultReport(report);
+    setExamPersistenceState(null);
     setCurrentView('exam-result');
   };
 
@@ -1135,6 +1162,7 @@ export default function App() {
             <ErrorBoundary featureName="PlacementResult" showHomeButton onGoHome={handleNavigateToday}>
               <PlacementResultPage
                 report={placementResultReport}
+                initialPersistence={placementPersistenceState || undefined}
                 onRetake={handleStartPlacementIntro}
                 onStartCurriculum={handleStartCurriculumAtLevel}
                 onSelectLesson={handleSelectLesson}
@@ -1306,6 +1334,7 @@ export default function App() {
             <ErrorBoundary featureName="ExamResult" showHomeButton onGoHome={handleNavigateToday}>
               <ExamResultPage
                 report={examResultReport}
+                initialPersistence={examPersistenceState || undefined}
                 onRetakeExam={handleRetakeExam}
                 onReturnToExamCenter={handleNavigateExamCenter}
                 onSelectLesson={handleSelectLesson}

@@ -109,7 +109,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                 type="button"
                 id="close-review-modal-btn"
                 onClick={onClose}
-                className="min-h-10 text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer flex items-center justify-center"
+                className="min-h-11 text-xs font-bold text-slate-500 hover:text-slate-700 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer flex items-center justify-center"
               >
                 Close
               </button>
@@ -162,7 +162,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                           onSelectQuestion(idx);
                           onClose();
                         }}
-                        className="min-h-10 px-3.5 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
+                        className="min-h-11 px-3.5 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
                       >
                         Question {idx + 1}
                       </button>
@@ -186,7 +186,7 @@ export const ExamReviewModal: React.FC<ExamReviewModalProps> = ({
                           onSelectQuestion(idx);
                           onClose();
                         }}
-                        className="min-h-10 px-3.5 py-2 rounded-lg bg-white border border-amber-300 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
+                        className="min-h-11 px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs flex items-center justify-center"
                       >
                         Question {idx + 1}
                       </button>

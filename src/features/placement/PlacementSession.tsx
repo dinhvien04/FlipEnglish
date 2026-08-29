@@ -5,6 +5,7 @@ import {
   PlacementStage,
   PlacementStageResult,
   PlacementQuestion,
+  PlacementPersistenceResult,
   PLACEMENT_STAGE_COUNT,
   PLACEMENT_STAGE_SIZE,
   PLACEMENT_TOTAL_QUESTIONS,
@@ -22,7 +23,7 @@ import { useI18n } from '../i18n';
 
 interface PlacementSessionProps {
   initialSession: PlacementSession;
-  onFinishPlacement: (report: PlacementResultReport) => void;
+  onFinishPlacement: (report: PlacementResultReport, persistenceResult?: PlacementPersistenceResult) => void;
   onExitPlacement: () => void;
   onRestartPlacement?: () => void;
 }
@@ -158,12 +159,11 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       );
 
       // Save to history & clear active
-      const persisted = savePlacementResultToHistory(finalReport);
-      finalReport.isPersisted = persisted;
+      const persistenceResult = savePlacementResultToHistory(finalReport);
       clearActivePlacement();
 
       startTransition(() => {
-        onFinishPlacement(finalReport);
+        onFinishPlacement(finalReport, persistenceResult);
       });
       return;
     }
@@ -219,7 +219,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
               <button
                 type="button"
                 onClick={onRestartPlacement}
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer"
+                className="min-h-11 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer inline-flex items-center justify-center"
               >
                 {t('result.retakeQuizBtn')}
               </button>
@@ -227,7 +227,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
             <button
               type="button"
               onClick={onExitPlacement}
-              className="px-4 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+              className="min-h-11 px-4 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer inline-flex items-center justify-center"
             >
               {t('ui.common.back')}
             </button>
@@ -278,7 +278,7 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
             <button
               type="button"
               onClick={onExitPlacement}
-              className="min-h-10 px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
+              className="min-h-11 px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
             >
               {t('ui.common.back')}
             </button>

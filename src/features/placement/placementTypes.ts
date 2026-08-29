@@ -75,6 +75,12 @@ export interface RecommendedLessonItem {
   reason: string;
 }
 
+export interface PlacementPersistenceResult {
+  latestSaved: boolean;
+  historySaved: boolean;
+  success: boolean;
+}
+
 export interface PlacementResultReport {
   id: string;
   sessionId: string;
@@ -99,7 +105,6 @@ export interface PlacementResultReport {
     level: CEFRLevel;
     skill: PlacementSkill;
   }[];
-  isPersisted?: boolean;
 }
 
 export interface PlacementSession {
