@@ -1,5 +1,10 @@
 import { RecentSearchItem } from './dictionaryTypes';
 import { normalizeDictionaryQuery } from './dictionaryLocalIndex';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from '../../utils/storageHealth';
 
 const RECENT_SEARCHES_KEY = 'flipenglish_dictionary_recent_v1';
 const MAX_RECENT_SEARCHES = 20;
@@ -7,7 +12,7 @@ const MAX_RECENT_SEARCHES = 20;
 export function getRecentSearches(): RecentSearchItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+    const raw = safeGetLocalStorage(RECENT_SEARCHES_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -43,7 +48,7 @@ export function addRecentSearch(word: string): void {
     });
 
     const bounded = filtered.slice(0, MAX_RECENT_SEARCHES);
-    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(bounded));
+    safeSetLocalStorage(RECENT_SEARCHES_KEY, JSON.stringify(bounded));
   } catch (err) {
     console.warn('[Dictionary Storage] Failed to write recent search:', err);
   }
@@ -52,7 +57,7 @@ export function addRecentSearch(word: string): void {
 export function clearRecentSearches(): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(RECENT_SEARCHES_KEY);
+    safeRemoveLocalStorage(RECENT_SEARCHES_KEY);
   } catch (err) {
     console.warn('[Dictionary Storage] Failed to clear recent searches:', err);
   }

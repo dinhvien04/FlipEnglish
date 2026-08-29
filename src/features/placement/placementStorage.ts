@@ -13,6 +13,11 @@ import {
 import { isValidPlacementQuestion } from './placementValidation';
 import { routeNextLevel } from './placementEngine';
 import { LESSONS } from '../../data/lessons';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from '../../utils/storageHealth';
 
 const ACTIVE_PLACEMENT_KEY = 'flipenglish_placement_active_v1';
 const PLACEMENT_HISTORY_KEY = 'flipenglish_placement_history_v1';
@@ -222,7 +227,7 @@ export function validatePlacementResultReport(data: any): data is PlacementResul
 export function loadActivePlacement(): PlacementSession | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(ACTIVE_PLACEMENT_KEY);
+    const raw = safeGetLocalStorage(ACTIVE_PLACEMENT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (validatePlacementSession(parsed)) {
@@ -250,7 +255,7 @@ export function saveActivePlacement(session: PlacementSession): void {
   if (typeof window === 'undefined') return;
   try {
     if (!validatePlacementSession(session)) return;
-    localStorage.setItem(ACTIVE_PLACEMENT_KEY, JSON.stringify(session));
+    safeSetLocalStorage(ACTIVE_PLACEMENT_KEY, JSON.stringify(session));
     emitPlacementUpdate();
   } catch (err) {
     // Storage quota or serialization issue
@@ -263,7 +268,7 @@ export function saveActivePlacement(session: PlacementSession): void {
 export function clearActivePlacement(): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(ACTIVE_PLACEMENT_KEY);
+    safeRemoveLocalStorage(ACTIVE_PLACEMENT_KEY);
     emitPlacementUpdate();
   } catch (err) {
     // ignore
@@ -277,7 +282,7 @@ export function saveLatestPlacementReport(report: PlacementResultReport): void {
   if (typeof window === 'undefined') return;
   try {
     if (!validatePlacementResultReport(report)) return;
-    localStorage.setItem(PLACEMENT_LATEST_REPORT_KEY, JSON.stringify(report));
+    safeSetLocalStorage(PLACEMENT_LATEST_REPORT_KEY, JSON.stringify(report));
     emitPlacementUpdate();
   } catch (err) {
     // ignore
@@ -290,16 +295,16 @@ export function saveLatestPlacementReport(report: PlacementResultReport): void {
 export function loadLatestPlacementReport(): PlacementResultReport | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(PLACEMENT_LATEST_REPORT_KEY);
+    const raw = safeGetLocalStorage(PLACEMENT_LATEST_REPORT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (validatePlacementResultReport(parsed)) {
       return parsed;
     }
-    localStorage.removeItem(PLACEMENT_LATEST_REPORT_KEY);
+    safeRemoveLocalStorage(PLACEMENT_LATEST_REPORT_KEY);
     return null;
   } catch (err) {
-    localStorage.removeItem(PLACEMENT_LATEST_REPORT_KEY);
+    safeRemoveLocalStorage(PLACEMENT_LATEST_REPORT_KEY);
     return null;
   }
 }
@@ -343,7 +348,7 @@ function validateHistoryItem(item: any): item is CompactPlacementHistoryItem {
 export function isPlacementResultExportedToReview(reportId: string): boolean {
   if (typeof window === 'undefined' || !reportId) return false;
   try {
-    const raw = localStorage.getItem(PLACEMENT_REVIEW_EXPORTS_KEY);
+    const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return false;
@@ -359,7 +364,7 @@ export function isPlacementResultExportedToReview(reportId: string): boolean {
 export function markPlacementResultExportedToReview(reportId: string): void {
   if (typeof window === 'undefined' || !reportId) return;
   try {
-    const raw = localStorage.getItem(PLACEMENT_REVIEW_EXPORTS_KEY);
+    const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
     let list: string[] = [];
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -370,7 +375,7 @@ export function markPlacementResultExportedToReview(reportId: string): void {
     if (!list.includes(reportId)) {
       list.unshift(reportId);
       list = list.slice(0, MAX_EXPORTED_REPORTS);
-      localStorage.setItem(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
+      safeSetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
     }
   } catch (err) {
     // ignore
@@ -383,11 +388,11 @@ export function markPlacementResultExportedToReview(reportId: string): void {
 export function loadPlacementHistory(): CompactPlacementHistoryItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(PLACEMENT_HISTORY_KEY);
+    const raw = safeGetLocalStorage(PLACEMENT_HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
-      localStorage.removeItem(PLACEMENT_HISTORY_KEY);
+      safeRemoveLocalStorage(PLACEMENT_HISTORY_KEY);
       return [];
     }
     const validItems = parsed.filter(validateHistoryItem);
@@ -429,7 +434,7 @@ export function savePlacementResultToHistory(report: PlacementResultReport): voi
       MAX_HISTORY_ITEMS
     );
 
-    localStorage.setItem(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
+    safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
     emitPlacementUpdate();
   } catch (err) {
     // ignore

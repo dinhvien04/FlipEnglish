@@ -1,6 +1,10 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../../constants/storageKeys';
 import { ReminderPreferences } from '../../types/reminders';
 import { isValidLocalDateKey } from '../studyPlan/studyPlanEngine';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+} from '../../utils/storageHealth';
 
 export const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
   schemaVersion: 1,
@@ -75,7 +79,7 @@ export function loadReminderPreferences(): ReminderPreferences {
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.REMINDERS);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.REMINDERS);
     if (!raw) {
       return { ...DEFAULT_REMINDER_PREFERENCES, updatedAt: Date.now() };
     }
@@ -104,7 +108,7 @@ export function saveReminderPreferences(preferences: ReminderPreferences): boole
     if (!validateReminderPreferences(preferences)) {
       return false;
     }
-    localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(preferences));
+    safeSetLocalStorage(STORAGE_KEYS.REMINDERS, JSON.stringify(preferences));
     emitRemindersUpdated();
     return true;
   } catch {

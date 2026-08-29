@@ -1,4 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+} from '../../utils/storageHealth';
 
 export interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -26,7 +30,7 @@ export function usePWAInstall() {
   const [isDismissed, setIsDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
-      const stored = localStorage.getItem(PWA_INSTALL_DISMISSED_KEY);
+      const stored = safeGetLocalStorage(PWA_INSTALL_DISMISSED_KEY);
       if (!stored) return false;
       const parsed = parseInt(stored, 10);
       if (isNaN(parsed)) return false;
@@ -90,7 +94,7 @@ export function usePWAInstall() {
   const dismissPrompt = useCallback(() => {
     setIsDismissed(true);
     try {
-      localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, Date.now().toString());
+      safeSetLocalStorage(PWA_INSTALL_DISMISSED_KEY, Date.now().toString());
     } catch {
       // Ignore storage errors
     }

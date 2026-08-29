@@ -1,5 +1,10 @@
 import { ConversationStorageData, SavedConversationSummary, ConversationCategory } from '../types/conversation';
 import { CEFRLevel } from '../types';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from './storageHealth';
 
 export const CONVERSATION_STORAGE_KEY = 'flipenglish_conversation_history_v1';
 export const CONVERSATION_UPDATED_EVENT = 'flipenglish_conversation_updated';
@@ -52,7 +57,7 @@ function sanitizeSummary(raw: any, now: number): SavedConversationSummary | null
  */
 export function loadConversationStorage(now: number = Date.now()): ConversationStorageData {
   try {
-    const raw = localStorage.getItem(CONVERSATION_STORAGE_KEY);
+    const raw = safeGetLocalStorage(CONVERSATION_STORAGE_KEY);
     if (!raw) {
       return { schemaVersion: 1, history: [] };
     }
@@ -116,7 +121,7 @@ export function saveConversationSummary(summary: Omit<SavedConversationSummary, 
       history: updatedHistory,
     };
 
-    localStorage.setItem(CONVERSATION_STORAGE_KEY, JSON.stringify(safeStorage));
+    safeSetLocalStorage(CONVERSATION_STORAGE_KEY, JSON.stringify(safeStorage));
     window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
   } catch (err) {
     console.error('Failed to save conversation summary to localStorage:', err);
@@ -128,7 +133,7 @@ export function saveConversationSummary(summary: Omit<SavedConversationSummary, 
  */
 export function clearConversationHistory(): void {
   try {
-    localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+    safeRemoveLocalStorage(CONVERSATION_STORAGE_KEY);
     window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
   } catch (err) {
     console.error('Failed to clear conversation history:', err);

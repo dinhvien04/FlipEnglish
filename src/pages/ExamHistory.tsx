@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CEFRLevel } from '../types';
 import { ExamResultReport } from '../types/exam';
-import { getExamHistory } from '../utils/examStorage';
+import { getExamHistory, clearExamHistory } from '../utils/examStorage';
 import { useI18n } from '../features/i18n';
 
 interface ExamHistoryProps {
@@ -29,7 +29,7 @@ export const ExamHistoryPage: React.FC<ExamHistoryProps> = ({
 
   const handleClearHistory = () => {
     if (window.confirm('Are you sure you want to clear all exam history?')) {
-      localStorage.removeItem('flipenglish_exam_history');
+      clearExamHistory();
       setHistory([]);
     }
   };

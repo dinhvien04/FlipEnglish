@@ -21,6 +21,11 @@ import { getReviewDashboardStats } from '../../utils/reviewStorage';
 import { getStoredProgress } from '../../utils/storage';
 import { getLatestPlacementResult } from '../placement/placementStorage';
 import { getExamHistory } from '../../utils/examStorage';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from '../../utils/storageHealth';
 
 export const STUDY_PLAN_SETTINGS_KEY = 'flipenglish_study_plan_settings_v1';
 export const TODAY_PLAN_KEY = 'flipenglish_today_plan_v1';
@@ -350,7 +355,7 @@ export function loadStudyPlanSettings(): StudyPlanSettings {
   }
 
   try {
-    const raw = localStorage.getItem(STUDY_PLAN_SETTINGS_KEY);
+    const raw = safeGetLocalStorage(STUDY_PLAN_SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (validateStudyPlanSettings(parsed)) {
@@ -379,7 +384,7 @@ export function saveStudyPlanSettings(settings: StudyPlanSettings): boolean {
   if (typeof window === 'undefined') return false;
   try {
     if (!validateStudyPlanSettings(settings)) return false;
-    localStorage.setItem(STUDY_PLAN_SETTINGS_KEY, JSON.stringify(settings));
+    safeSetLocalStorage(STUDY_PLAN_SETTINGS_KEY, JSON.stringify(settings));
     emitStudyPlanUpdate();
     return true;
   } catch (err) {
@@ -393,7 +398,7 @@ export function saveStudyPlanSettings(settings: StudyPlanSettings): boolean {
 export function loadStudyPlanHistory(): CompactStudyPlanHistoryItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STUDY_PLAN_HISTORY_KEY);
+    const raw = safeGetLocalStorage(STUDY_PLAN_HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -428,7 +433,7 @@ export function archivePlanToHistory(plan: TodayStudyPlan): boolean {
       0,
       MAX_HISTORY_DAYS
     );
-    localStorage.setItem(STUDY_PLAN_HISTORY_KEY, JSON.stringify(newHistory));
+    safeSetLocalStorage(STUDY_PLAN_HISTORY_KEY, JSON.stringify(newHistory));
     return true;
   } catch (err) {
     return false;
@@ -539,7 +544,7 @@ export function getOrGenerateTodayPlan(): TodayStudyPlan {
 
   if (typeof window !== 'undefined') {
     try {
-      const raw = localStorage.getItem(TODAY_PLAN_KEY);
+      const raw = safeGetLocalStorage(TODAY_PLAN_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (validateTodayStudyPlan(parsed)) {
@@ -581,7 +586,7 @@ export function saveTodayPlan(plan: TodayStudyPlan): boolean {
   if (typeof window === 'undefined') return false;
   try {
     if (!validateTodayStudyPlan(plan)) return false;
-    localStorage.setItem(TODAY_PLAN_KEY, JSON.stringify(plan));
+    safeSetLocalStorage(TODAY_PLAN_KEY, JSON.stringify(plan));
     emitStudyPlanUpdate();
     return true;
   } catch (err) {

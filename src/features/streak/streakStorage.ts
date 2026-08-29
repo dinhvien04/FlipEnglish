@@ -1,6 +1,10 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../../constants/storageKeys';
 import { LearnerStreak } from '../../types/streak';
 import { isValidLocalDateKey } from '../studyPlan/studyPlanEngine';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+} from '../../utils/storageHealth';
 
 export const INITIAL_LEARNER_STREAK: LearnerStreak = {
   schemaVersion: 1,
@@ -85,7 +89,7 @@ export function getStoredLearnerStreak(): LearnerStreak {
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.STREAK);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.STREAK);
     if (!raw) {
       return { ...INITIAL_LEARNER_STREAK, updatedAt: Date.now() };
     }
@@ -115,7 +119,7 @@ export function saveLearnerStreak(streak: LearnerStreak): boolean {
       return false;
     }
 
-    localStorage.setItem(STORAGE_KEYS.STREAK, JSON.stringify(streak));
+    safeSetLocalStorage(STORAGE_KEYS.STREAK, JSON.stringify(streak));
     emitStreakUpdate();
     return true;
   } catch (err) {

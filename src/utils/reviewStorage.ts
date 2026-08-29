@@ -16,6 +16,7 @@ import {
 } from './reviewScheduler';
 import { resolveCurriculumItem } from './curriculumIndex';
 import { ALL_CURRICULUM_LESSONS } from '../data/curriculum';
+import { safeGetLocalStorage, safeSetLocalStorage } from './storageHealth';
 
 export const REVIEW_STORAGE_KEY = 'flipenglish_review_v1';
 export const REVIEW_UPDATED_EVENT = 'flipenglish_review_updated';
@@ -129,7 +130,7 @@ function sanitizeRecentLogs(rawLogs: any, now: number): ReviewLogEntry[] {
  */
 export function loadReviewStorage(now: number = Date.now()): ReviewStorage {
   try {
-    const raw = localStorage.getItem(REVIEW_STORAGE_KEY);
+    const raw = safeGetLocalStorage(REVIEW_STORAGE_KEY);
     if (!raw) {
       return { schemaVersion: 1, items: {}, recentLogs: [] };
     }
@@ -189,7 +190,7 @@ export function saveReviewStorage(storage: ReviewStorage): void {
       recentLogs: prunedLogs,
     };
 
-    localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
+    safeSetLocalStorage(REVIEW_STORAGE_KEY, JSON.stringify(safeStorage));
     window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
   } catch (err) {
     console.error('Failed to save review state to localStorage:', err);

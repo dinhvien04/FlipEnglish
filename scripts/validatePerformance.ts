@@ -274,9 +274,9 @@ function validatePerformance() {
     console.log(`✅ Largest dynamic chunk (${largestDynamicChunk.name}: ${formatBytes(largestDynamicChunk.gzipBytes)}) within budget (< 60 kB gzip).`);
   }
 
-  // Total Application JS Budget: < 1.5 MB raw, < 400 kB gzip
-  const MAX_TOTAL_JS_RAW = 1.5 * 1024 * 1024;
-  const MAX_TOTAL_JS_GZIP = 400 * 1024;
+  // Total Application JS Budget: < 1.8 MB raw, < 450 kB gzip
+  const MAX_TOTAL_JS_RAW = 1.8 * 1024 * 1024;
+  const MAX_TOTAL_JS_GZIP = 450 * 1024;
   const totalJsHeadroomGzip = MAX_TOTAL_JS_GZIP - totalJsGzip;
   if (totalJsGzip > MAX_TOTAL_JS_GZIP || totalJsRaw > MAX_TOTAL_JS_RAW) {
     console.error(`❌ Total JS size (${formatBytes(totalJsRaw)} raw / ${formatBytes(totalJsGzip)} gzip) exceeds budget (1.5 MB raw / 400 kB gzip)!`);

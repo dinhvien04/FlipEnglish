@@ -18,6 +18,8 @@ import { getLessonProgress } from './utils/storage';
 import { getActiveExam, clearActiveExam } from './utils/examStorage';
 import { saveConversationSummary } from './utils/conversationStorage';
 import { Header } from './components/Header';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { StorageWarningBanner } from './components/StorageWarningBanner';
 import { ResumeExamModal } from './components/exam/ResumeExamModal';
 import { Home } from './pages/Home';
 import { LessonIntro } from './pages/LessonIntro';
@@ -912,6 +914,7 @@ export default function App() {
       {/* Sticky Header */}
       {currentView !== 'exam-session' && currentView !== 'conversation-session' && currentView !== 'placement-session' && currentView !== 'onboarding' && (
         <>
+          <StorageWarningBanner />
           <OfflineBanner />
           <Header
             onNavigateToday={handleNavigateToday}
@@ -970,13 +973,15 @@ export default function App() {
 
           {/* Dictionary & Personal Wordbook View */}
           {currentView === 'dictionary' && (
-            <DictionaryPage
-              initialWord={dictionarySearchWord}
-              returnContext={dictionaryReturnContext}
-              onReturn={handleReturnFromDictionary}
-              onNavigateLesson={handleSelectLessonById}
-              onNavigateReview={handleNavigateReview}
-            />
+            <ErrorBoundary featureName="Dictionary" showHomeButton onGoHome={handleNavigateToday}>
+              <DictionaryPage
+                initialWord={dictionarySearchWord}
+                returnContext={dictionaryReturnContext}
+                onReturn={handleReturnFromDictionary}
+                onNavigateLesson={handleSelectLessonById}
+                onNavigateReview={handleNavigateReview}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Curriculum Views */}
@@ -996,92 +1001,110 @@ export default function App() {
 
           {/* Placement Test Views */}
           {currentView === 'placement-intro' && (
-            <PlacementIntro
-              onStartPlacement={handleStartPlacementSession}
-              onBack={handleNavigateHome}
-              latestHistoryItem={getLatestPlacementResult()}
-              onViewPreviousResult={handleViewPlacementResult}
-              startError={placementStartError}
-              isStartingPlacement={isStartingPlacement}
-            />
+            <ErrorBoundary featureName="Placement" showHomeButton onGoHome={handleNavigateToday}>
+              <PlacementIntro
+                onStartPlacement={handleStartPlacementSession}
+                onBack={handleNavigateHome}
+                latestHistoryItem={getLatestPlacementResult()}
+                onViewPreviousResult={handleViewPlacementResult}
+                startError={placementStartError}
+                isStartingPlacement={isStartingPlacement}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'placement-session' && activePlacementSession && (
-            <PlacementSessionPage
-              key={activePlacementSession.id}
-              initialSession={activePlacementSession}
-              onFinishPlacement={handleFinishPlacementSession}
-              onExitPlacement={handleNavigateHome}
-              onRestartPlacement={handleStartPlacementSession}
-            />
+            <ErrorBoundary featureName="PlacementSession" showHomeButton onGoHome={handleNavigateToday}>
+              <PlacementSessionPage
+                key={activePlacementSession.id}
+                initialSession={activePlacementSession}
+                onFinishPlacement={handleFinishPlacementSession}
+                onExitPlacement={handleNavigateHome}
+                onRestartPlacement={handleStartPlacementSession}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'placement-result' && placementResultReport && (
-            <PlacementResultPage
-              report={placementResultReport}
-              onRetake={handleStartPlacementIntro}
-              onStartCurriculum={handleStartCurriculumAtLevel}
-              onSelectLesson={handleSelectLesson}
-              onNavigateReview={handleNavigateReview}
-            />
+            <ErrorBoundary featureName="PlacementResult" showHomeButton onGoHome={handleNavigateToday}>
+              <PlacementResultPage
+                report={placementResultReport}
+                onRetake={handleStartPlacementIntro}
+                onStartCurriculum={handleStartCurriculumAtLevel}
+                onSelectLesson={handleSelectLesson}
+                onNavigateReview={handleNavigateReview}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Smart Review (Spaced Repetition) View */}
           {currentView === 'review' && (
-            <ReviewDashboard
-              onNavigateToHome={handleNavigateHome}
-              resumeContext={resumedReviewContext}
-              onResumeConsumed={handleReviewResumeConsumed}
-              onSessionContextChange={setActiveReviewContext}
-              onLookupWord={(word, reviewContext) =>
-                handleNavigateDictionary(word, {
-                  source: 'review',
-                  view: 'review',
-                  reviewContext,
-                })
-              }
-            />
+            <ErrorBoundary featureName="SmartReview" showHomeButton onGoHome={handleNavigateToday}>
+              <ReviewDashboard
+                onNavigateToHome={handleNavigateHome}
+                resumeContext={resumedReviewContext}
+                onResumeConsumed={handleReviewResumeConsumed}
+                onSessionContextChange={setActiveReviewContext}
+                onLookupWord={(word, reviewContext) =>
+                  handleNavigateDictionary(word, {
+                    source: 'review',
+                    view: 'review',
+                    reviewContext,
+                  })
+                }
+              />
+            </ErrorBoundary>
           )}
 
           {/* AI Conversation Lab Views */}
           {currentView === 'conversation' && (
-            <ConversationHome
-              onSelectScenario={handleSelectScenario}
-              onBackToHome={handleNavigateHome}
-            />
+            <ErrorBoundary featureName="ConversationHome" showHomeButton onGoHome={handleNavigateToday}>
+              <ConversationHome
+                onSelectScenario={handleSelectScenario}
+                onBackToHome={handleNavigateHome}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'conversation-setup' && selectedScenario && (
-            <ConversationSetup
-              scenario={selectedScenario}
-              onStartSession={handleStartConversation}
-              onBack={handleNavigateConversation}
-            />
+            <ErrorBoundary featureName="ConversationSetup" showHomeButton onGoHome={handleNavigateToday}>
+              <ConversationSetup
+                scenario={selectedScenario}
+                onStartSession={handleStartConversation}
+                onBack={handleNavigateConversation}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'conversation-session' && selectedScenario && (
-            <ConversationSession
-              scenario={selectedScenario}
-              level={conversationLevel}
-              onFinishConversation={handleFinishConversation}
-              onExitSession={handleNavigateConversation}
-            />
+            <ErrorBoundary featureName="ConversationSession" showHomeButton onGoHome={handleNavigateToday}>
+              <ConversationSession
+                scenario={selectedScenario}
+                level={conversationLevel}
+                onFinishConversation={handleFinishConversation}
+                onExitSession={handleNavigateConversation}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'conversation-result' && selectedScenario && conversationEvaluation && (
-            <ConversationResult
-              scenario={selectedScenario}
-              level={conversationLevel}
-              evaluation={conversationEvaluation}
-              turns={conversationTurns}
-              onPracticeAgain={handlePracticeConversationAgain}
-              onBackToLab={handleNavigateConversation}
-              onNavigateReview={handleNavigateReview}
-            />
+            <ErrorBoundary featureName="ConversationResult" showHomeButton onGoHome={handleNavigateToday}>
+              <ConversationResult
+                scenario={selectedScenario}
+                level={conversationLevel}
+                evaluation={conversationEvaluation}
+                turns={conversationTurns}
+                onPracticeAgain={handlePracticeConversationAgain}
+                onBackToLab={handleNavigateConversation}
+                onNavigateReview={handleNavigateReview}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'flip-lens' && (
-            <FlipLens onBackToHome={handleNavigateHome} />
+            <ErrorBoundary featureName="FlipLens" showHomeButton onGoHome={handleNavigateToday}>
+              <FlipLens onBackToHome={handleNavigateHome} />
+            </ErrorBoundary>
           )}
 
           {currentView === 'lesson-intro' && selectedLesson && (
@@ -1094,31 +1117,35 @@ export default function App() {
           )}
 
           {currentView === 'learn' && selectedLesson && (
-            <Learn
-              lesson={selectedLesson}
-              wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
-              isReviewMistakesMode={isReviewMistakesMode}
-              resumeState={resumedLearnContext}
-              onResumeConsumed={handleLearnResumeConsumed}
-              onFinishFlashcards={handleFinishFlashcards}
-              onBackToIntro={handleBackToIntro}
-              onSessionContextChange={setActiveLearnContext}
-              onLookupWord={(word, learnContext) =>
-                handleNavigateDictionary(word, {
-                  source: 'learn',
-                  view: 'learn',
-                  learnContext,
-                })
-              }
-            />
+            <ErrorBoundary featureName="Learn" showHomeButton onGoHome={handleNavigateToday}>
+              <Learn
+                lesson={selectedLesson}
+                wordsToLearn={isReviewMistakesMode ? mistakeWords : selectedLesson.words}
+                isReviewMistakesMode={isReviewMistakesMode}
+                resumeState={resumedLearnContext}
+                onResumeConsumed={handleLearnResumeConsumed}
+                onFinishFlashcards={handleFinishFlashcards}
+                onBackToIntro={handleBackToIntro}
+                onSessionContextChange={setActiveLearnContext}
+                onLookupWord={(word, learnContext) =>
+                  handleNavigateDictionary(word, {
+                    source: 'learn',
+                    view: 'learn',
+                    learnContext,
+                  })
+                }
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'exercise' && selectedLesson && (
-            <Exercise
-              lesson={selectedLesson}
-              onFinishQuiz={handleFinishQuiz}
-              onExitQuiz={handleBackToIntro}
-            />
+            <ErrorBoundary featureName="Exercise" showHomeButton onGoHome={handleNavigateToday}>
+              <Exercise
+                lesson={selectedLesson}
+                onFinishQuiz={handleFinishQuiz}
+                onExitQuiz={handleBackToIntro}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'result' && selectedLesson && quizResults && (
@@ -1137,47 +1164,57 @@ export default function App() {
 
           {/* Practice Exam Views */}
           {currentView === 'exam-center' && (
-            <ExamCenter
-              onStartExamFlow={handleStartExamFlow}
-              onViewResultReport={handleViewResultReport}
-              onViewAllHistory={handleViewAllHistory}
-              onStartPlacement={handleStartPlacementIntro}
-            />
+            <ErrorBoundary featureName="ExamCenter" showHomeButton onGoHome={handleNavigateToday}>
+              <ExamCenter
+                onStartExamFlow={handleStartExamFlow}
+                onViewResultReport={handleViewResultReport}
+                onViewAllHistory={handleViewAllHistory}
+                onStartPlacement={handleStartPlacementIntro}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'exam-intro' && (
-            <ExamIntro
-              mode={examMode}
-              level={examLevel}
-              onStartExam={handleStartExamSession}
-              onBackToExamCenter={handleNavigateExamCenter}
-              isStartingExam={isStartingExam}
-              startError={examStartError}
-            />
+            <ErrorBoundary featureName="ExamIntro" showHomeButton onGoHome={handleNavigateToday}>
+              <ExamIntro
+                mode={examMode}
+                level={examLevel}
+                onStartExam={handleStartExamSession}
+                onBackToExamCenter={handleNavigateExamCenter}
+                isStartingExam={isStartingExam}
+                startError={examStartError}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'exam-session' && activeExamSession && (
-            <ExamSessionPage
-              initialSession={activeExamSession}
-              onFinishExam={handleFinishExamSession}
-            />
+            <ErrorBoundary featureName="ExamSession" showHomeButton onGoHome={handleNavigateToday}>
+              <ExamSessionPage
+                initialSession={activeExamSession}
+                onFinishExam={handleFinishExamSession}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'exam-result' && examResultReport && (
-            <ExamResultPage
-              report={examResultReport}
-              onRetakeExam={handleRetakeExam}
-              onReturnToExamCenter={handleNavigateExamCenter}
-              onSelectLesson={handleSelectLesson}
-              onStartAIPractice={handleStartAIPracticeFromExam}
-            />
+            <ErrorBoundary featureName="ExamResult" showHomeButton onGoHome={handleNavigateToday}>
+              <ExamResultPage
+                report={examResultReport}
+                onRetakeExam={handleRetakeExam}
+                onReturnToExamCenter={handleNavigateExamCenter}
+                onSelectLesson={handleSelectLesson}
+                onStartAIPractice={handleStartAIPracticeFromExam}
+              />
+            </ErrorBoundary>
           )}
 
           {currentView === 'exam-history' && (
-            <ExamHistoryPage
-              onViewReport={handleViewResultReport}
-              onBackToExamCenter={handleNavigateExamCenter}
-            />
+            <ErrorBoundary featureName="ExamHistory" showHomeButton onGoHome={handleNavigateToday}>
+              <ExamHistoryPage
+                onViewReport={handleViewResultReport}
+                onBackToExamCenter={handleNavigateExamCenter}
+              />
+            </ErrorBoundary>
           )}
         </Suspense>
       </main>

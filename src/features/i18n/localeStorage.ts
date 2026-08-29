@@ -1,4 +1,8 @@
 import { UiLanguageMode, StoredLanguagePreference } from './i18nTypes';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+} from '../../utils/storageHealth';
 
 export const LANGUAGE_STORAGE_KEY = 'flipenglish_ui_language_v1';
 export const LANGUAGE_UPDATED_EVENT = 'flipenglish_ui_language_updated';
@@ -49,7 +53,7 @@ export function parseStoredLanguagePreference(
 export function loadStoredLanguagePreference(): StoredLanguagePreference | null {
   if (typeof window === 'undefined') return null;
   try {
-    return parseStoredLanguagePreference(localStorage.getItem(LANGUAGE_STORAGE_KEY));
+    return parseStoredLanguagePreference(safeGetLocalStorage(LANGUAGE_STORAGE_KEY));
   } catch (err) {
     return null;
   }
@@ -64,7 +68,7 @@ export function saveStoredLanguagePreference(mode: UiLanguageMode, explicit: boo
       explicit,
       savedAt: Date.now(),
     };
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, JSON.stringify(record));
+    safeSetLocalStorage(LANGUAGE_STORAGE_KEY, JSON.stringify(record));
     window.dispatchEvent(new CustomEvent(LANGUAGE_UPDATED_EVENT, { detail: { mode, explicit } }));
   } catch (err) {
     // Storage quota or security error fallback in-memory

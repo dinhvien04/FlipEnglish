@@ -1,6 +1,10 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../../constants/storageKeys';
 import { ActiveTimeRecord } from '../../types/progress';
 import { getLocalDateKey, isValidLocalDateKey } from '../studyPlan/studyPlanEngine';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+} from '../../utils/storageHealth';
 
 /**
  * Creates a fresh ActiveTimeRecord for a given local date key.
@@ -86,7 +90,7 @@ export function getStoredActiveTime(referenceDate: Date = new Date()): ActiveTim
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_TIME);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.ACTIVE_TIME);
     if (!raw) {
       return createInitialActiveTimeRecord(todayKey, now);
     }
@@ -131,7 +135,7 @@ export function saveActiveTime(record: ActiveTimeRecord): boolean {
       return false;
     }
 
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_TIME, JSON.stringify(record));
+    safeSetLocalStorage(STORAGE_KEYS.ACTIVE_TIME, JSON.stringify(record));
     emitActiveTimeUpdate();
     return true;
   } catch (err) {

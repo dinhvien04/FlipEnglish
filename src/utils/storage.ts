@@ -1,4 +1,5 @@
 import { AllProgress, LessonProgress } from '../types';
+import { safeGetLocalStorage, safeSetLocalStorage, safeRemoveLocalStorage } from './storageHealth';
 
 const STORAGE_KEY = 'flipenglish_progress_v1';
 const MAX_PROGRESS_ENTRIES = 200;
@@ -31,7 +32,7 @@ function sanitizeProgressRecord(raw: any): LessonProgress | null {
 
 export const getStoredProgress = (): AllProgress => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeGetLocalStorage(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -88,7 +89,7 @@ export const saveLessonProgress = (lessonId: string, score: number): LessonProgr
       pruned[k] = all[k];
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+    safeSetLocalStorage(STORAGE_KEY, JSON.stringify(pruned));
 
     // Dispatch a storage event so components can update if needed
     window.dispatchEvent(new Event('flipenglish_progress_updated'));
@@ -123,7 +124,7 @@ export const getOverallStats = (totalLessonsCount: number) => {
 
 export const clearAllProgress = () => {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveLocalStorage(STORAGE_KEY);
     window.dispatchEvent(new Event('flipenglish_progress_updated'));
   } catch (err) {
     console.error('Failed to clear progress:', err);

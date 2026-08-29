@@ -2,36 +2,41 @@ import { LearnResumeContext, ReviewResumeContext } from '../types/sessionResume'
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../constants/storageKeys';
 import { getLessonById } from '../data/lessons';
 import { normalizeLearnResumeContext, normalizeReviewResumeContext } from './sessionResume';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from './storageHealth';
 
 /**
  * Validates and retrieves the active Learn session from localStorage.
  * If invalid or expired/corrupted, cleans up storage and returns null.
  */
 export function getActiveLearnSession(): LearnResumeContext | null {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return null;
   }
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       return null;
     }
     if (typeof parsed.lessonId !== 'string' || !parsed.lessonId.trim()) {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       return null;
     }
     const lesson = getLessonById(parsed.lessonId);
     if (!lesson) {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       return null;
     }
     const totalWords = lesson.words.length;
     const normalized = normalizeLearnResumeContext(parsed, parsed.lessonId, totalWords);
     if (!normalized) {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       return null;
     }
     return {
@@ -45,7 +50,7 @@ export function getActiveLearnSession(): LearnResumeContext | null {
     };
   } catch (err) {
     try {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
     } catch {}
     return null;
   }
@@ -55,7 +60,7 @@ export function getActiveLearnSession(): LearnResumeContext | null {
  * Saves the active Learn session to localStorage.
  */
 export function saveActiveLearnSession(context: LearnResumeContext): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return;
   }
   try {
@@ -73,7 +78,7 @@ export function saveActiveLearnSession(context: LearnResumeContext): void {
       totalWords: lesson.words.length,
       timestamp: Date.now(),
     };
-    localStorage.setItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(payload));
+    safeSetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(payload));
     window.dispatchEvent(new Event(CONTINUITY_EVENTS.SESSION_UPDATED));
   } catch (err) {
     // Storage full or quota exceeded
@@ -84,11 +89,11 @@ export function saveActiveLearnSession(context: LearnResumeContext): void {
  * Clears the active Learn session from localStorage.
  */
 export function clearActiveLearnSession(): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return;
   }
   try {
-    localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+    safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
     window.dispatchEvent(new Event(CONTINUITY_EVENTS.SESSION_UPDATED));
   } catch (err) {}
 }
@@ -98,20 +103,20 @@ export function clearActiveLearnSession(): void {
  * If invalid or corrupted, cleans up storage and returns null.
  */
 export function getActiveReviewSession(): ReviewResumeContext | null {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return null;
   }
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
-      localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
       return null;
     }
     const normalized = normalizeReviewResumeContext(parsed);
     if (!normalized) {
-      localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
       return null;
     }
     return {
@@ -123,7 +128,7 @@ export function getActiveReviewSession(): ReviewResumeContext | null {
     };
   } catch (err) {
     try {
-      localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     } catch {}
     return null;
   }
@@ -133,7 +138,7 @@ export function getActiveReviewSession(): ReviewResumeContext | null {
  * Saves the active Review session to localStorage.
  */
 export function saveActiveReviewSession(context: ReviewResumeContext): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return;
   }
   try {
@@ -147,7 +152,7 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
       ratingBreakdown: normalized.ratingBreakdown,
       timestamp: Date.now(),
     };
-    localStorage.setItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(payload));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(payload));
     window.dispatchEvent(new Event(CONTINUITY_EVENTS.SESSION_UPDATED));
   } catch (err) {
     // Storage full or quota exceeded
@@ -158,11 +163,11 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
  * Clears the active Review session from localStorage.
  */
 export function clearActiveReviewSession(): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+  if (typeof window === 'undefined') {
     return;
   }
   try {
-    localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+    safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     window.dispatchEvent(new Event(CONTINUITY_EVENTS.SESSION_UPDATED));
   } catch (err) {}
 }

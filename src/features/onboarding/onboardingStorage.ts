@@ -5,6 +5,11 @@ import { getReviewDashboardStats } from '../../utils/reviewStorage';
 import { getLatestPlacementResult } from '../placement/placementStorage';
 import { getExamHistory } from '../../utils/examStorage';
 import { getRecentSearches } from '../dictionary/dictionaryStorage';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from '../../utils/storageHealth';
 
 export const ONBOARDING_STORAGE_KEY = 'flipenglish_onboarding_v1';
 export const ONBOARDING_UPDATED_EVENT = 'flipenglish_onboarding_updated';
@@ -29,7 +34,7 @@ export function validateOnboardingState(data: unknown): data is OnboardingState 
 export function loadOnboardingState(): OnboardingState | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    const raw = safeGetLocalStorage(ONBOARDING_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (validateOnboardingState(parsed)) {
@@ -45,7 +50,7 @@ export function saveOnboardingState(state: OnboardingState): void {
   if (typeof window === 'undefined') return;
   try {
     if (!validateOnboardingState(state)) return;
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+    safeSetLocalStorage(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
     window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
   } catch {
     // ignore storage quota errors
@@ -55,7 +60,7 @@ export function saveOnboardingState(state: OnboardingState): void {
 export function clearOnboardingState(): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    safeRemoveLocalStorage(ONBOARDING_STORAGE_KEY);
     window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
   } catch {
     // ignore

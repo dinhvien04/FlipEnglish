@@ -4,6 +4,11 @@ import {
   validateLearnResumeContext,
   validateReviewResumeContext,
 } from './sessionPersistenceValidation';
+import {
+  safeGetLocalStorage,
+  safeSetLocalStorage,
+  safeRemoveLocalStorage,
+} from '../../utils/storageHealth';
 
 /**
  * Dispatches a custom event indicating active session state was updated/cleared.
@@ -35,7 +40,7 @@ export function saveActiveLearnSession(context: LearnResumeContext): void {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(validated));
+    safeSetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE, JSON.stringify(validated));
     emitSessionUpdate();
   } catch (err) {
     console.error('Failed to save active learn session to localStorage:', err);
@@ -48,7 +53,7 @@ export function saveActiveLearnSession(context: LearnResumeContext): void {
  */
 export function getActiveLearnSession(now: number = Date.now()): LearnResumeContext | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
     if (!raw) {
       return null;
     }
@@ -57,14 +62,14 @@ export function getActiveLearnSession(now: number = Date.now()): LearnResumeCont
     try {
       parsed = JSON.parse(raw);
     } catch {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       emitSessionUpdate();
       return null;
     }
 
     const validated = validateLearnResumeContext(parsed, now);
     if (!validated) {
-      localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
       emitSessionUpdate();
       return null;
     }
@@ -81,7 +86,7 @@ export function getActiveLearnSession(now: number = Date.now()): LearnResumeCont
  */
 export function clearActiveLearnSession(): void {
   try {
-    localStorage.removeItem(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+    safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
     emitSessionUpdate();
   } catch (err) {
     console.error('Failed to clear active learn session from localStorage:', err);
@@ -105,7 +110,7 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(validated));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(validated));
     emitSessionUpdate();
   } catch (err) {
     console.error('Failed to save active review session to localStorage:', err);
@@ -118,7 +123,7 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
  */
 export function getActiveReviewSession(now: number = Date.now()): ReviewResumeContext | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+    const raw = safeGetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     if (!raw) {
       return null;
     }
@@ -127,14 +132,14 @@ export function getActiveReviewSession(now: number = Date.now()): ReviewResumeCo
     try {
       parsed = JSON.parse(raw);
     } catch {
-      localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
       emitSessionUpdate();
       return null;
     }
 
     const validated = validateReviewResumeContext(parsed, now);
     if (!validated) {
-      localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
       emitSessionUpdate();
       return null;
     }
@@ -151,7 +156,7 @@ export function getActiveReviewSession(now: number = Date.now()): ReviewResumeCo
  */
 export function clearActiveReviewSession(): void {
   try {
-    localStorage.removeItem(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+    safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     emitSessionUpdate();
   } catch (err) {
     console.error('Failed to clear active review session from localStorage:', err);

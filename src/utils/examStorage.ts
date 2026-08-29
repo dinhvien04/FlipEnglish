@@ -1,4 +1,5 @@
 import { CEFRLevel, ExamResultReport, ExamSession } from '../types/exam';
+import { safeGetLocalStorage, safeSetLocalStorage, safeRemoveLocalStorage } from './storageHealth';
 
 const ACTIVE_EXAM_KEY = 'flipenglish_exam_active';
 const EXAM_HISTORY_KEY = 'flipenglish_exam_history';
@@ -42,7 +43,7 @@ function isValidReportObject(obj: any): obj is ExamResultReport {
 export function saveActiveExam(session: ExamSession): void {
   try {
     if (!isValidSessionObject(session)) return;
-    localStorage.setItem(ACTIVE_EXAM_KEY, JSON.stringify(session));
+    safeSetLocalStorage(ACTIVE_EXAM_KEY, JSON.stringify(session));
   } catch (err) {
     console.error('Failed to save active exam session to localStorage', err);
   }
@@ -53,18 +54,18 @@ export function saveActiveExam(session: ExamSession): void {
  */
 export function getActiveExam(): ExamSession | null {
   try {
-    const raw = localStorage.getItem(ACTIVE_EXAM_KEY);
+    const raw = safeGetLocalStorage(ACTIVE_EXAM_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw);
     if (!isValidSessionObject(session)) {
-      localStorage.removeItem(ACTIVE_EXAM_KEY);
+      safeRemoveLocalStorage(ACTIVE_EXAM_KEY);
       return null;
     }
     return session;
   } catch (err) {
     console.error('Failed to read active exam session from localStorage', err);
     try {
-      localStorage.removeItem(ACTIVE_EXAM_KEY);
+      safeRemoveLocalStorage(ACTIVE_EXAM_KEY);
     } catch {}
     return null;
   }
@@ -75,7 +76,7 @@ export function getActiveExam(): ExamSession | null {
  */
 export function clearActiveExam(): void {
   try {
-    localStorage.removeItem(ACTIVE_EXAM_KEY);
+    safeRemoveLocalStorage(ACTIVE_EXAM_KEY);
   } catch (err) {
     console.error('Failed to clear active exam', err);
   }
@@ -93,7 +94,7 @@ export function saveExamResultToHistory(report: ExamResultReport): void {
       0,
       MAX_HISTORY_ITEMS
     );
-    localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(updated));
+    safeSetLocalStorage(EXAM_HISTORY_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
   } catch (err) {
     console.error('Failed to save exam result to history', err);
@@ -105,16 +106,26 @@ export function saveExamResultToHistory(report: ExamResultReport): void {
  */
 export function getExamHistory(): ExamResultReport[] {
   try {
-    const raw = localStorage.getItem(EXAM_HISTORY_KEY);
+    const raw = safeGetLocalStorage(EXAM_HISTORY_KEY);
     if (!raw) return [];
-    const list = JSON.parse(raw);
-    if (!Array.isArray(list)) return [];
-
-    const validItems = list.filter(isValidReportObject).slice(0, MAX_HISTORY_ITEMS);
-    return validItems;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidReportObject).slice(0, MAX_HISTORY_ITEMS);
   } catch (err) {
-    console.error('Failed to read exam history', err);
+    console.error('Failed to read exam history from localStorage', err);
     return [];
+  }
+}
+
+/**
+ * Clear all exam history
+ */
+export function clearExamHistory(): void {
+  try {
+    safeRemoveLocalStorage(EXAM_HISTORY_KEY);
+    window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+  } catch (err) {
+    console.error('Failed to clear exam history', err);
   }
 }
 

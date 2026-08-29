@@ -73,6 +73,9 @@ jobs:
       - name: Production Deployment & Runtime Boundaries Audit
         run: npm run validate:deployment
 
+      - name: Resilience & Failure Handling Hardening Audit
+        run: npm run validate:resilience
+
       - name: Production Dependency Security Audit
         run: npm run security:audit
 
