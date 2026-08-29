@@ -6,7 +6,7 @@ interface ResumeExamModalProps {
   session: ExamSession;
   onResume: () => void;
   onDismiss: () => void;
-  onDiscard: () => void;
+  onDiscard: () => boolean | void;
 }
 
 export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
@@ -18,7 +18,11 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
   const { t } = useI18n();
   const modalRef = useRef<HTMLDivElement>(null);
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  const discardTriggerBtnRef = useRef<HTMLButtonElement>(null);
+  const keepBtnRef = useRef<HTMLButtonElement>(null);
+  const retryBtnRef = useRef<HTMLButtonElement>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const answeredCount = Object.keys(session.answers).length;
@@ -37,11 +41,34 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
     return () => clearInterval(interval);
   }, [isExpired]);
 
+  // Focus management when transitioning into or out of discard confirmation state or error state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (discardError) {
+        retryBtnRef.current?.focus();
+      } else if (showDiscardConfirm) {
+        keepBtnRef.current?.focus();
+      } else {
+        // If returning from confirmation, restore focus to trigger or resume button
+        if (discardTriggerBtnRef.current) {
+          discardTriggerBtnRef.current.focus();
+        } else {
+          resumeBtnRef.current?.focus();
+        }
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [showDiscardConfirm, discardError]);
+
   // Accessibility: Focus trapping, Escape key dismiss (safe close), autofocus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showDiscardConfirm) {
+        if (discardError) {
+          setDiscardError(null);
+          setShowDiscardConfirm(false);
+        } else if (showDiscardConfirm) {
           setShowDiscardConfirm(false);
         } else {
           onDismiss();
@@ -73,15 +100,23 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    const timer = setTimeout(() => {
-      resumeBtnRef.current?.focus();
-    }, 50);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(timer);
     };
-  }, [onDismiss, showDiscardConfirm]);
+  }, [onDismiss, showDiscardConfirm, discardError]);
+
+  const handleConfirmDiscard = () => {
+    setDiscardError(null);
+    const result = onDiscard();
+    if (result === false) {
+      setDiscardError(t('studyPlan.resumeModal.examDiscardError'));
+    }
+  };
+
+  const handleCancelDiscardFlow = () => {
+    setDiscardError(null);
+    setShowDiscardConfirm(false);
+  };
 
   return (
     <div
@@ -133,24 +168,49 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
             : t('studyPlan.resumeModal.examDesc')}
         </p>
 
-        {showDiscardConfirm ? (
+        {discardError ? (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3" role="alert">
+            <p className="text-xs font-bold text-rose-900">
+              {discardError}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleCancelDiscardFlow}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('studyPlan.resumeModal.examKeep')}
+              </button>
+              <button
+                ref={retryBtnRef}
+                type="button"
+                id="retry-discard-exam-btn"
+                onClick={handleConfirmDiscard}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('ui.common.retry')}
+              </button>
+            </div>
+          </div>
+        ) : showDiscardConfirm ? (
           <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
             <p className="text-xs font-bold text-rose-900">
               {t('studyPlan.resumeModal.examDiscardConfirmPrompt')}
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <button
+                ref={keepBtnRef}
                 type="button"
                 onClick={() => setShowDiscardConfirm(false)}
-                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
               >
                 {t('studyPlan.resumeModal.examKeep')}
               </button>
               <button
                 type="button"
                 id="confirm-discard-exam-btn"
-                onClick={onDiscard}
-                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                onClick={handleConfirmDiscard}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
               >
                 {t('studyPlan.resumeModal.examConfirmDiscard')}
               </button>
@@ -159,10 +219,14 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
+              ref={discardTriggerBtnRef}
               type="button"
               id="discard-active-exam-btn"
-              onClick={() => setShowDiscardConfirm(true)}
-              className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+              onClick={() => {
+                setDiscardError(null);
+                setShowDiscardConfirm(true);
+              }}
+              className="w-full sm:w-auto flex-1 min-h-11 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
             >
               {t('studyPlan.resumeModal.examDiscard')}
             </button>
@@ -172,7 +236,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
               type="button"
               id="resume-active-exam-btn"
               onClick={onResume}
-              className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
+              className="w-full sm:w-auto flex-1 min-h-11 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
             >
               {t('studyPlan.resumeModal.examResume')}
             </button>
@@ -182,3 +246,4 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
     </div>
   );
 };
+

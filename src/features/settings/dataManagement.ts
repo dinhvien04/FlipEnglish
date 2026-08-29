@@ -7,9 +7,11 @@ export type DataResetScope = 'learning' | 'vocabulary' | 'all';
 
 export interface DataManagementResult {
   success: boolean;
+  partial: boolean;
   scope: DataResetScope;
   removedKeys: string[];
   failedKeys: string[];
+  message?: string;
 }
 
 /**
@@ -133,6 +135,7 @@ function emitResetEvents(scope: DataResetScope, isFullSuccess: boolean): void {
 export function resetLearningProgress(): DataManagementResult {
   const { removedKeys, failedKeys } = removeKeysSafely(FLIPENGLISH_LEARNING_STORAGE_KEYS);
   const success = failedKeys.length === 0;
+  const partial = removedKeys.length > 0 && failedKeys.length > 0;
 
   if (removedKeys.length > 0) {
     emitResetEvents('learning', success);
@@ -140,6 +143,7 @@ export function resetLearningProgress(): DataManagementResult {
 
   return {
     success,
+    partial,
     scope: 'learning',
     removedKeys,
     failedKeys,
@@ -168,6 +172,7 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
   }
 
   const success = failedKeys.length === 0 && idbSuccess;
+  const partial = removedKeys.length > 0 && failedKeys.length > 0;
 
   if (removedKeys.length > 0) {
     emitResetEvents('vocabulary', success);
@@ -175,6 +180,7 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
 
   return {
     success,
+    partial,
     scope: 'vocabulary',
     removedKeys,
     failedKeys,
@@ -230,6 +236,7 @@ export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
   }
 
   const success = failedKeys.length === 0 && idbSavedSuccess && idbEntriesSuccess && idbMetaSuccess;
+  const partial = removedKeys.length > 0 && failedKeys.length > 0;
 
   // Always emit events for successfully removed domains, but only emit USER_DATA_RESET on full success
   if (removedKeys.length > 0) {
@@ -238,6 +245,7 @@ export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
 
   return {
     success,
+    partial,
     scope: 'all',
     removedKeys,
     failedKeys,

@@ -7,6 +7,7 @@ import { resolveCurriculumItem } from '../../utils/curriculumIndex';
 import {
   isPlacementResultExportedToReview,
   markPlacementResultExportedToReview,
+  savePlacementResultToHistory,
 } from './placementStorage';
 import { useI18n } from '../i18n';
 
@@ -30,6 +31,9 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   const [addedWordsCount, setAddedWordsCount] = useState<number | null>(
     isAlreadyExported ? -1 : null
   );
+
+  const [isPersisted, setIsPersisted] = useState<boolean>(report.isPersisted !== false);
+  const [retrySavedSuccess, setRetrySavedSuccess] = useState<boolean>(false);
 
   const levelBadgeClass: Record<CEFRLevel, { bg: string; text: string; border: string }> = {
     A1: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
@@ -66,8 +70,50 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
     setAddedWordsCount(canonicalWeakIds.length);
   };
 
+  const handleRetrySave = () => {
+    const success = savePlacementResultToHistory(report);
+    if (success) {
+      setIsPersisted(true);
+      setRetrySavedSuccess(true);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
+      {!isPersisted && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-amber-50 border border-amber-200 text-amber-900 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
+        >
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-amber-950">
+              {t('placement.result.saveWarning')}
+            </p>
+            <p className="text-2xs sm:text-xs text-amber-800">
+              {t('error.storageWarningDesc')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRetrySave}
+            className="shrink-0 min-h-10 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            {t('placement.result.retrySave')}
+          </button>
+        </div>
+      )}
+
+      {retrySavedSuccess && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-xs"
+        >
+          {t('placement.result.savedSuccess')}
+        </div>
+      )}
+
       {/* Top Banner: Estimated Starting Level */}
       <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

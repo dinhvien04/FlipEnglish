@@ -10,7 +10,7 @@ const MAX_STR_LEN = 1000;
 /**
  * Validate untrusted ExamSession structure from localStorage
  */
-function isValidSessionObject(obj: any): obj is ExamSession {
+export function isValidSessionObject(obj: any): obj is ExamSession {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
   if (obj.schemaVersion !== 2) return false;
   if (typeof obj.id !== 'string' || obj.id.length === 0 || obj.id.length > 100) return false;
@@ -25,14 +25,16 @@ function isValidSessionObject(obj: any): obj is ExamSession {
 /**
  * Validate untrusted ExamResultReport structure from localStorage
  */
-function isValidReportObject(obj: any): obj is ExamResultReport {
+export function isValidReportObject(obj: any): obj is ExamResultReport {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
   if (typeof obj.id !== 'string' || obj.id.length === 0 || obj.id.length > 100) return false;
+  if (typeof obj.sessionId !== 'string' || obj.sessionId.length === 0 || obj.sessionId.length > 100) return false;
   if (typeof obj.title !== 'string' || obj.title.length > MAX_STR_LEN) return false;
   if (typeof obj.overallPercentage !== 'number' || obj.overallPercentage < 0 || obj.overallPercentage > 100) return false;
-  if (typeof obj.score !== 'number' || obj.score < 0 || obj.score > 200) return false;
+  if (typeof obj.correctCount !== 'number' || obj.correctCount < 0 || obj.correctCount > 200) return false;
   if (typeof obj.totalQuestions !== 'number' || obj.totalQuestions <= 0 || obj.totalQuestions > 200) return false;
-  if (!Array.isArray(obj.sectionBreakdown)) return false;
+  if (!Array.isArray(obj.sectionScores)) return false;
+  if (typeof obj.startedAt !== 'number' || typeof obj.submittedAt !== 'number') return false;
 
   return true;
 }
@@ -85,11 +87,11 @@ export function clearActiveExam(): boolean {
 }
 
 /**
- * Save an exam result report to history (max 20 items)
+ * Save an exam result report to history (max 20 items). Returns boolean indicating success.
  */
-export function saveExamResultToHistory(report: ExamResultReport): void {
+export function saveExamResultToHistory(report: ExamResultReport): boolean {
   try {
-    if (!isValidReportObject(report)) return;
+    if (!isValidReportObject(report)) return false;
     const history = getExamHistory();
     const updated = [report, ...history.filter((item) => item.id !== report.id)].slice(
       0,
@@ -98,9 +100,12 @@ export function saveExamResultToHistory(report: ExamResultReport): void {
     const writeSuccess = safeSetLocalStorage(EXAM_HISTORY_KEY, JSON.stringify(updated));
     if (writeSuccess) {
       window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+      return true;
     }
+    return false;
   } catch (err) {
     console.error('Failed to save exam result to history', err);
+    return false;
   }
 }
 

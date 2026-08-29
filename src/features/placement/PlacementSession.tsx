@@ -37,11 +37,17 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
   const [session, setSession] = useState<PlacementSession>(initialSession);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [storageSaveFailed, setStorageSaveFailed] = useState(false);
   const [, startTransition] = useTransition();
 
   // Save session state to localStorage on every update
   useEffect(() => {
-    saveActivePlacement(session);
+    const success = saveActivePlacement(session);
+    if (!success) {
+      setStorageSaveFailed(true);
+    } else {
+      setStorageSaveFailed(false);
+    }
   }, [session]);
 
   const currentStage: PlacementStage = session.stages[session.currentStageIndex];
@@ -152,7 +158,8 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       );
 
       // Save to history & clear active
-      savePlacementResultToHistory(finalReport);
+      const persisted = savePlacementResultToHistory(finalReport);
+      finalReport.isPersisted = persisted;
       clearActivePlacement();
 
       startTransition(() => {
@@ -292,7 +299,16 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       </header>
 
       {/* Main Placement Question Container */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col justify-between">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col justify-between space-y-4">
+        {storageSaveFailed && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 shadow-xs"
+          >
+            <span>{t('placement.session.storageWarning')}</span>
+          </div>
+        )}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 flex-1 flex flex-col justify-between min-h-120">
           <div className="space-y-6">
             {/* Skill Badge */}

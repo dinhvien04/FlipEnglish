@@ -20,7 +20,7 @@ window.addEventListener('vite:preloadError', (event) => {
   event.preventDefault();
   console.warn('[Vite preloadError] Failed to fetch dynamic import chunk:', event);
 
-  // If user is currently offline, dispatch offline chunk recovery event
+  // If user is currently offline, dispatch offline chunk recovery event (no pointless reload)
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     window.dispatchEvent(
       new CustomEvent('flipenglish_chunk_load_error', { detail: { isOffline: true } })
@@ -50,21 +50,17 @@ window.addEventListener('vite:preloadError', (event) => {
     }
 
     if (!marker) {
-      // First attempt or expired attempt
+      // First online attempt or previous attempt expired: allow 1 automatic reload
       const newMarker: ChunkRecoveryMarker = { attempts: 1, firstAttemptAt: now };
       sessionStorage.setItem(CHUNK_RECOVERY_KEY, JSON.stringify(newMarker));
       window.location.reload();
       return;
     }
 
-    if (marker.attempts < 1) {
-      marker.attempts += 1;
-      sessionStorage.setItem(CHUNK_RECOVERY_KEY, JSON.stringify(marker));
-      window.location.reload();
-      return;
-    }
+    // Inside TTL window and already attempted reload: do NOT reload again
   } catch (err) {
     console.warn('[Vite preloadError] sessionStorage restricted or unavailable:', err);
+    // If sessionStorage is unavailable: do not loop -> broadcast error to recovery UI
   }
 
   // If reload already attempted inside TTL window or storage failed, broadcast error to Recovery UI

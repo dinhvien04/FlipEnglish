@@ -158,12 +158,13 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
   assert.strictEqual(setSuccess, true);
   assert.strictEqual(safeGetLocalStorage(testKey), testVal);
 
-  // 2.3 QuotaExceededError simulation
+  // 2.3 QuotaExceededError simulation on write
   const quotaErr = new DOMException('Quota exceeded', 'QuotaExceededError');
-  recordStorageFailure(testKey, quotaErr);
+  recordStorageFailure(testKey, quotaErr, 'write');
   const quotaHealth = getStorageHealth();
   assert.strictEqual(quotaHealth.isHealthy, false);
   assert.strictEqual(quotaHealth.lastFailureType, 'quota_exceeded');
+  assert.strictEqual(quotaHealth.lastFailureOperation, 'write');
 
   // 2.4 Dismissal warning separation
   dismissStorageWarning();
@@ -172,20 +173,34 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
   assert.strictEqual(dismissedHealth.isHealthy, false); // Technical health remains false until successful probe/write
 
   // 2.5 Probe indicates physical storage accessibility but preserves unresolved failed keys
-  recordStorageSuccess('flipenglish_storage_health_probe');
+  recordStorageSuccess('flipenglish_storage_health_probe', 'probe');
   assert.strictEqual(getStorageHealth().isStorageAccessible, true);
   assert.strictEqual(getStorageHealth().isHealthy, false); // Stays false because testKey failed earlier
 
+  // 2.5.1 Transient read failure should not permanently lock health; reading successfully reconciles read accessibility without falsely clearing failed writes
+  const readFailKey = 'flipenglish_read_fail_key';
+  recordStorageFailure(readFailKey, new DOMException('Access denied', 'SecurityError'), 'read');
+  assert.strictEqual(getStorageHealth().isHealthy, false);
+  assert.strictEqual(getStorageHealth().failedKeys.includes(readFailKey), true);
+  assert.strictEqual(getStorageHealth().failedKeys.includes(testKey), true);
+
+  // Reading successfully reconciles readFailKey without clearing write failure on testKey
+  recordStorageSuccess(readFailKey, 'read');
+  assert.strictEqual(getStorageHealth().failedKeys.includes(readFailKey), false);
+  assert.strictEqual(getStorageHealth().failedKeys.includes(testKey), true);
+  assert.strictEqual(getStorageHealth().isHealthy, false);
+
   // 2.6 Resolving the specific failed key restores isHealthy to true
-  recordStorageSuccess(testKey);
+  recordStorageSuccess(testKey, 'write');
   assert.strictEqual(getStorageHealth().isHealthy, true);
   assert.strictEqual(getStorageHealth().isWarningDismissed, false);
+  assert.strictEqual(getStorageHealth().failedKeys.length, 0);
 
   // 2.7 Safe Remove
   safeRemoveLocalStorage(testKey);
   assert.strictEqual(safeGetLocalStorage(testKey), null);
 
-  console.log('  PASS: Storage health tracking, quota simulation, warning dismissal separation, probe non-masking, and safe operations verified.');
+  console.log('  PASS: Storage health tracking, quota simulation, warning dismissal separation, probe non-masking, read/write/remove failure distinction, and safe operations verified.');
 }
 
 // TEST 3: ErrorBoundary Categorization & Sanitization
@@ -258,6 +273,218 @@ console.log('\n[Suite 4] Testing Strict Schema Validation Invariants...');
     'flashcardIndex exceeding totalWords must be rejected'
   );
 
+  // 4.6 In-flight Review Session Persistence Deep Field Preservation & Round-trip Validation
+  const richVocabWord = {
+    id: 'bear-responsibility',
+    type: 'collocation' as const,
+    word: 'bear responsibility',
+    expression: 'bear full responsibility for something',
+    pronunciation: '/beər rɪˌspɒn.səˈbɪl.ə.ti/',
+    partOfSpeech: 'collocation' as const,
+    meaning: 'chịu trách nhiệm',
+    level: 'B2' as const,
+    example: 'The company must bear responsibility for the environmental damage caused.',
+    exampleTranslation: 'Công ty phải chịu trách nhiệm về thiệt hại môi trường đã gây ra.',
+    context: 'Formal corporate and legal contexts when accepting liability or duty.',
+    imageUrl: 'https://images.unsplash.com/photo-example',
+    imageAlt: 'A business person signing an official agreement document',
+    visualQuizEligible: false,
+    emoji: '⚖️',
+    definition: 'To be held accountable for a situation or action.',
+    collocations: ['bear full responsibility', 'bear heavy responsibility'],
+    synonyms: ['take responsibility', 'shoulder responsibility', 'accept blame'],
+    antonyms: ['deny responsibility', 'shift blame'],
+    wordFamily: ['responsible', 'responsibly', 'irresponsible'],
+    register: 'formal' as const,
+    usageNote: 'Often paired with the preposition "for".',
+    nuanceNote: '"Bear responsibility" is more formal than "take responsibility".',
+    nuance: 'Denotes carrying the legal or moral weight of an outcome.',
+    items: ['take responsibility', 'bear responsibility', 'shoulder responsibility'],
+    pattern: 'bear responsibility for + noun/gerund',
+    promptWord: 'RESPONSIBLE',
+    tags: ['business', 'law', 'b2-collocations'],
+  };
+
+  const richLesson = {
+    id: 'b2-collocations-work',
+    title: 'Workplace Collocations',
+    level: 'B2' as const,
+    levelTitle: 'B2 — Upper Intermediate',
+    description: 'Advanced business expressions and collocations for professional communication.',
+    category: 'Business',
+    imageUrl: 'https://images.unsplash.com/photo-lesson',
+    imageAlt: 'Corporate meeting room in a skyscraper',
+    icon: 'briefcase',
+    badgeText: 'Essential B2',
+    tags: ['business', 'workplace', 'advanced'],
+    words: [richVocabWord],
+  };
+
+  const richReviewSession = {
+    schemaVersion: 1,
+    activeQueue: [
+      {
+        state: {
+          itemId: 'bear-responsibility',
+          status: 'review' as const,
+          firstSeenAt: Date.now() - 86400000,
+          lastReviewedAt: Date.now() - 3600000,
+          nextReviewAt: Date.now() + 86400000,
+          intervalMinutes: 1440,
+          reviewCount: 3,
+          correctCount: 3,
+          lapseCount: 0,
+          correctStreak: 3,
+          lastRating: 'good' as const,
+        },
+        word: richVocabWord,
+        lesson: richLesson,
+        level: 'B2' as const,
+        isOverdue: false,
+        nextIntervals: { again: 10, hard: 1440, good: 4320, easy: 10080 },
+      },
+    ],
+    currentIndex: 0,
+    ratingBreakdown: { again: 0, hard: 0, good: 1, easy: 0 },
+    timestamp: Date.now(),
+  };
+
+  const sanitizedReview = validateReviewResumeContext(richReviewSession);
+  assert.ok(sanitizedReview, 'Rich review session must validate successfully');
+  assert.strictEqual(sanitizedReview?.activeQueue.length, 1);
+
+  const restoredItem = sanitizedReview?.activeQueue[0];
+  const restoredWord = restoredItem?.word;
+  const restoredLesson = restoredItem?.lesson;
+
+  // Verify all rich VocabWord fields survive round-trip sanitization
+  assert.strictEqual(restoredWord?.id, 'bear-responsibility');
+  assert.strictEqual(restoredWord?.type, 'collocation');
+  assert.strictEqual(restoredWord?.word, 'bear responsibility');
+  assert.strictEqual(restoredWord?.expression, 'bear full responsibility for something');
+  assert.strictEqual(restoredWord?.pronunciation, '/beər rɪˌspɒn.səˈbɪl.ə.ti/');
+  assert.strictEqual(restoredWord?.partOfSpeech, 'collocation');
+  assert.strictEqual(restoredWord?.meaning, 'chịu trách nhiệm');
+  assert.strictEqual(restoredWord?.level, 'B2');
+  assert.strictEqual(restoredWord?.example, 'The company must bear responsibility for the environmental damage caused.');
+  assert.strictEqual(restoredWord?.exampleTranslation, 'Công ty phải chịu trách nhiệm về thiệt hại môi trường đã gây ra.');
+  assert.strictEqual(restoredWord?.context, 'Formal corporate and legal contexts when accepting liability or duty.');
+  assert.strictEqual(restoredWord?.imageUrl, 'https://images.unsplash.com/photo-example');
+  assert.strictEqual(restoredWord?.imageAlt, 'A business person signing an official agreement document');
+  assert.strictEqual(restoredWord?.visualQuizEligible, false);
+  assert.strictEqual(restoredWord?.emoji, '⚖️');
+  assert.strictEqual(restoredWord?.definition, 'To be held accountable for a situation or action.');
+  assert.deepStrictEqual(restoredWord?.collocations, ['bear full responsibility', 'bear heavy responsibility']);
+  assert.deepStrictEqual(restoredWord?.synonyms, ['take responsibility', 'shoulder responsibility', 'accept blame']);
+  assert.deepStrictEqual(restoredWord?.antonyms, ['deny responsibility', 'shift blame']);
+  assert.deepStrictEqual(restoredWord?.wordFamily, ['responsible', 'responsibly', 'irresponsible']);
+  assert.strictEqual(restoredWord?.register, 'formal');
+  assert.strictEqual(restoredWord?.usageNote, 'Often paired with the preposition "for".');
+  assert.strictEqual(restoredWord?.nuanceNote, '"Bear responsibility" is more formal than "take responsibility".');
+  assert.strictEqual(restoredWord?.nuance, 'Denotes carrying the legal or moral weight of an outcome.');
+  assert.deepStrictEqual(restoredWord?.items, ['take responsibility', 'bear responsibility', 'shoulder responsibility']);
+  assert.strictEqual(restoredWord?.pattern, 'bear responsibility for + noun/gerund');
+  assert.strictEqual(restoredWord?.promptWord, 'RESPONSIBLE');
+  assert.deepStrictEqual(restoredWord?.tags, ['business', 'law', 'b2-collocations']);
+
+  // Verify all rich Lesson fields survive round-trip sanitization
+  assert.strictEqual(restoredLesson?.id, 'b2-collocations-work');
+  assert.strictEqual(restoredLesson?.title, 'Workplace Collocations');
+  assert.strictEqual(restoredLesson?.level, 'B2');
+  assert.strictEqual(restoredLesson?.levelTitle, 'B2 — Upper Intermediate');
+  assert.strictEqual(restoredLesson?.description, 'Advanced business expressions and collocations for professional communication.');
+  assert.strictEqual(restoredLesson?.category, 'Business');
+  assert.strictEqual(restoredLesson?.imageUrl, 'https://images.unsplash.com/photo-lesson');
+  assert.strictEqual(restoredLesson?.imageAlt, 'Corporate meeting room in a skyscraper');
+  assert.strictEqual(restoredLesson?.icon, 'briefcase');
+  assert.strictEqual(restoredLesson?.badgeText, 'Essential B2');
+  assert.deepStrictEqual(restoredLesson?.tags, ['business', 'workplace', 'advanced']);
+  assert.strictEqual(restoredLesson?.words.length, 1);
+  assert.strictEqual(restoredLesson?.words[0].id, 'bear-responsibility');
+
+  // Verify rejection of invalid types, unknown injected keys, invalid schema, and staleness
+  // 1. Injected unknown keys in word
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      activeQueue: [{ ...richReviewSession.activeQueue[0], word: { ...richVocabWord, evilKey: 'injected' } }],
+    }),
+    null,
+    'Unknown injected key on word must be rejected'
+  );
+
+  // 2. Malformed type in word (invalid enum)
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      activeQueue: [{ ...richReviewSession.activeQueue[0], word: { ...richVocabWord, type: 'invalid-item-type' } }],
+    }),
+    null,
+    'Invalid word type enum must be rejected'
+  );
+
+  // 3. Malformed register in word (invalid enum)
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      activeQueue: [{ ...richReviewSession.activeQueue[0], word: { ...richVocabWord, register: 'ultra-formal' } }],
+    }),
+    null,
+    'Invalid register enum must be rejected'
+  );
+
+  // 4. Malformed array item (non-string in synonyms)
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      activeQueue: [{ ...richReviewSession.activeQueue[0], word: { ...richVocabWord, synonyms: [123, 'valid'] } }],
+    }),
+    null,
+    'Non-string in array field must be rejected'
+  );
+
+  // 5. Injected unknown key in lesson
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      activeQueue: [{ ...richReviewSession.activeQueue[0], lesson: { ...richLesson, injectedLessonKey: 1 } }],
+    }),
+    null,
+    'Unknown injected key on lesson must be rejected'
+  );
+
+  // 6. Invalid schemaVersion
+  assert.strictEqual(
+    validateReviewResumeContext({ ...richReviewSession, schemaVersion: 2 }),
+    null,
+    'Invalid schemaVersion 2 must be rejected'
+  );
+
+  // 7. Stale review session (> 24 hours old)
+  const staleTimestamp = Date.now() - (25 * 60 * 60 * 1000);
+  assert.strictEqual(
+    validateReviewResumeContext({ ...richReviewSession, timestamp: staleTimestamp }),
+    null,
+    'Stale review session (> 24h) must be discarded'
+  );
+
+  // 8. Out-of-bounds currentIndex
+  assert.strictEqual(
+    validateReviewResumeContext({ ...richReviewSession, currentIndex: 5 }),
+    null,
+    'currentIndex exceeding queue length must be rejected'
+  );
+
+  // 9. Negative rating breakdown
+  assert.strictEqual(
+    validateReviewResumeContext({
+      ...richReviewSession,
+      ratingBreakdown: { again: -1, hard: 0, good: 0, easy: 0 },
+    }),
+    null,
+    'Negative rating breakdown must be rejected'
+  );
+
   console.log('  PASS: Domain storage validators reject corrupted/untrusted data gracefully.');
 }
 
@@ -283,6 +510,7 @@ console.log('\n[Suite 5] Testing Bilingual (EN / VI) Error Translation Key Parit
     'error.storageWarningDesc',
     'error.storageQuotaDesc',
     'error.storageRetry',
+    'error.storageCheck',
     'error.storageDismiss',
     'error.sessionCorruptTitle',
     'error.sessionCorruptDesc',

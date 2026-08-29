@@ -82,7 +82,7 @@ export const StorageWarningBanner: React.FC = () => {
             disabled={isRetrying}
             className="min-h-11 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
           >
-            {isRetrying ? t('ui.common.loading') : t('error.storageRetry')}
+            {isRetrying ? t('ui.common.loading') : t('error.storageCheck')}
           </button>
           <button
             type="button"

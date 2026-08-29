@@ -44,6 +44,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const [storageHealth, setStorageHealth] = useState<StorageHealthState>(() => getStorageHealth());
   const [activeModal, setActiveModal] = useState<ConfirmModalType>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
@@ -57,6 +58,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const retryBtnRef = useRef<HTMLButtonElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
   // Sync study plan settings updates
@@ -94,12 +96,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const openModal = (modalType: 'reset-learning' | 'clear-vocab' | 'erase-all') => {
     triggerElementRef.current = document.activeElement as HTMLElement | null;
+    setModalError(null);
     setActiveModal(modalType);
   };
 
   useEffect(() => {
     if (!activeModal) {
       setTypedConfirmation('');
+      setModalError(null);
       if (triggerElementRef.current) {
         triggerElementRef.current.focus();
         triggerElementRef.current = null;
@@ -109,7 +113,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isProcessing) {
-        setActiveModal(null);
+        if (modalError) {
+          setModalError(null);
+        } else {
+          setActiveModal(null);
+        }
         return;
       }
 
@@ -139,7 +147,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     const timer = setTimeout(() => {
-      if (activeModal === 'erase-all') {
+      if (modalError) {
+        retryBtnRef.current?.focus();
+      } else if (activeModal === 'erase-all') {
         textInputRef.current?.focus();
       } else {
         confirmBtnRef.current?.focus();
@@ -150,10 +160,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timer);
     };
-  }, [activeModal, isProcessing]);
+  }, [activeModal, isProcessing, modalError]);
 
   const handleResetLearning = () => {
     setIsProcessing(true);
+    setModalError(null);
     setStatusFeedback(null);
     try {
       const res: DataManagementResult = resetLearningProgress();
@@ -164,16 +175,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         });
         setActiveModal(null);
       } else {
-        setStatusFeedback({
-          type: 'error',
-          message: t('settings.toast.actionFailed'),
-        });
+        setModalError(
+          res.partial
+            ? t('settings.modal.partialFailureError')
+            : t('settings.modal.operationFailedError')
+        );
       }
     } catch {
-      setStatusFeedback({
-        type: 'error',
-        message: t('settings.toast.actionFailed'),
-      });
+      setModalError(t('settings.modal.operationFailedError'));
     } finally {
       setIsProcessing(false);
     }
@@ -181,6 +190,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const handleClearVocab = async () => {
     setIsProcessing(true);
+    setModalError(null);
     setStatusFeedback(null);
     try {
       const res = await clearSavedVocabulary();
@@ -191,16 +201,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         });
         setActiveModal(null);
       } else {
-        setStatusFeedback({
-          type: 'error',
-          message: t('settings.toast.actionFailed'),
-        });
+        setModalError(
+          res.partial
+            ? t('settings.modal.partialFailureError')
+            : t('settings.modal.operationFailedError')
+        );
       }
     } catch {
-      setStatusFeedback({
-        type: 'error',
-        message: t('settings.toast.actionFailed'),
-      });
+      setModalError(t('settings.modal.operationFailedError'));
     } finally {
       setIsProcessing(false);
     }
@@ -212,6 +220,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
 
     setIsProcessing(true);
+    setModalError(null);
     setStatusFeedback(null);
     try {
       const res = await eraseAllFlipEnglishData();
@@ -222,16 +231,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         });
         setActiveModal(null);
       } else {
-        setStatusFeedback({
-          type: 'error',
-          message: t('settings.toast.actionFailed'),
-        });
+        setModalError(
+          res.partial
+            ? t('settings.modal.partialFailureError')
+            : t('settings.modal.operationFailedError')
+        );
       }
     } catch {
-      setStatusFeedback({
-        type: 'error',
-        message: t('settings.toast.actionFailed'),
-      });
+      setModalError(t('settings.modal.operationFailedError'));
     } finally {
       setIsProcessing(false);
     }
@@ -538,25 +545,57 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 {t('settings.modal.resetProgressPreserve')}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                disabled={isProcessing}
-                className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
-              >
-                {t('settings.modal.cancel')}
-              </button>
-              <button
-                ref={confirmBtnRef}
-                type="button"
-                onClick={handleResetLearning}
-                disabled={isProcessing}
-                className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex-1"
-              >
-                {isProcessing ? t('ui.common.loading') : t('settings.modal.resetProgressConfirm')}
-              </button>
-            </div>
+
+            {modalError ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3" role="alert">
+                <p className="text-xs font-bold text-rose-900">
+                  {modalError}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalError(null);
+                      setActiveModal(null);
+                    }}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {t('settings.modal.cancel')}
+                  </button>
+                  <button
+                    ref={retryBtnRef}
+                    type="button"
+                    id="retry-reset-learning-btn"
+                    onClick={handleResetLearning}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {isProcessing ? t('ui.common.loading') : t('settings.modal.retry')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  disabled={isProcessing}
+                  className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
+                >
+                  {t('settings.modal.cancel')}
+                </button>
+                <button
+                  ref={confirmBtnRef}
+                  type="button"
+                  onClick={handleResetLearning}
+                  disabled={isProcessing}
+                  className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex-1"
+                >
+                  {isProcessing ? t('ui.common.loading') : t('settings.modal.resetProgressConfirm')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -596,25 +635,57 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 {t('settings.modal.clearVocabPreserve')}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                disabled={isProcessing}
-                className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
-              >
-                {t('settings.modal.cancel')}
-              </button>
-              <button
-                ref={confirmBtnRef}
-                type="button"
-                onClick={handleClearVocab}
-                disabled={isProcessing}
-                className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex-1"
-              >
-                {isProcessing ? t('ui.common.loading') : t('settings.modal.clearVocabConfirm')}
-              </button>
-            </div>
+
+            {modalError ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3" role="alert">
+                <p className="text-xs font-bold text-rose-900">
+                  {modalError}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalError(null);
+                      setActiveModal(null);
+                    }}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {t('settings.modal.cancel')}
+                  </button>
+                  <button
+                    ref={retryBtnRef}
+                    type="button"
+                    id="retry-clear-vocab-btn"
+                    onClick={handleClearVocab}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {isProcessing ? t('ui.common.loading') : t('settings.modal.retry')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  disabled={isProcessing}
+                  className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
+                >
+                  {t('settings.modal.cancel')}
+                </button>
+                <button
+                  ref={confirmBtnRef}
+                  type="button"
+                  onClick={handleClearVocab}
+                  disabled={isProcessing}
+                  className="min-h-11 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer flex-1"
+                >
+                  {isProcessing ? t('ui.common.loading') : t('settings.modal.clearVocabConfirm')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -673,32 +744,66 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                disabled={isProcessing}
-                className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
-              >
-                {t('settings.modal.cancel')}
-              </button>
-              <button
-                ref={confirmBtnRef}
-                type="button"
-                onClick={handleEraseAll}
-                disabled={
-                  isProcessing ||
-                  typedConfirmation.trim() !== 'RESET'
-                }
-                className={`min-h-11 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs flex-1 ${
-                  typedConfirmation.trim() === 'RESET' && !isProcessing
-                    ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white cursor-pointer'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200'
-                }`}
-              >
-                {isProcessing ? t('ui.common.loading') : t('settings.modal.eraseAllConfirm')}
-              </button>
-            </div>
+            {modalError ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3" role="alert">
+                <p className="text-xs font-bold text-rose-900">
+                  {modalError}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalError(null);
+                      setActiveModal(null);
+                    }}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {t('settings.modal.cancel')}
+                  </button>
+                  <button
+                    ref={retryBtnRef}
+                    type="button"
+                    id="retry-erase-all-btn"
+                    onClick={handleEraseAll}
+                    disabled={
+                      isProcessing ||
+                      typedConfirmation.trim() !== 'RESET'
+                    }
+                    className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    {isProcessing ? t('ui.common.loading') : t('settings.modal.retry')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  disabled={isProcessing}
+                  className="min-h-11 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition-colors cursor-pointer flex-1"
+                >
+                  {t('settings.modal.cancel')}
+                </button>
+                <button
+                  ref={confirmBtnRef}
+                  type="button"
+                  onClick={handleEraseAll}
+                  disabled={
+                    isProcessing ||
+                    typedConfirmation.trim() !== 'RESET'
+                  }
+                  className={`min-h-11 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs flex-1 ${
+                    typedConfirmation.trim() === 'RESET' && !isProcessing
+                      ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white cursor-pointer'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200'
+                  }`}
+                >
+                  {isProcessing ? t('ui.common.loading') : t('settings.modal.eraseAllConfirm')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

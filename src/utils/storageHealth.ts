@@ -5,11 +5,14 @@ export type StorageFailureType =
   | 'unavailable'
   | 'unknown';
 
+export type StorageOperationType = 'read' | 'write' | 'remove' | 'probe';
+
 export interface StorageHealthState {
   isHealthy: boolean;
   isStorageAccessible: boolean;
   isWarningDismissed: boolean;
   lastFailureType: StorageFailureType | null;
+  lastFailureOperation?: StorageOperationType | null;
   lastFailedKey: string | null;
   failedKeys: string[];
   failedWriteAttempts: number;
@@ -17,11 +20,15 @@ export interface StorageHealthState {
 
 export const STORAGE_HEALTH_EVENT = 'flipenglish_storage_health_changed';
 
+const failedWriteKeys = new Set<string>();
+const failedReadKeys = new Set<string>();
+
 let currentHealth: StorageHealthState = {
   isHealthy: true,
   isStorageAccessible: true,
   isWarningDismissed: false,
   lastFailureType: null,
+  lastFailureOperation: null,
   lastFailedKey: null,
   failedKeys: [],
   failedWriteAttempts: 0,
@@ -77,26 +84,60 @@ function emitHealthUpdate(): void {
 }
 
 /**
- * Records a successful storage write.
- * - If key is the diagnostic probe, updates isStorageAccessible = true without erasing genuine failed keys.
- * - For real application keys, filters out the recovered key from failedKeys.
+ * Records a successful storage operation.
+ * - If key is the diagnostic probe (or operation is 'probe'), updates isStorageAccessible = true
+ *   without erasing genuine unresolved application failures.
+ * - For read success, reconciles read accessibility and removes the key from failedReadKeys,
+ *   without falsely clearing keys that failed on write/remove.
+ * - For write/remove success, removes the key from failedWriteKeys and failedReadKeys.
  */
-export function recordStorageSuccess(key: string): void {
-  if (key === 'flipenglish_storage_health_probe') {
-    const isHealthyNow = currentHealth.failedKeys.length === 0;
+export function recordStorageSuccess(
+  key: string,
+  operation: StorageOperationType = 'write'
+): void {
+  if (key === 'flipenglish_storage_health_probe' || operation === 'probe') {
+    const combinedFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
+    const isHealthyNow = combinedFailedKeys.length === 0;
     currentHealth = {
       ...currentHealth,
       isStorageAccessible: true,
       isHealthy: isHealthyNow,
       isWarningDismissed: isHealthyNow ? false : currentHealth.isWarningDismissed,
       lastFailureType: isHealthyNow ? null : currentHealth.lastFailureType,
-      lastFailedKey: isHealthyNow ? null : currentHealth.lastFailedKey,
+      lastFailureOperation: isHealthyNow ? null : currentHealth.lastFailureOperation,
+      lastFailedKey: isHealthyNow
+        ? null
+        : combinedFailedKeys[combinedFailedKeys.length - 1] ?? null,
+      failedKeys: combinedFailedKeys,
     };
     emitHealthUpdate();
     return;
   }
 
-  const remainingFailedKeys = currentHealth.failedKeys.filter((k) => k !== key);
+  if (operation === 'read') {
+    failedReadKeys.delete(key);
+    const remainingKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
+    const nowHealthy = remainingKeys.length === 0;
+
+    currentHealth = {
+      ...currentHealth,
+      isStorageAccessible: true,
+      isHealthy: nowHealthy,
+      isWarningDismissed: nowHealthy ? false : currentHealth.isWarningDismissed,
+      lastFailureType: nowHealthy ? null : currentHealth.lastFailureType,
+      lastFailureOperation: nowHealthy ? null : currentHealth.lastFailureOperation,
+      lastFailedKey: nowHealthy ? null : remainingKeys[remainingKeys.length - 1] ?? null,
+      failedKeys: remainingKeys,
+      failedWriteAttempts: nowHealthy ? 0 : currentHealth.failedWriteAttempts,
+    };
+    emitHealthUpdate();
+    return;
+  }
+
+  // Write or Remove success
+  failedWriteKeys.delete(key);
+  failedReadKeys.delete(key);
+  const remainingFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
   const nowHealthy = remainingFailedKeys.length === 0;
 
   currentHealth = {
@@ -105,7 +146,8 @@ export function recordStorageSuccess(key: string): void {
     isHealthy: nowHealthy,
     isWarningDismissed: nowHealthy ? false : currentHealth.isWarningDismissed,
     lastFailureType: nowHealthy ? null : currentHealth.lastFailureType,
-    lastFailedKey: nowHealthy ? null : remainingFailedKeys[remainingFailedKeys.length - 1],
+    lastFailureOperation: nowHealthy ? null : currentHealth.lastFailureOperation,
+    lastFailedKey: nowHealthy ? null : remainingFailedKeys[remainingFailedKeys.length - 1] ?? null,
     failedKeys: remainingFailedKeys,
     failedWriteAttempts: nowHealthy ? 0 : currentHealth.failedWriteAttempts,
   };
@@ -114,16 +156,27 @@ export function recordStorageSuccess(key: string): void {
 
 /**
  * Records a storage failure and triggers global health listeners.
- * Re-shows warning only if a new key failed or failure type changed.
+ * Accurately tracks failure operation ('read' | 'write' | 'remove' | 'probe').
  */
-export function recordStorageFailure(key: string, err: unknown): void {
+export function recordStorageFailure(
+  key: string,
+  err: unknown,
+  operation: StorageOperationType = 'write'
+): void {
   const failureType = categorizeStorageError(err);
-  const isNewKey = !currentHealth.failedKeys.includes(key);
-  const updatedFailedKeys = isNewKey
-    ? [...currentHealth.failedKeys, key]
-    : currentHealth.failedKeys;
 
-  const isMaterialChange = isNewKey || currentHealth.lastFailureType !== failureType;
+  if (operation === 'read') {
+    failedReadKeys.add(key);
+  } else if (operation === 'write' || operation === 'remove') {
+    failedWriteKeys.add(key);
+  }
+
+  const updatedFailedKeys = Array.from(new Set([...failedWriteKeys, ...failedReadKeys]));
+  const isNewKey = !currentHealth.failedKeys.includes(key);
+  const isMaterialChange =
+    isNewKey ||
+    currentHealth.lastFailureType !== failureType ||
+    currentHealth.lastFailureOperation !== operation;
 
   currentHealth = {
     ...currentHealth,
@@ -131,9 +184,13 @@ export function recordStorageFailure(key: string, err: unknown): void {
     isStorageAccessible: false,
     isWarningDismissed: isMaterialChange ? false : currentHealth.isWarningDismissed,
     lastFailureType: failureType,
+    lastFailureOperation: operation,
     lastFailedKey: key,
     failedKeys: updatedFailedKeys,
-    failedWriteAttempts: currentHealth.failedWriteAttempts + 1,
+    failedWriteAttempts:
+      operation === 'write' || operation === 'remove'
+        ? currentHealth.failedWriteAttempts + 1
+        : currentHealth.failedWriteAttempts,
   };
   emitHealthUpdate();
 }
@@ -153,7 +210,7 @@ export function dismissStorageWarning(): void {
  * Gets the current snapshot of storage health.
  */
 export function getStorageHealth(): StorageHealthState {
-  return { ...currentHealth };
+  return { ...currentHealth, failedKeys: [...currentHealth.failedKeys] };
 }
 
 /**
@@ -163,33 +220,36 @@ export function getStorageHealth(): StorageHealthState {
 export function safeSetLocalStorage(key: string, value: string): boolean {
   try {
     if (typeof localStorage === 'undefined') {
-      recordStorageFailure(key, new Error('localStorage is undefined'));
+      recordStorageFailure(key, new Error('localStorage is undefined'), 'write');
       return false;
     }
 
     localStorage.setItem(key, value);
-    recordStorageSuccess(key);
+    recordStorageSuccess(key, 'write');
     return true;
   } catch (err) {
     console.warn(`[FlipEnglish Storage] Failed to write key "${key}":`, err);
-    recordStorageFailure(key, err);
+    recordStorageFailure(key, err, 'write');
     return false;
   }
 }
 
 /**
  * Safe localStorage.getItem wrapper that catches SecurityErrors, records degradation, and returns null cleanly.
+ * On success, reconciles read accessibility without falsely clearing failed writes.
  */
 export function safeGetLocalStorage(key: string): string | null {
   try {
     if (typeof localStorage === 'undefined') {
-      recordStorageFailure(key, new Error('localStorage is undefined'));
+      recordStorageFailure(key, new Error('localStorage is undefined'), 'read');
       return null;
     }
-    return localStorage.getItem(key);
+    const value = localStorage.getItem(key);
+    recordStorageSuccess(key, 'read');
+    return value;
   } catch (err) {
     console.warn(`[FlipEnglish Storage] Failed to read key "${key}":`, err);
-    recordStorageFailure(key, err);
+    recordStorageFailure(key, err, 'read');
     return null;
   }
 }
@@ -200,15 +260,15 @@ export function safeGetLocalStorage(key: string): string | null {
 export function safeRemoveLocalStorage(key: string): boolean {
   try {
     if (typeof localStorage === 'undefined') {
-      recordStorageFailure(key, new Error('localStorage is undefined'));
+      recordStorageFailure(key, new Error('localStorage is undefined'), 'remove');
       return false;
     }
     localStorage.removeItem(key);
-    recordStorageSuccess(key);
+    recordStorageSuccess(key, 'remove');
     return true;
   } catch (err) {
     console.warn(`[FlipEnglish Storage] Failed to remove key "${key}":`, err);
-    recordStorageFailure(key, err);
+    recordStorageFailure(key, err, 'remove');
     return false;
   }
 }

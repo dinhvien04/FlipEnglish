@@ -714,14 +714,13 @@ export default function App() {
     setPendingResumePlacement(null);
   };
 
-  const handleDiscardActivePlacement = () => {
+  const handleDiscardActivePlacement = (): boolean => {
     const cleared = clearActivePlacement();
     if (cleared) {
       setPendingResumePlacement(null);
-    } else {
-      // Storage failed to remove key, dismiss modal to prevent broken state
-      setPendingResumePlacement(null);
+      return true;
     }
+    return false;
   };
 
   const handleStartCurriculumAtLevel = (level: CEFRLevel) => {
@@ -842,13 +841,13 @@ export default function App() {
     setPendingResumeSession(null);
   };
 
-  const handleDiscardActiveExam = () => {
+  const handleDiscardActiveExam = (): boolean => {
     const cleared = clearActiveExam();
     if (cleared) {
       setPendingResumeSession(null);
-    } else {
-      setPendingResumeSession(null);
+      return true;
     }
+    return false;
   };
 
   // Start AI Practice on missed words from exam

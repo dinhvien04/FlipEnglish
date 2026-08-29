@@ -99,6 +99,7 @@ export interface PlacementResultReport {
     level: CEFRLevel;
     skill: PlacementSkill;
   }[];
+  isPersisted?: boolean;
 }
 
 export interface PlacementSession {

@@ -617,6 +617,81 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
   const fakeWordId = 'fake-word-id-9999';
   assert(Boolean(resolveCurriculumItem(realLessonWordId)), 'Real curriculum word resolves properly');
   assert(!resolveCurriculumItem(fakeWordId), 'Fake word ID does not resolve in curriculum index');
+  // 9. Fault Injection & Persistence Durability Tests
+  console.log('\n--- 9. FAULT INJECTION & PERSISTENCE DURABILITY TESTS ---');
+  {
+    const originalSetItem = (global as any).localStorage.setItem;
+    const originalRemoveItem = (global as any).localStorage.removeItem;
+
+    const testReport: any = {
+      id: 'placement-durability-test-report',
+      sessionId: 'session-durability-1',
+      date: '2026-08-29',
+      startedAt: Date.now() - 50000,
+      completedAt: Date.now(),
+      estimatedLevel: 'B1',
+      levelTitle: 'Independent User',
+      levelDescription: 'Can understand the main points of clear standard input on familiar matters.',
+      canDoSummary: 'Can produce simple connected text on topics which are familiar or of personal interest.',
+      confidence: 'Strong evidence',
+      confidenceReason: 'Consistent performance across adaptive stages.',
+      totalQuestions: 24,
+      correctCount: 18,
+      overallPercentage: 75,
+      skillScores: {
+        vocabulary: { skill: 'vocabulary', attempted: 6, correct: 5, percentage: 83, weightedScore: 83 },
+        'use-of-english': { skill: 'use-of-english', attempted: 6, correct: 5, percentage: 83, weightedScore: 83 },
+        reading: { skill: 'reading', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+        listening: { skill: 'listening', attempted: 6, correct: 4, percentage: 67, weightedScore: 67 },
+      },
+      stagePath: [
+        { stageIndex: 0, level: 'B1', questionIds: ['q1','q2','q3','q4','q5','q6'], totalQuestions: 6, correctCount: 5, scorePercentage: 83, routingDecision: 'same', nextLevel: 'B1' },
+        { stageIndex: 1, level: 'B1', questionIds: ['q7','q8','q9','q10','q11','q12'], totalQuestions: 6, correctCount: 5, scorePercentage: 83, routingDecision: 'same', nextLevel: 'B1' },
+        { stageIndex: 2, level: 'B1', questionIds: ['q13','q14','q15','q16','q17','q18'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+        { stageIndex: 3, level: 'B1', questionIds: ['q19','q20','q21','q22','q23','q24'], totalQuestions: 6, correctCount: 4, scorePercentage: 67, routingDecision: 'same', nextLevel: 'B1' },
+      ],
+      recommendedLessons: [],
+      missedTargetItems: [],
+    };
+
+    // Case 1: Active Placement save fails gracefully
+    (global as any).localStorage.setItem = () => {
+      throw new Error('QuotaExceededError');
+    };
+    const saveActiveResult = (await import('../src/features/placement/placementStorage')).saveActivePlacement(baseValidSession as any);
+    assert(saveActiveResult === false, 'Fault Injection: saveActivePlacement returns false on storage quota error without throwing');
+
+    // Case 2: Save placement result to history fails gracefully on write error
+    const saveHistoryResult = (await import('../src/features/placement/placementStorage')).savePlacementResultToHistory(testReport);
+    assert(saveHistoryResult === false, 'Fault Injection: savePlacementResultToHistory returns false on storage quota error');
+
+    // Case 3: Clear active placement fails gracefully on removal error
+    (global as any).localStorage.setItem = originalSetItem;
+    (global as any).localStorage.removeItem = () => {
+      throw new Error('SecurityError');
+    };
+    const clearActiveResult = (await import('../src/features/placement/placementStorage')).clearActivePlacement();
+    assert(clearActiveResult === false, 'Fault Injection: clearActivePlacement returns false on removal error without throwing');
+
+    // Case 4: Idempotent history saving prevents duplicate entries on retry
+    (global as any).localStorage.removeItem = originalRemoveItem;
+    const { savePlacementResultToHistory: saveHistoryOk, loadPlacementHistory } = await import('../src/features/placement/placementStorage');
+    const firstSave = saveHistoryOk(testReport);
+    assert(firstSave === true, 'Successful initial placement history write');
+    const historyAfterFirst = loadPlacementHistory();
+    const countFirst = historyAfterFirst.filter((h) => h.id === testReport.id).length;
+    assert(countFirst === 1, 'Report appears once in placement history');
+
+    const secondSave = saveHistoryOk(testReport); // Retry
+    assert(secondSave === true, 'Successful retry placement history write');
+    const historyAfterSecond = loadPlacementHistory();
+    const countSecond = historyAfterSecond.filter((h) => h.id === testReport.id).length;
+    assert(countSecond === 1, 'Retry did not create duplicate placement history entries');
+
+    // Restore original mock functions
+    (global as any).localStorage.setItem = originalSetItem;
+    (global as any).localStorage.removeItem = originalRemoveItem;
+  }
 }
 
 console.log('\n--- PLACEMENT VALIDATION SUMMARY ---');

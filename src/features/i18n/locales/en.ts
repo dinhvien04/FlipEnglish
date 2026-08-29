@@ -372,6 +372,10 @@ export const enCatalog = {
   'placement.result.exportToReview': 'Export Missed Items to Smart Review',
   'placement.result.exported': 'Exported to Smart Review',
   'placement.result.startCurriculum': 'Start Learning at {level}',
+  'placement.session.storageWarning': 'Unable to save placement progress to device storage. Your test is continuing safely in memory, but may not be resumable if you close this tab.',
+  'placement.result.saveWarning': 'Placement completed, but the result could not be saved to your device history.',
+  'placement.result.retrySave': 'Retry Saving Result',
+  'placement.result.savedSuccess': 'Result saved to history successfully.',
 
   // Exam Center
   'exam.title': 'Exam Center',
@@ -404,6 +408,10 @@ export const enCatalog = {
   'exam.result.sectionBreakdown': 'Section Performance',
   'exam.result.reviewAnswers': 'Review Answers & Explanations',
   'exam.result.retake': 'Take Another Exam',
+  'exam.session.storageWarning': 'Unable to save exam progress to device storage. Your exam is continuing safely in memory, but may not be resumable if you close this tab.',
+  'exam.result.saveWarning': 'Exam completed, but the result could not be saved to your device history.',
+  'exam.result.retrySave': 'Retry Saving Result',
+  'exam.result.savedSuccess': 'Result saved to history successfully.',
 
   // Conversation Lab
   'conversation.title': 'AI Conversation Lab',
@@ -550,6 +558,7 @@ export const enCatalog = {
   'error.storageWarningDesc': 'We could not save your latest progress to local storage on this device (it may be full or restricted). You can continue this session, but progress might not persist after closing.',
   'error.storageQuotaDesc': 'Device storage quota exceeded. Please free up space or clear browser cache to ensure your study progress is saved.',
   'error.storageRetry': 'Retry Saving',
+  'error.storageCheck': 'Check storage again',
   'error.storageDismiss': 'Dismiss',
   'error.sessionCorruptTitle': 'Session Recovery',
   'error.sessionCorruptDesc': 'We could not restore your previous session, but your overall learning progress is completely safe.',
@@ -594,6 +603,7 @@ export const enCatalog = {
   'studyPlan.resumeModal.placementDiscardConfirmPrompt': 'Are you sure you want to discard your placement progress? This action cannot be undone.',
   'studyPlan.resumeModal.placementKeep': 'Keep Progress',
   'studyPlan.resumeModal.placementConfirmDiscard': 'Yes, Start Over',
+  'studyPlan.resumeModal.placementDiscardError': 'Failed to clear saved session on this device. Please try again.',
   'studyPlan.resumeModal.examBadge': 'Active Exam Found',
   'studyPlan.resumeModal.examTitle': 'Resume Exam?',
   'studyPlan.resumeModal.examLabel': 'Exam:',
@@ -605,6 +615,7 @@ export const enCatalog = {
   'studyPlan.resumeModal.examDiscardConfirmPrompt': 'Are you sure you want to discard your active exam? Your answers will not be saved.',
   'studyPlan.resumeModal.examKeep': 'Keep Progress',
   'studyPlan.resumeModal.examConfirmDiscard': 'Yes, Discard',
+  'studyPlan.resumeModal.examDiscardError': 'Failed to clear saved session on this device. Please try again.',
   'studyPlan.resumeModal.examResume': 'Resume Exam',
   'studyPlan.resumeModal.examExpired': 'Time Expired',
   'studyPlan.resumeModal.examExpiredDesc': 'The time limit for this exam has ended. You can review and submit your answers, or discard this session.',
@@ -722,6 +733,9 @@ export const enCatalog = {
   'settings.modal.eraseAllTypePrompt': 'To confirm, please type {keyword} below:',
   'settings.modal.eraseAllConfirm': 'Erase Everything',
   'settings.modal.cancel': 'Cancel',
+  'settings.modal.retry': 'Retry',
+  'settings.modal.partialFailureError': 'Some data could not be removed from this device.',
+  'settings.modal.operationFailedError': 'Failed to complete data reset on this device. Please try again.',
 
   // Feedback banners & notifications
   'settings.toast.resetProgressSuccess': 'Learning progress has been successfully reset.',

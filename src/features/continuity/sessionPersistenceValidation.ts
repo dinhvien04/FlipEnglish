@@ -1,5 +1,5 @@
 import { LearnResumeContext, ReviewResumeContext } from '../../types/sessionResume';
-import { CEFRLevel } from '../../types';
+import { CEFRLevel, LearningItemType, PartOfSpeech } from '../../types';
 import { ReviewRating, ReviewStatus, ResolvedReviewItem, ReviewItemState } from '../../types/review';
 import { VocabWord } from '../../types';
 import { Lesson } from '../../types';
@@ -12,6 +12,33 @@ export const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const VALID_CEFR_LEVELS = new Set<string>(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
 export const VALID_REVIEW_RATINGS = new Set<string>(['again', 'hard', 'good', 'easy']);
 export const VALID_REVIEW_STATUSES = new Set<string>(['learning', 'review', 'mastered']);
+
+export const VALID_LEARNING_ITEM_TYPES = new Set<string>([
+  'word',
+  'phrase',
+  'collocation',
+  'phrasalVerb',
+  'idiom',
+  'wordFamily',
+  'synonymSet',
+  'nuanceSet',
+  'registerPair',
+]);
+
+export const VALID_PARTS_OF_SPEECH = new Set<string>([
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'phrase',
+  'preposition',
+  'conjunction',
+  'idiom',
+  'collocation',
+  'phrasal verb',
+]);
+
+export const VALID_REGISTERS = new Set<string>(['informal', 'neutral', 'formal']);
 
 const ALLOWED_LEARN_KEYS = new Set<string>([
   'schemaVersion',
@@ -110,66 +137,166 @@ function hasOnlyAllowedKeys(obj: Record<string, any>, allowed: Set<string>): boo
 }
 
 /**
- * Validates and sanitizes a VocabWord structure in Review items.
+ * Validates and deeply sanitizes a VocabWord structure in Review items.
+ * Reconstructs all valid metadata fields (context, collocations, synonyms, nuance, register, etc.).
  */
-function sanitizeVocabWord(raw: any): VocabWord | null {
+export function sanitizeVocabWord(raw: any): VocabWord | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   if (!hasOnlyAllowedKeys(raw, ALLOWED_VOCAB_WORD_KEYS)) return null;
+
+  // Required core identifiers & content
   if (typeof raw.id !== 'string' || !raw.id.trim() || raw.id.length > 100) return null;
   if (typeof raw.word !== 'string' || !raw.word.trim() || raw.word.length > 100) return null;
   if (typeof raw.meaning !== 'string' || !raw.meaning.trim() || raw.meaning.length > 500) return null;
-  if (raw.level && !VALID_CEFR_LEVELS.has(raw.level)) return null;
+
+  // Optional string and enum metadata validation
+  if (raw.type !== undefined && (typeof raw.type !== 'string' || !VALID_LEARNING_ITEM_TYPES.has(raw.type))) return null;
+  if (raw.expression !== undefined && (typeof raw.expression !== 'string' || raw.expression.length > 200)) return null;
   if (raw.pronunciation !== undefined && (typeof raw.pronunciation !== 'string' || raw.pronunciation.length > 100)) return null;
-  if (raw.partOfSpeech !== undefined && (typeof raw.partOfSpeech !== 'string' || raw.partOfSpeech.length > 50)) return null;
+  if (raw.partOfSpeech !== undefined && (typeof raw.partOfSpeech !== 'string' || !VALID_PARTS_OF_SPEECH.has(raw.partOfSpeech))) return null;
+  if (raw.level !== undefined && (typeof raw.level !== 'string' || !VALID_CEFR_LEVELS.has(raw.level))) return null;
   if (raw.example !== undefined && (typeof raw.example !== 'string' || raw.example.length > 500)) return null;
   if (raw.exampleTranslation !== undefined && (typeof raw.exampleTranslation !== 'string' || raw.exampleTranslation.length > 500)) return null;
+  if (raw.context !== undefined && (typeof raw.context !== 'string' || raw.context.length > 1000)) return null;
   if (raw.imageUrl !== undefined && (typeof raw.imageUrl !== 'string' || raw.imageUrl.length > 500)) return null;
-  if (raw.collocations !== undefined && !Array.isArray(raw.collocations)) return null;
+  if (raw.imageAlt !== undefined && (typeof raw.imageAlt !== 'string' || raw.imageAlt.length > 500)) return null;
+  if (raw.visualQuizEligible !== undefined && typeof raw.visualQuizEligible !== 'boolean') return null;
+  if (raw.emoji !== undefined && (typeof raw.emoji !== 'string' || raw.emoji.length > 20)) return null;
+  if (raw.definition !== undefined && (typeof raw.definition !== 'string' || raw.definition.length > 1000)) return null;
 
-  return {
+  // Array fields validation
+  if (raw.collocations !== undefined) {
+    if (!Array.isArray(raw.collocations) || raw.collocations.length > 30 || raw.collocations.some((c: any) => typeof c !== 'string' || c.length > 150)) {
+      return null;
+    }
+  }
+  if (raw.synonyms !== undefined) {
+    if (!Array.isArray(raw.synonyms) || raw.synonyms.length > 30 || raw.synonyms.some((s: any) => typeof s !== 'string' || s.length > 100)) {
+      return null;
+    }
+  }
+  if (raw.antonyms !== undefined) {
+    if (!Array.isArray(raw.antonyms) || raw.antonyms.length > 30 || raw.antonyms.some((a: any) => typeof a !== 'string' || a.length > 100)) {
+      return null;
+    }
+  }
+  if (raw.wordFamily !== undefined) {
+    if (!Array.isArray(raw.wordFamily) || raw.wordFamily.length > 30 || raw.wordFamily.some((w: any) => typeof w !== 'string' || w.length > 100)) {
+      return null;
+    }
+  }
+  if (raw.register !== undefined && (typeof raw.register !== 'string' || !VALID_REGISTERS.has(raw.register))) return null;
+  if (raw.usageNote !== undefined && (typeof raw.usageNote !== 'string' || raw.usageNote.length > 1000)) return null;
+  if (raw.nuanceNote !== undefined && (typeof raw.nuanceNote !== 'string' || raw.nuanceNote.length > 1000)) return null;
+  if (raw.nuance !== undefined && (typeof raw.nuance !== 'string' || raw.nuance.length > 1000)) return null;
+  if (raw.items !== undefined) {
+    if (!Array.isArray(raw.items) || raw.items.length > 30 || raw.items.some((it: any) => typeof it !== 'string' || it.length > 150)) {
+      return null;
+    }
+  }
+  if (raw.pattern !== undefined && (typeof raw.pattern !== 'string' || raw.pattern.length > 300)) return null;
+  if (raw.promptWord !== undefined && (typeof raw.promptWord !== 'string' || raw.promptWord.length > 100)) return null;
+  if (raw.tags !== undefined) {
+    if (!Array.isArray(raw.tags) || raw.tags.length > 30 || raw.tags.some((t: any) => typeof t !== 'string' || t.length > 50)) {
+      return null;
+    }
+  }
+
+  // Reconstruct cleanly preserving all valid supported fields
+  const result: VocabWord = {
     id: raw.id.trim(),
     word: raw.word.trim(),
-    pronunciation: typeof raw.pronunciation === 'string' ? raw.pronunciation.trim() : undefined,
-    partOfSpeech: raw.partOfSpeech,
     meaning: raw.meaning.trim(),
     example: typeof raw.example === 'string' ? raw.example.trim() : '',
-    exampleTranslation: typeof raw.exampleTranslation === 'string' ? raw.exampleTranslation.trim() : undefined,
-    level: raw.level as CEFRLevel,
-    imageUrl: raw.imageUrl,
-    collocations: Array.isArray(raw.collocations) ? raw.collocations.map(String) : undefined,
   };
+
+  if (raw.type !== undefined) result.type = raw.type as LearningItemType;
+  if (raw.expression !== undefined) result.expression = raw.expression.trim();
+  if (raw.pronunciation !== undefined) result.pronunciation = raw.pronunciation.trim();
+  if (raw.partOfSpeech !== undefined) result.partOfSpeech = raw.partOfSpeech as PartOfSpeech;
+  if (raw.level !== undefined) result.level = raw.level as CEFRLevel;
+  if (raw.exampleTranslation !== undefined) result.exampleTranslation = raw.exampleTranslation.trim();
+  if (raw.context !== undefined) result.context = raw.context.trim();
+  if (raw.imageUrl !== undefined) result.imageUrl = raw.imageUrl;
+  if (raw.imageAlt !== undefined) result.imageAlt = raw.imageAlt.trim();
+  if (raw.visualQuizEligible !== undefined) result.visualQuizEligible = raw.visualQuizEligible;
+  if (raw.emoji !== undefined) result.emoji = raw.emoji.trim();
+  if (raw.definition !== undefined) result.definition = raw.definition.trim();
+  if (raw.collocations !== undefined) result.collocations = raw.collocations.map((s: string) => s.trim());
+  if (raw.synonyms !== undefined) result.synonyms = raw.synonyms.map((s: string) => s.trim());
+  if (raw.antonyms !== undefined) result.antonyms = raw.antonyms.map((s: string) => s.trim());
+  if (raw.wordFamily !== undefined) result.wordFamily = raw.wordFamily.map((s: string) => s.trim());
+  if (raw.register !== undefined) result.register = raw.register as 'informal' | 'neutral' | 'formal';
+  if (raw.usageNote !== undefined) result.usageNote = raw.usageNote.trim();
+  if (raw.nuanceNote !== undefined) result.nuanceNote = raw.nuanceNote.trim();
+  if (raw.nuance !== undefined) result.nuance = raw.nuance.trim();
+  if (raw.items !== undefined) result.items = raw.items.map((s: string) => s.trim());
+  if (raw.pattern !== undefined) result.pattern = raw.pattern.trim();
+  if (raw.promptWord !== undefined) result.promptWord = raw.promptWord.trim();
+  if (raw.tags !== undefined) result.tags = raw.tags.map((s: string) => s.trim());
+
+  return result;
 }
 
 /**
- * Validates and sanitizes a Lesson structure in Review items.
+ * Validates and deeply sanitizes a Lesson structure in Review items.
+ * Reconstructs all valid metadata fields (imageAlt, icon, badgeText, tags, words).
  */
-function sanitizeLesson(raw: any): Lesson | null {
+export function sanitizeLesson(raw: any): Lesson | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   if (!hasOnlyAllowedKeys(raw, ALLOWED_LESSON_KEYS)) return null;
+
   if (typeof raw.id !== 'string' || !raw.id.trim() || raw.id.length > 100) return null;
   if (typeof raw.title !== 'string' || !raw.title.trim() || raw.title.length > 200) return null;
   if (!VALID_CEFR_LEVELS.has(raw.level)) return null;
+
   if (raw.levelTitle !== undefined && (typeof raw.levelTitle !== 'string' || raw.levelTitle.length > 200)) return null;
   if (raw.description !== undefined && (typeof raw.description !== 'string' || raw.description.length > 1000)) return null;
   if (raw.category !== undefined && (typeof raw.category !== 'string' || raw.category.length > 100)) return null;
   if (raw.imageUrl !== undefined && (typeof raw.imageUrl !== 'string' || raw.imageUrl.length > 500)) return null;
+  if (raw.imageAlt !== undefined && (typeof raw.imageAlt !== 'string' || raw.imageAlt.length > 500)) return null;
+  if (raw.icon !== undefined && (typeof raw.icon !== 'string' || raw.icon.length > 100)) return null;
+  if (raw.badgeText !== undefined && (typeof raw.badgeText !== 'string' || raw.badgeText.length > 100)) return null;
 
-  return {
+  if (raw.tags !== undefined) {
+    if (!Array.isArray(raw.tags) || raw.tags.length > 30 || raw.tags.some((t: any) => typeof t !== 'string' || t.length > 50)) {
+      return null;
+    }
+  }
+
+  const sanitizedWords: VocabWord[] = [];
+  if (raw.words !== undefined) {
+    if (!Array.isArray(raw.words) || raw.words.length > 100) return null;
+    for (const w of raw.words) {
+      const sanitizedW = sanitizeVocabWord(w);
+      if (!sanitizedW) return null;
+      sanitizedWords.push(sanitizedW);
+    }
+  }
+
+  const result: Lesson = {
     id: raw.id.trim(),
     title: raw.title.trim(),
+    level: raw.level as CEFRLevel,
     levelTitle: typeof raw.levelTitle === 'string' ? raw.levelTitle.trim() : '',
     description: typeof raw.description === 'string' ? raw.description.trim() : '',
-    level: raw.level as CEFRLevel,
     category: typeof raw.category === 'string' ? raw.category.trim() : 'General',
     imageUrl: typeof raw.imageUrl === 'string' ? raw.imageUrl : '',
-    words: [],
+    words: sanitizedWords,
   };
+
+  if (raw.imageAlt !== undefined) result.imageAlt = raw.imageAlt.trim();
+  if (raw.icon !== undefined) result.icon = raw.icon.trim();
+  if (raw.badgeText !== undefined) result.badgeText = raw.badgeText.trim();
+  if (raw.tags !== undefined) result.tags = raw.tags.map((t: string) => t.trim());
+
+  return result;
 }
 
 /**
  * Validates and sanitizes a ReviewItemState in ResolvedReviewItem.
  */
-function sanitizeReviewItemState(raw: any): ReviewItemState | null {
+export function sanitizeReviewItemState(raw: any): ReviewItemState | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   if (!hasOnlyAllowedKeys(raw, ALLOWED_ITEM_STATE_KEYS)) return null;
   if (typeof raw.itemId !== 'string' || !raw.itemId.trim() || raw.itemId.length > 100) return null;
@@ -202,7 +329,7 @@ function sanitizeReviewItemState(raw: any): ReviewItemState | null {
 /**
  * Validates and sanitizes ResolvedReviewItem.
  */
-function sanitizeResolvedReviewItem(raw: any): ResolvedReviewItem | null {
+export function sanitizeResolvedReviewItem(raw: any): ResolvedReviewItem | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   if (!hasOnlyAllowedKeys(raw, ALLOWED_RESOLVED_ITEM_KEYS)) return null;
 
@@ -239,7 +366,7 @@ function sanitizeResolvedReviewItem(raw: any): ResolvedReviewItem | null {
 /**
  * Validates and sanitizes rating breakdown.
  */
-function sanitizeRatingBreakdown(raw: any): Record<ReviewRating, number> | null {
+export function sanitizeRatingBreakdown(raw: any): Record<ReviewRating, number> | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   if (!hasOnlyAllowedKeys(raw, ALLOWED_RATING_KEYS)) return null;
 

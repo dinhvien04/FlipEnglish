@@ -374,6 +374,10 @@ export const viCatalog: Record<TranslationKey, string> = {
   'placement.result.exportToReview': 'Đưa các câu sai vào Ôn tập thông minh',
   'placement.result.exported': 'Đã thêm vào Ôn tập',
   'placement.result.startCurriculum': 'Bắt đầu học tại cấp độ {level}',
+  'placement.session.storageWarning': 'Không thể lưu tiến trình kiểm tra vào bộ nhớ thiết bị. Bài làm vẫn tiếp tục an toàn trên bộ nhớ đệm, nhưng có thể không thể tiếp tục lại nếu bạn đóng tab này.',
+  'placement.result.saveWarning': 'Đã hoàn thành bài kiểm tra, nhưng chưa thể lưu kết quả vào lịch sử trên thiết bị.',
+  'placement.result.retrySave': 'Thử lưu lại kết quả',
+  'placement.result.savedSuccess': 'Đã lưu kết quả vào lịch sử thành công.',
 
   // Exam Center
   'exam.title': 'Luyện thi & Đánh giá',
@@ -406,6 +410,10 @@ export const viCatalog: Record<TranslationKey, string> = {
   'exam.result.sectionBreakdown': 'Kết quả từng phần thi',
   'exam.result.reviewAnswers': 'Xem lại đáp án & giải thích',
   'exam.result.retake': 'Làm bài thi khác',
+  'exam.session.storageWarning': 'Không thể lưu tiến trình bài thi vào bộ nhớ thiết bị. Bài làm vẫn tiếp tục an toàn trên bộ nhớ đệm, nhưng có thể không thể tiếp tục lại nếu bạn đóng tab này.',
+  'exam.result.saveWarning': 'Đã hoàn thành bài thi, nhưng chưa thể lưu kết quả vào lịch sử trên thiết bị.',
+  'exam.result.retrySave': 'Thử lưu lại kết quả',
+  'exam.result.savedSuccess': 'Đã lưu kết quả vào lịch sử thành công.',
 
   // Conversation Lab
   'conversation.title': 'Luyện hội thoại với AI',
@@ -552,6 +560,7 @@ export const viCatalog: Record<TranslationKey, string> = {
   'error.storageWarningDesc': 'Không thể lưu tiến trình mới nhất vào bộ nhớ thiết bị (dung lượng đầy hoặc bị hạn chế). Bạn vẫn có thể tiếp tục phiên học này nhưng dữ liệu có thể không lưu sau khi đóng ứng dụng.',
   'error.storageQuotaDesc': 'Đã vượt quá hạn mức dung lượng lưu trữ của thiết bị. Vui lòng dọn dẹp dung lượng hoặc xóa bộ nhớ đệm trình duyệt để đảm bảo tiến độ học tập được lưu.',
   'error.storageRetry': 'Thử lưu lại',
+  'error.storageCheck': 'Kiểm tra lại bộ nhớ',
   'error.storageDismiss': 'Bỏ qua',
   'error.sessionCorruptTitle': 'Khôi phục phiên học',
   'error.sessionCorruptDesc': 'Không thể khôi phục phiên học trước đó, nhưng toàn bộ tiến trình học tập tổng thể của bạn hoàn toàn an toàn.',
@@ -596,6 +605,7 @@ export const viCatalog: Record<TranslationKey, string> = {
   'studyPlan.resumeModal.placementDiscardConfirmPrompt': 'Bạn có chắc chắn muốn hủy tiến trình kiểm tra trình độ này? Thao tác này không thể hoàn tác.',
   'studyPlan.resumeModal.placementKeep': 'Giữ tiến trình',
   'studyPlan.resumeModal.placementConfirmDiscard': 'Đồng ý làm lại',
+  'studyPlan.resumeModal.placementDiscardError': 'Không thể xóa phiên đã lưu trên thiết bị này. Vui lòng thử lại.',
   'studyPlan.resumeModal.examBadge': 'Tìm thấy bài thi đang làm',
   'studyPlan.resumeModal.examTitle': 'Tiếp tục bài thi?',
   'studyPlan.resumeModal.examLabel': 'Bài thi:',
@@ -607,6 +617,7 @@ export const viCatalog: Record<TranslationKey, string> = {
   'studyPlan.resumeModal.examDiscardConfirmPrompt': 'Bạn có chắc chắn muốn hủy bài thi đang làm dở? Các câu trả lời sẽ không được lưu.',
   'studyPlan.resumeModal.examKeep': 'Giữ tiến trình',
   'studyPlan.resumeModal.examConfirmDiscard': 'Đồng ý hủy',
+  'studyPlan.resumeModal.examDiscardError': 'Không thể xóa phiên đã lưu trên thiết bị này. Vui lòng thử lại.',
   'studyPlan.resumeModal.examResume': 'Tiếp tục bài thi',
   'studyPlan.resumeModal.examExpired': 'Hết giờ làm bài',
   'studyPlan.resumeModal.examExpiredDesc': 'Thời gian làm bài thi này đã kết thúc. Bạn có thể xem lại và nộp bài, hoặc hủy phiên làm bài này.',
@@ -724,6 +735,9 @@ export const viCatalog: Record<TranslationKey, string> = {
   'settings.modal.eraseAllTypePrompt': 'Để xác nhận, vui lòng nhập chữ {keyword} vào ô bên dưới:',
   'settings.modal.eraseAllConfirm': 'Xóa tất cả dữ liệu',
   'settings.modal.cancel': 'Hủy',
+  'settings.modal.retry': 'Thử lại',
+  'settings.modal.partialFailureError': 'Một số dữ liệu không thể xóa khỏi thiết bị này.',
+  'settings.modal.operationFailedError': 'Không thể hoàn thành việc đặt lại dữ liệu trên thiết bị này. Vui lòng thử lại.',
 
   // Feedback banners & notifications
   'settings.toast.resetProgressSuccess': 'Đã đặt lại tiến trình học tập thành công.',

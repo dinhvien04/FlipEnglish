@@ -6,6 +6,7 @@ import { EXAM_DISCLAIMER } from '../data/exams/config';
 import { classifyApiError } from '../utils/apiError';
 import { useI18n } from '../features/i18n';
 import { useAiStatus } from '../features/ai/useAiStatus';
+import { saveExamResultToHistory } from '../utils/examStorage';
 
 interface ExamResultProps {
   report: ExamResultReport;
@@ -31,8 +32,19 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
   const [expandedExplanationMap, setExpandedExplanationMap] = useState<Record<string, string>>({});
   const [explainingQuestionId, setExplainingQuestionId] = useState<string | null>(null);
 
+  const [isPersisted, setIsPersisted] = useState<boolean>(report.isPersisted !== false);
+  const [retrySavedSuccess, setRetrySavedSuccess] = useState<boolean>(false);
+
   const durationMin = Math.floor(report.durationSpentSeconds / 60);
   const durationSec = report.durationSpentSeconds % 60;
+
+  const handleRetrySave = () => {
+    const success = saveExamResultToHistory(report);
+    if (success) {
+      setIsPersisted(true);
+      setRetrySavedSuccess(true);
+    }
+  };
 
   // Performance Badge Color
   const getBadgeStyle = () => {
@@ -163,6 +175,40 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 animate-fadeIn">
+      {!isPersisted && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-amber-50 border border-amber-200 text-amber-900 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
+        >
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-amber-950">
+              {t('exam.result.saveWarning')}
+            </p>
+            <p className="text-2xs sm:text-xs text-amber-800">
+              {t('error.storageWarningDesc')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRetrySave}
+            className="shrink-0 min-h-10 px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            {t('exam.result.retrySave')}
+          </button>
+        </div>
+      )}
+
+      {retrySavedSuccess && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-xs"
+        >
+          {t('exam.result.savedSuccess')}
+        </div>
+      )}
+
       {/* Top Banner / Score Card */}
       <section className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-8">

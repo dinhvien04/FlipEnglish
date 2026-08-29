@@ -8,15 +8,23 @@ const MAX_IDLE_TIMEOUT_MS = 60 * 1000; // 60 seconds of inactivity cutoff
  * Tracks learner interaction (pointer, touch, keydown, scroll) to prevent phantom accumulation
  * on unattended visible tabs.
  */
-export function recordUserInteraction(): void {
-  lastUserInteractionTime = Date.now();
+export function recordUserInteraction(timestamp: number = Date.now()): void {
+  lastUserInteractionTime = timestamp;
 }
+
+/**
+ * Alias for recordUserInteraction for standard activity recording terminology.
+ */
+export const recordUserActivity = recordUserInteraction;
 
 /**
  * Checks if user is currently active (interacted within idle timeout threshold).
  */
-export function isUserActive(cutoffMs: number = MAX_IDLE_TIMEOUT_MS): boolean {
-  return Date.now() - lastUserInteractionTime < cutoffMs;
+export function isUserActive(
+  cutoffMs: number = MAX_IDLE_TIMEOUT_MS,
+  currentTime: number = Date.now()
+): boolean {
+  return currentTime - lastUserInteractionTime < cutoffMs;
 }
 
 /**
@@ -26,19 +34,23 @@ export function isUserActive(cutoffMs: number = MAX_IDLE_TIMEOUT_MS): boolean {
  * @param seconds Number of active seconds to accumulate.
  * @param referenceDate Optional reference date for testing / simulation.
  * @param bypassActivityGate Optional flag for deterministic unit testing.
+ * @param currentTime Optional current timestamp for timeline simulation.
  */
 export function recordActiveStudySeconds(
   seconds: number,
   referenceDate?: Date,
-  bypassActivityGate: boolean = false
+  bypassActivityGate: boolean = false,
+  currentTime?: number
 ): ActiveTimeRecord {
   // Gated by page visibility in browser environments
   if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
     return getStoredActiveTime(referenceDate);
   }
 
+  const effectiveNow = currentTime ?? (referenceDate ? referenceDate.getTime() : Date.now());
+
   // Gated by user interaction cutoff (unless explicitly bypassed in unit test)
-  if (!bypassActivityGate && !isUserActive()) {
+  if (!bypassActivityGate && !isUserActive(MAX_IDLE_TIMEOUT_MS, effectiveNow)) {
     return getStoredActiveTime(referenceDate);
   }
 
@@ -49,12 +61,11 @@ export function recordActiveStudySeconds(
     return currentRecord;
   }
 
-  const now = Date.now();
   const updatedRecord: ActiveTimeRecord = {
     ...currentRecord,
     activeSeconds: currentRecord.activeSeconds + safeSeconds,
-    lastHeartbeatAt: now,
-    updatedAt: now,
+    lastHeartbeatAt: effectiveNow,
+    updatedAt: effectiveNow,
   };
 
   saveActiveTime(updatedRecord);

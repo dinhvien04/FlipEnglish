@@ -136,6 +136,7 @@ export interface ExamResultReport {
     userAnswer: string;
   }[];
   recommendedLessonIds: string[];
+  isPersisted?: boolean;
 }
 
 export interface AIExamAnalysisRecommendation {

@@ -22,6 +22,9 @@ import {
 import {
   recordActiveStudySeconds,
   getActiveMinutesToday,
+  recordUserActivity,
+  recordUserInteraction,
+  isUserActive,
 } from '../src/features/progress/activeTimeEngine';
 import { MeaningfulLearningEvent } from '../src/types/streak';
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../src/constants/storageKeys';
@@ -278,7 +281,76 @@ recordActiveStudySeconds(30, day2Date, true);
 assert(getStoredActiveTime(day2Date).activeSeconds === 180, 'Active seconds accumulated when page is visible');
 assert(getActiveMinutesToday(day2Date) === 3, '3 active minutes after 180s');
 
-console.log('\n--- Test Suite 6: Storage Failure & Health Defense Paths ---');
+console.log('\n--- Test Suite 6: Active Time Real Timeline & Idle Gate Invariants ---');
+{
+  localStorage.clear();
+  dispatchedEvents.length = 0;
+  (globalThis as any).document.visibilityState = 'visible';
+
+  const baseTimelineDate = new Date('2026-08-29T10:00:00.000Z');
+  const t0 = baseTimelineDate.getTime();
+
+  // Step 1: T+0 user interaction recorded via recordUserActivity()
+  recordUserActivity(t0);
+  assert(isUserActive(60000, t0) === true, 'User is active at T+0');
+
+  // Step 2: T+5s active time accumulated (without bypassActivityGate)
+  const t5 = t0 + 5000;
+  recordActiveStudySeconds(5, new Date(t5), false, t5);
+  assert(getStoredActiveTime(new Date(t5)).activeSeconds === 5, 'T+5s accumulated 5 active seconds');
+
+  // Step 3: T+59s still within 60s active window -> heartbeat accumulates
+  const t59 = t0 + 59000;
+  assert(isUserActive(60000, t59) === true, 'User still active at T+59s (< 60s)');
+  recordActiveStudySeconds(5, new Date(t59), false, t59);
+  assert(getStoredActiveTime(new Date(t59)).activeSeconds === 10, 'T+59s accumulated next heartbeat (10 total seconds)');
+
+  // Step 4: T+61s user considered idle (> 60s since T+0) -> no accumulation
+  const t61 = t0 + 61000;
+  assert(isUserActive(60000, t61) === false, 'User considered idle at T+61s (> 60s)');
+  recordActiveStudySeconds(5, new Date(t61), false, t61);
+  assert(getStoredActiveTime(new Date(t61)).activeSeconds === 10, 'T+61s idle: active seconds remain 10');
+
+  // Step 5: T+120s no hidden idle accumulation
+  const t120 = t0 + 120000;
+  assert(isUserActive(60000, t120) === false, 'User remains idle at T+120s');
+  recordActiveStudySeconds(5, new Date(t120), false, t120);
+  assert(getStoredActiveTime(new Date(t120)).activeSeconds === 10, 'T+120s: zero accumulation while idle');
+
+  // Step 6: User interacts again at T+130s -> next heartbeat accumulates
+  const t130 = t0 + 130000;
+  recordUserActivity(t130);
+  assert(isUserActive(60000, t130) === true, 'User active again at T+130s');
+  const t135 = t0 + 135000;
+  recordActiveStudySeconds(5, new Date(t135), false, t135);
+  assert(getStoredActiveTime(new Date(t135)).activeSeconds === 15, 'T+135s: accumulation resumes (15 total seconds)');
+
+  // Step 7: Hidden tab (document.visibilityState = "hidden") -> no accumulation even if active
+  (globalThis as any).document.visibilityState = 'hidden';
+  recordUserActivity(t135);
+  const t140 = t0 + 140000;
+  recordActiveStudySeconds(5, new Date(t140), false, t140);
+  assert(getStoredActiveTime(new Date(t140)).activeSeconds === 15, 'Hidden tab: no accumulation despite user interaction');
+
+  // Step 8: Visible tab -> accumulation resumes
+  (globalThis as any).document.visibilityState = 'visible';
+  const t145 = t0 + 145000;
+  recordUserActivity(t145);
+  recordActiveStudySeconds(5, new Date(t145), false, t145);
+  assert(getStoredActiveTime(new Date(t145)).activeSeconds === 20, 'Visible tab: accumulation resumes (20 total seconds)');
+
+  // Step 9: Day rollover -> resets daily active seconds cleanly
+  const rolloverDate = new Date('2026-08-30T01:00:00.000Z');
+  const tNextDay = rolloverDate.getTime();
+  recordUserActivity(tNextDay);
+  const nextDayRecord = getStoredActiveTime(rolloverDate);
+  assert(nextDayRecord.localDate === '2026-08-30', 'Rollover date matches 2026-08-30');
+  assert(nextDayRecord.activeSeconds === 0, 'Rollover resets daily active seconds to 0');
+  recordActiveStudySeconds(10, rolloverDate, false, tNextDay + 5000);
+  assert(getStoredActiveTime(rolloverDate).activeSeconds === 10, 'New day accumulates from 0 (10 seconds on Day 2)');
+}
+
+console.log('\n--- Test Suite 7: Storage Failure & Health Defense Paths ---');
 // Test storage write failure handling in saveActiveTime and saveLearnerStreak
 const originalSetItem = localStorage.setItem;
 (localStorage as any).setItem = () => {

@@ -272,18 +272,20 @@ export function clearActivePlacement(): boolean {
 }
 
 /**
- * Saves Latest Validated Placement Result Report
+ * Saves Latest Validated Placement Result Report. Returns boolean indicating success.
  */
-export function saveLatestPlacementReport(report: PlacementResultReport): void {
-  if (typeof window === 'undefined') return;
+export function saveLatestPlacementReport(report: PlacementResultReport): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    if (!validatePlacementResultReport(report)) return;
+    if (!validatePlacementResultReport(report)) return false;
     const writeSuccess = safeSetLocalStorage(PLACEMENT_LATEST_REPORT_KEY, JSON.stringify(report));
     if (writeSuccess) {
       emitPlacementUpdate();
+      return true;
     }
+    return false;
   } catch (err) {
-    // ignore
+    return false;
   }
 }
 
@@ -401,12 +403,13 @@ export function loadPlacementHistory(): CompactPlacementHistoryItem[] {
 }
 
 /**
- * Saves completed placement result report to history and saves dedicated latest report
+ * Saves completed placement result report to history and saves dedicated latest report.
+ * Returns boolean indicating whether storage write succeeded.
  */
-export function savePlacementResultToHistory(report: PlacementResultReport): void {
-  if (typeof window === 'undefined') return;
+export function savePlacementResultToHistory(report: PlacementResultReport): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    saveLatestPlacementReport(report);
+    const reportSaved = saveLatestPlacementReport(report);
 
     const history = loadPlacementHistory();
     const matchedWeakWordIds = report.missedTargetItems
@@ -433,9 +436,11 @@ export function savePlacementResultToHistory(report: PlacementResultReport): voi
     const writeSuccess = safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
     if (writeSuccess) {
       emitPlacementUpdate();
+      return true;
     }
+    return reportSaved;
   } catch (err) {
-    // ignore
+    return false;
   }
 }
 

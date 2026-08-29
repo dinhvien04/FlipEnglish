@@ -6,7 +6,7 @@ interface ResumePlacementModalProps {
   session: PlacementSession;
   onResume: () => void;
   onDismiss: () => void;
-  onStartOver: () => void;
+  onStartOver: () => boolean | void;
 }
 
 export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
@@ -18,13 +18,40 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
   const { t } = useI18n();
   const modalRef = useRef<HTMLDivElement>(null);
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  const startOverTriggerBtnRef = useRef<HTMLButtonElement>(null);
+  const keepBtnRef = useRef<HTMLButtonElement>(null);
+  const retryBtnRef = useRef<HTMLButtonElement>(null);
   const [showConfirmStartOver, setShowConfirmStartOver] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+
+  // Focus management when transitioning into or out of start over confirmation state or error state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (discardError) {
+        retryBtnRef.current?.focus();
+      } else if (showConfirmStartOver) {
+        keepBtnRef.current?.focus();
+      } else {
+        // If returning from confirmation, restore focus to trigger or resume button
+        if (startOverTriggerBtnRef.current) {
+          startOverTriggerBtnRef.current.focus();
+        } else {
+          resumeBtnRef.current?.focus();
+        }
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [showConfirmStartOver, discardError]);
 
   // Accessibility: Focus trapping, Escape key dismiss (safe close), autofocus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showConfirmStartOver) {
+        if (discardError) {
+          setDiscardError(null);
+          setShowConfirmStartOver(false);
+        } else if (showConfirmStartOver) {
           setShowConfirmStartOver(false);
         } else {
           onDismiss();
@@ -56,15 +83,23 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    const timer = setTimeout(() => {
-      resumeBtnRef.current?.focus();
-    }, 50);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(timer);
     };
-  }, [onDismiss, showConfirmStartOver]);
+  }, [onDismiss, showConfirmStartOver, discardError]);
+
+  const handleConfirmStartOver = () => {
+    setDiscardError(null);
+    const result = onStartOver();
+    if (result === false) {
+      setDiscardError(t('studyPlan.resumeModal.placementDiscardError'));
+    }
+  };
+
+  const handleCancelDiscardFlow = () => {
+    setDiscardError(null);
+    setShowConfirmStartOver(false);
+  };
 
   return (
     <div
@@ -96,24 +131,49 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
           </p>
         </div>
 
-        {showConfirmStartOver ? (
+        {discardError ? (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3" role="alert">
+            <p className="text-xs font-bold text-rose-900">
+              {discardError}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleCancelDiscardFlow}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('studyPlan.resumeModal.placementKeep')}
+              </button>
+              <button
+                ref={retryBtnRef}
+                type="button"
+                id="retry-discard-placement-btn"
+                onClick={handleConfirmStartOver}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('ui.common.retry')}
+              </button>
+            </div>
+          </div>
+        ) : showConfirmStartOver ? (
           <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
             <p className="text-xs font-bold text-rose-900">
               {t('studyPlan.resumeModal.placementDiscardConfirmPrompt')}
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <button
+                ref={keepBtnRef}
                 type="button"
                 onClick={() => setShowConfirmStartOver(false)}
-                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
               >
                 {t('studyPlan.resumeModal.placementKeep')}
               </button>
               <button
                 type="button"
                 id="confirm-discard-placement-btn"
-                onClick={onStartOver}
-                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                onClick={handleConfirmStartOver}
+                className="w-full sm:w-auto flex-1 min-h-11 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
               >
                 {t('studyPlan.resumeModal.placementConfirmDiscard')}
               </button>
@@ -122,10 +182,14 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
+              ref={startOverTriggerBtnRef}
               type="button"
               id="discard-placement-btn"
-              onClick={() => setShowConfirmStartOver(true)}
-              className="min-h-12 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+              onClick={() => {
+                setDiscardError(null);
+                setShowConfirmStartOver(true);
+              }}
+              className="min-h-11 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
             >
               {t('studyPlan.resumeModal.placementStartOver')}
             </button>
@@ -135,7 +199,7 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
               type="button"
               id="resume-placement-btn"
               onClick={onResume}
-              className="flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
+              className="flex-1 min-h-11 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
             >
               {t('studyPlan.resumeModal.placementResume')}
             </button>
@@ -145,3 +209,4 @@ export const ResumePlacementModal: React.FC<ResumePlacementModalProps> = ({
     </div>
   );
 };
+

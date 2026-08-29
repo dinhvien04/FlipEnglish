@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useI18n } from '../features/i18n';
 
 interface ChunkRecoveryDetail {
@@ -9,6 +9,8 @@ interface ChunkRecoveryDetail {
 export const GlobalChunkRecoveryController: React.FC = () => {
   const { t } = useI18n();
   const [chunkError, setChunkError] = useState<ChunkRecoveryDetail | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const primaryBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleChunkError = (event: Event) => {
@@ -21,6 +23,45 @@ export const GlobalChunkRecoveryController: React.FC = () => {
       window.removeEventListener('flipenglish_chunk_load_error', handleChunkError);
     };
   }, []);
+
+  // Accessibility: Focus trapping and autofocus primary action on mount
+  useEffect(() => {
+    if (!chunkError) return;
+
+    const timer = setTimeout(() => {
+      primaryBtnRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [chunkError]);
 
   if (!chunkError) {
     return null;
@@ -40,13 +81,16 @@ export const GlobalChunkRecoveryController: React.FC = () => {
 
   return (
     <div
-      role="alertdialog"
+      role="dialog"
       aria-modal="true"
       aria-labelledby="chunk-recovery-title"
       aria-describedby="chunk-recovery-desc"
       className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
     >
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+      <div
+        ref={modalRef}
+        className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5"
+      >
         <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto text-xl font-black select-none">
           !
         </div>
@@ -62,6 +106,7 @@ export const GlobalChunkRecoveryController: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center">
           <button
+            ref={primaryBtnRef}
             type="button"
             onClick={handleRetry}
             className="min-h-11 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer inline-flex items-center justify-center"

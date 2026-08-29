@@ -24,13 +24,19 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
   const [session, setSession] = useState<ExamSession>(initialSession);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [storageSaveFailed, setStorageSaveFailed] = useState(false);
 
   const drawerCloseBtnRef = useRef<HTMLButtonElement>(null);
   const drawerTriggerBtnRef = useRef<HTMLButtonElement>(null);
 
   // Sync to localStorage on every state change
   useEffect(() => {
-    saveActiveExam(session);
+    const success = saveActiveExam(session);
+    if (!success) {
+      setStorageSaveFailed(true);
+    } else {
+      setStorageSaveFailed(false);
+    }
   }, [session]);
 
   // Focus management & Escape listener for mobile Questions drawer
@@ -71,7 +77,8 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
     };
 
     const report = calculateExamResult(finalSession);
-    saveExamResultToHistory(report);
+    const persisted = saveExamResultToHistory(report);
+    report.isPersisted = persisted;
     clearActiveExam();
 
     recordMeaningfulLearningEvent({
@@ -190,7 +197,16 @@ export const ExamSessionPage: React.FC<ExamSessionProps> = ({
       </header>
 
       {/* Main Examination Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
+        {storageSaveFailed && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 shadow-xs"
+          >
+            <span>{t('exam.session.storageWarning')}</span>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Question Area (8 cols on desktop) */}
           <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs min-h-[550px] flex flex-col justify-between">
