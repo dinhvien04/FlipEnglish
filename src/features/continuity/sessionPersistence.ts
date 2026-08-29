@@ -64,15 +64,19 @@ export function getActiveLearnSession(now: number = Date.now()): LearnResumeCont
     try {
       parsed = JSON.parse(raw);
     } catch {
-      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
-      emitSessionUpdate();
+      const removed = safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      if (removed) {
+        emitSessionUpdate();
+      }
       return null;
     }
 
     const validated = validateLearnResumeContext(parsed, now);
     if (!validated) {
-      safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
-      emitSessionUpdate();
+      const removed = safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+      if (removed) {
+        emitSessionUpdate();
+      }
       return null;
     }
 
@@ -84,14 +88,19 @@ export function getActiveLearnSession(now: number = Date.now()): LearnResumeCont
 }
 
 /**
- * Clears active Learn session from localStorage and emits update event.
+ * Clears active Learn session from localStorage and emits update event if removal succeeded.
  */
-export function clearActiveLearnSession(): void {
+export function clearActiveLearnSession(): boolean {
   try {
-    safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
-    emitSessionUpdate();
+    const removed = safeRemoveLocalStorage(STORAGE_KEYS.LEARN_SESSION_ACTIVE);
+    if (removed) {
+      emitSessionUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     console.error('Failed to clear active learn session from localStorage:', err);
+    return false;
   }
 }
 
@@ -136,15 +145,19 @@ export function getActiveReviewSession(now: number = Date.now()): ReviewResumeCo
     try {
       parsed = JSON.parse(raw);
     } catch {
-      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
-      emitSessionUpdate();
+      const removed = safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      if (removed) {
+        emitSessionUpdate();
+      }
       return null;
     }
 
     const validated = validateReviewResumeContext(parsed, now);
     if (!validated) {
-      safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
-      emitSessionUpdate();
+      const removed = safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+      if (removed) {
+        emitSessionUpdate();
+      }
       return null;
     }
 
@@ -156,13 +169,18 @@ export function getActiveReviewSession(now: number = Date.now()): ReviewResumeCo
 }
 
 /**
- * Clears active Smart Review session from localStorage and emits update event.
+ * Clears active Smart Review session from localStorage and emits update event if removal succeeded.
  */
-export function clearActiveReviewSession(): void {
+export function clearActiveReviewSession(): boolean {
   try {
-    safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
-    emitSessionUpdate();
+    const removed = safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
+    if (removed) {
+      emitSessionUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     console.error('Failed to clear active review session from localStorage:', err);
+    return false;
   }
 }

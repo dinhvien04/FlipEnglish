@@ -278,6 +278,24 @@ recordActiveStudySeconds(30, day2Date);
 assert(getStoredActiveTime(day2Date).activeSeconds === 180, 'Active seconds accumulated when page is visible');
 assert(getActiveMinutesToday(day2Date) === 3, '3 active minutes after 180s');
 
+console.log('\n--- Test Suite 6: Storage Failure & Health Defense Paths ---');
+// Test storage write failure handling in saveActiveTime and saveLearnerStreak
+const originalSetItem = localStorage.setItem;
+(localStorage as any).setItem = () => {
+  throw new Error('Simulated QuotaExceededError (quota exceeded)');
+};
+
+dispatchedEvents.length = 0;
+const saveFailed = saveActiveTime(createInitialActiveTimeRecord('2026-08-28'));
+assert(saveFailed === false, 'saveActiveTime returns false on storage quota failure');
+assert(!dispatchedEvents.includes(CONTINUITY_EVENTS.ACTIVE_TIME_UPDATED), 'Active time update event is NOT dispatched on write failure');
+
+const streakFailed = saveLearnerStreak(INITIAL_LEARNER_STREAK);
+assert(streakFailed === false, 'saveLearnerStreak returns false on storage quota failure');
+assert(!dispatchedEvents.includes(CONTINUITY_EVENTS.STREAK_UPDATED), 'Streak update event is NOT dispatched on write failure');
+
+localStorage.setItem = originalSetItem;
+
 console.log(`\n========================================`);
 console.log(`Validation Results: ${passedTests}/${totalTests} tests passed (${failedTests} failures)`);
 console.log(`========================================\n`);

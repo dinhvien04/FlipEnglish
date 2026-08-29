@@ -236,6 +236,32 @@ async function runDataManagementValidation() {
   }
   console.log('✅ eraseAllFlipEnglishData() purges all FlipEnglish keys while leaving unrelated origin storage intact.');
 
+  console.log('\n--- 3. Validating Partial Failure Handling & Storage Diagnostics ---');
+  // Simulate partial failure where one key fails to delete
+  store.clear();
+  store.set(STORAGE_KEYS.PROGRESS, '{"test": 1}');
+  store.set(STORAGE_KEYS.REVIEW, '{"test": 2}');
+
+  const originalRemove = window.localStorage.removeItem;
+  (window.localStorage as any).removeItem = (key: string) => {
+    if (key === STORAGE_KEYS.REVIEW) {
+      throw new Error('Simulated Quota/Security Deletion Failure');
+    }
+    store.delete(key);
+  };
+
+  const partialReset = resetLearningProgress();
+  if (partialReset.success) {
+    console.error('❌ resetLearningProgress reported success despite key deletion failure');
+    process.exit(1);
+  }
+  if (!partialReset.failedKeys.includes(STORAGE_KEYS.REVIEW)) {
+    console.error('❌ resetLearningProgress failedKeys did not contain failed key');
+    process.exit(1);
+  }
+  console.log('✅ resetLearningProgress correctly reports partial failure and identifies failed keys.');
+  window.localStorage.removeItem = originalRemove;
+
   console.log('\n========================================');
   console.log('✅ ALL DATA MANAGEMENT VALIDATION CHECKS PASSED');
   console.log('========================================');

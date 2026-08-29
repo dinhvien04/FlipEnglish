@@ -50,6 +50,7 @@ import {
 import { recordMeaningfulLearningEvent } from './features/streak/streakEngine';
 import { recordActiveStudySeconds, recordUserInteraction } from './features/progress/activeTimeEngine';
 import { DATA_MANAGEMENT_EVENTS } from './constants/storageKeys';
+import { DataResetScope } from './features/settings/dataManagement';
 import { OfflineBanner } from './features/pwa/OfflineBanner';
 import { PWAUpdatePrompt } from './features/pwa/PWAUpdatePrompt';
 import { useI18n } from './features/i18n';
@@ -170,17 +171,44 @@ export default function App() {
       setPendingResumePlacement(activePlacement);
     }
 
-    // Listen for data resets to purge in-memory transient sessions immediately
-    const handleDataReset = () => {
-      setPendingResumeSession(null);
-      setPendingResumePlacement(null);
-      setActiveExamSession(null);
-      setActivePlacementSession(null);
-      setQuizResults(null);
-      setResumedLearnContext(null);
-      setResumedReviewContext(null);
-      setSelectedLessonId(null);
-      setTemporaryLesson(null);
+    // Listen for data resets to purge in-memory transient sessions immediately with scope awareness
+    const handleDataReset = (event: Event) => {
+      const customEvent = event as CustomEvent<{ scope?: DataResetScope }>;
+      const scope = customEvent.detail?.scope;
+
+      if (scope === 'vocabulary') {
+        setDictionarySearchWord('');
+        setDictionaryReturnContext(null);
+        return;
+      }
+
+      if (scope === 'learning' || scope === 'all' || !scope) {
+        setPendingResumeSession(null);
+        setPendingResumePlacement(null);
+        setActiveExamSession(null);
+        setActivePlacementSession(null);
+        setQuizResults(null);
+        setMistakeWords([]);
+        setIsReviewMistakesMode(false);
+        setResumedLearnContext(null);
+        setResumedReviewContext(null);
+        setActiveLearnContext(null);
+        setActiveReviewContext(null);
+        setSelectedLessonId(null);
+        setTemporaryLesson(null);
+        setExamResultReport(null);
+        setPlacementResultReport(null);
+        setSelectedScenario(null);
+        setConversationTurns([]);
+        setConversationEvaluation(null);
+      }
+
+      if (scope === 'all') {
+        setDictionarySearchWord('');
+        setDictionaryReturnContext(null);
+        setHomeLevelFilter('ALL');
+        setCurrentView('onboarding');
+      }
     };
 
     window.addEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);

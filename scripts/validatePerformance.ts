@@ -254,14 +254,14 @@ function validatePerformance() {
   });
 
   // Threshold Checks
-  // Initial JS Gzip budget: < 320 kB (down from 350.89 kB before Phase 2 splitting)
-  const MAX_INITIAL_JS_GZIP = 320 * 1024;
+  // Initial JS Gzip budget: < 300 kB (restored to 300 kB budget)
+  const MAX_INITIAL_JS_GZIP = 300 * 1024;
   const initialJsHeadroom = MAX_INITIAL_JS_GZIP - initialJsGzip;
   if (initialJsGzip > MAX_INITIAL_JS_GZIP) {
-    console.error(`\n❌ Initial JS gzip size (${formatBytes(initialJsGzip)}) exceeds strict budget of 320 kB!`);
+    console.error(`\n❌ Initial JS gzip size (${formatBytes(initialJsGzip)}) exceeds strict budget of 300 kB!`);
     process.exit(1);
   }
-  console.log(`\n✅ Initial JS Gzip (${formatBytes(initialJsGzip)}) satisfies strict budget (< 320 kB) [Headroom: ${formatBytes(initialJsHeadroom)}].`);
+  console.log(`\n✅ Initial JS Gzip (${formatBytes(initialJsGzip)}) satisfies strict budget (< 300 kB) [Headroom: ${formatBytes(initialJsHeadroom)}].`);
 
   // Largest Dynamic Chunk Budget: Single dynamic chunk < 60 kB gzip
   const MAX_DYNAMIC_CHUNK_GZIP = 60 * 1024;

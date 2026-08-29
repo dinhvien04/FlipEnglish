@@ -108,9 +108,12 @@ export function saveReminderPreferences(preferences: ReminderPreferences): boole
     if (!validateReminderPreferences(preferences)) {
       return false;
     }
-    safeSetLocalStorage(STORAGE_KEYS.REMINDERS, JSON.stringify(preferences));
-    emitRemindersUpdated();
-    return true;
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.REMINDERS, JSON.stringify(preferences));
+    if (writeSuccess) {
+      emitRemindersUpdated();
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

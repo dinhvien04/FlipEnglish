@@ -3,7 +3,7 @@ import { Lesson, VocabWord } from '../types';
 import { AIExamAnalysis, ExamResultReport } from '../types/exam';
 import { LESSONS } from '../data/lessons';
 import { EXAM_DISCLAIMER } from '../data/exams/config';
-import { getApiErrorMessage } from '../utils/apiError';
+import { classifyApiError } from '../utils/apiError';
 import { useI18n } from '../features/i18n';
 import { useAiStatus } from '../features/ai/useAiStatus';
 
@@ -88,7 +88,8 @@ export const ExamResultPage: React.FC<ExamResultProps> = ({
       setAiAnalysis(data);
     } catch (err: any) {
       console.error('Error analyzing exam:', err);
-      setAnalysisError(getApiErrorMessage(err, 'Failed to connect to AI Tutor.'));
+      const classified = classifyApiError(err);
+      setAnalysisError(t(classified.userMessageKey));
     } finally {
       setIsAnalyzing(false);
     }

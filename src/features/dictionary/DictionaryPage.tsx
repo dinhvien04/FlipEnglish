@@ -21,6 +21,7 @@ import { DictionaryEntryView } from './DictionaryEntryView';
 import { DictionaryHistory } from './DictionaryHistory';
 import { SavedWordsPanel } from './SavedWordsPanel';
 import { useI18n } from '../i18n';
+import { DATA_MANAGEMENT_EVENTS } from '../../constants/storageKeys';
 
 interface DictionaryPageProps {
   initialWord?: string;
@@ -60,6 +61,31 @@ export const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
   useEffect(() => {
     refreshSavedWords();
+
+    const handleDictionaryUpdate = () => {
+      refreshSavedWords();
+      setRecentSearches(getRecentSearches());
+    };
+
+    const handleDataReset = (e: Event) => {
+      const detail = (e as CustomEvent<{ scope?: string }>)?.detail;
+      if (detail?.scope === 'vocabulary' || detail?.scope === 'all' || !detail?.scope) {
+        refreshSavedWords();
+        setRecentSearches([]);
+        setEntry(null);
+        setReverseResults([]);
+        setSpellingSuggestions([]);
+        setErrorMessage(null);
+      }
+    };
+
+    window.addEventListener('flipenglish_dictionary_updated', handleDictionaryUpdate);
+    window.addEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+
+    return () => {
+      window.removeEventListener('flipenglish_dictionary_updated', handleDictionaryUpdate);
+      window.removeEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+    };
   }, []);
 
   // Canonical word-open helper: ALWAYS executes standard Dictionary Lookup

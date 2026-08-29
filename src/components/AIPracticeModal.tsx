@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AIPracticeQuestion, VocabWord } from '../types';
 import { speakWord } from '../utils/speech';
 import { useI18n } from '../features/i18n';
@@ -23,7 +23,52 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
   const [correctCount, setCorrectCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
   const currentQuestion = questions[currentIndex];
+
+  // Accessibility: Focus trap & Escape key dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const timer = setTimeout(() => {
+      closeBtnRef.current?.focus();
+    }, 50);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [onClose]);
 
   const handleCheckAnswer = () => {
     if (!selectedOption || isAnswerChecked) return;
@@ -62,12 +107,20 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-2xl my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ai-practice-modal-title"
+    >
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-2xl my-8 animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="space-y-0.5">
-            <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+            <h3 id="ai-practice-modal-title" className="text-base font-extrabold text-slate-900 leading-tight">
               {t('aiPractice.title')}
             </h3>
             <p className="text-xs text-slate-500 font-medium">
@@ -76,6 +129,7 @@ export const AIPracticeModal: React.FC<AIPracticeModalProps> = ({
           </div>
 
           <button
+            ref={closeBtnRef}
             onClick={onClose}
             className="min-h-10 px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center"
           >

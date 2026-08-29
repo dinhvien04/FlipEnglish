@@ -14,6 +14,7 @@ import { classifyApiError, NormalizedApiError, ApiFailureKind } from '../src/uti
 import {
   getStorageHealth,
   recordStorageFailure,
+  recordStorageSuccess,
   dismissStorageWarning,
   safeGetLocalStorage,
   safeSetLocalStorage,
@@ -160,15 +161,22 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
   assert.strictEqual(quotaHealth.isHealthy, false);
   assert.strictEqual(quotaHealth.lastFailureType, 'quota_exceeded');
 
-  // 2.4 Dismissal recovery
+  // 2.4 Dismissal warning separation
   dismissStorageWarning();
-  assert.strictEqual(getStorageHealth().isHealthy, true);
+  const dismissedHealth = getStorageHealth();
+  assert.strictEqual(dismissedHealth.isWarningDismissed, true);
+  assert.strictEqual(dismissedHealth.isHealthy, false); // Technical health remains false until successful probe
 
-  // 2.5 Safe Remove
+  // 2.5 Probe recovery
+  recordStorageSuccess('flipenglish_storage_health_probe');
+  assert.strictEqual(getStorageHealth().isHealthy, true);
+  assert.strictEqual(getStorageHealth().isWarningDismissed, false);
+
+  // 2.6 Safe Remove
   safeRemoveLocalStorage(testKey);
   assert.strictEqual(safeGetLocalStorage(testKey), null);
 
-  console.log('  PASS: Storage health tracking, quota simulation, and safe operations verified.');
+  console.log('  PASS: Storage health tracking, quota simulation, warning dismissal separation, and safe operations verified.');
 }
 
 // TEST 3: ErrorBoundary Categorization & Sanitization

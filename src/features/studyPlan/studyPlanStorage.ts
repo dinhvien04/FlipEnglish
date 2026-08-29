@@ -384,9 +384,12 @@ export function saveStudyPlanSettings(settings: StudyPlanSettings): boolean {
   if (typeof window === 'undefined') return false;
   try {
     if (!validateStudyPlanSettings(settings)) return false;
-    safeSetLocalStorage(STUDY_PLAN_SETTINGS_KEY, JSON.stringify(settings));
-    emitStudyPlanUpdate();
-    return true;
+    const writeSuccess = safeSetLocalStorage(STUDY_PLAN_SETTINGS_KEY, JSON.stringify(settings));
+    if (writeSuccess) {
+      emitStudyPlanUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     return false;
   }
@@ -433,8 +436,8 @@ export function archivePlanToHistory(plan: TodayStudyPlan): boolean {
       0,
       MAX_HISTORY_DAYS
     );
-    safeSetLocalStorage(STUDY_PLAN_HISTORY_KEY, JSON.stringify(newHistory));
-    return true;
+    const writeSuccess = safeSetLocalStorage(STUDY_PLAN_HISTORY_KEY, JSON.stringify(newHistory));
+    return writeSuccess;
   } catch (err) {
     return false;
   }
@@ -586,9 +589,12 @@ export function saveTodayPlan(plan: TodayStudyPlan): boolean {
   if (typeof window === 'undefined') return false;
   try {
     if (!validateTodayStudyPlan(plan)) return false;
-    safeSetLocalStorage(TODAY_PLAN_KEY, JSON.stringify(plan));
-    emitStudyPlanUpdate();
-    return true;
+    const writeSuccess = safeSetLocalStorage(TODAY_PLAN_KEY, JSON.stringify(plan));
+    if (writeSuccess) {
+      emitStudyPlanUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     return false;
   }

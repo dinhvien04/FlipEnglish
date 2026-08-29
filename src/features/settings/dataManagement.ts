@@ -1,6 +1,7 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS, DATA_MANAGEMENT_EVENTS } from '../../constants/storageKeys';
-import { safeRemoveLocalStorage } from '../../utils/storageHealth';
+import { safeRemoveLocalStorage, safeGetLocalStorage } from '../../utils/storageHealth';
 import { clearAllSavedWordsFromDb, clearAllCachedEntriesFromDb, clearAllMetadataFromDb } from '../dictionary/dictionaryCache';
+import { LANGUAGE_UPDATED_EVENT } from '../i18n/localeStorage';
 
 export type DataResetScope = 'learning' | 'vocabulary' | 'all';
 
@@ -68,27 +69,17 @@ function removeKeysSafely(keys: readonly string[]): { removedKeys: string[]; fai
   const failedKeys: string[] = [];
 
   for (const key of keys) {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const exists = window.localStorage.getItem(key) !== null;
-      if (exists) {
-        const removed = safeRemoveLocalStorage(key);
-        if (removed && window.localStorage.getItem(key) === null) {
-          removedKeys.push(key);
-        } else {
-          failedKeys.push(key);
-        }
-      } else {
-        // Key is already absent, consider it cleaned
-        removedKeys.push(key);
-      }
-    } else {
-      // Non-browser execution
+    const exists = safeGetLocalStorage(key) !== null;
+    if (exists) {
       const removed = safeRemoveLocalStorage(key);
-      if (removed) {
+      if (removed && safeGetLocalStorage(key) === null) {
         removedKeys.push(key);
       } else {
         failedKeys.push(key);
       }
+    } else {
+      // Key is already absent, consider it cleaned
+      removedKeys.push(key);
     }
   }
 
@@ -102,7 +93,7 @@ function emitResetEvents(scope: DataResetScope): void {
   if (typeof window === 'undefined') return;
 
   try {
-    // 1. Centralized reset event
+    // 1. Centralized reset event with typed scope detail
     window.dispatchEvent(
       new CustomEvent(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, {
         detail: { scope },
@@ -129,7 +120,7 @@ function emitResetEvents(scope: DataResetScope): void {
     if (scope === 'all') {
       window.dispatchEvent(new Event(CONTINUITY_EVENTS.REMINDERS_UPDATED));
       window.dispatchEvent(new Event('flipenglish_onboarding_updated'));
-      window.dispatchEvent(new Event('flipenglish_locale_updated'));
+      window.dispatchEvent(new Event(LANGUAGE_UPDATED_EVENT));
     }
   } catch (err) {
     console.warn('[DataManagement] Error dispatching reset events:', err);

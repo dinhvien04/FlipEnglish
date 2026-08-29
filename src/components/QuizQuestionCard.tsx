@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { QuizQuestion, MistakeExplanation } from '../types';
 import { speakWord, stopSpeech } from '../utils/speech';
 import { SafeImage } from './SafeImage';
-import { getApiErrorMessage } from '../utils/apiError';
+import { classifyApiError } from '../utils/apiError';
+import { useI18n } from '../features/i18n';
 
 interface QuizQuestionCardProps {
   question: QuizQuestion;
@@ -28,6 +29,7 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
   aiConfigured = false,
   aiEnabled = false,
 }) => {
+  const { t } = useI18n();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [typedAnswer, setTypedAnswer] = useState<string>('');
   const [isAnswerChecked, setIsAnswerChecked] = useState<boolean>(false);
@@ -165,12 +167,8 @@ export const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
       }
     } catch (err: any) {
       console.error('Error fetching mistake explanation:', err);
-      setExplanationError(
-        getApiErrorMessage(
-          err,
-          "We couldn't generate an explanation right now. You can continue with the lesson normally."
-        )
-      );
+      const classified = classifyApiError(err);
+      setExplanationError(t(classified.userMessageKey));
     } finally {
       setIsExplaining(false);
     }

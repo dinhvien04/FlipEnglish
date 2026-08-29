@@ -8,11 +8,13 @@ import {
   saveStoredLanguagePreference,
   parseStoredLanguagePreference,
   LANGUAGE_STORAGE_KEY,
+  LANGUAGE_UPDATED_EVENT,
   isValidUiLanguageMode,
 } from './localeStorage';
 import { resolveInitialUiLanguage } from './resolveInitialLanguage';
 import { updateDocumentLanguageMetadata } from './documentLanguage';
 import { hasMeaningfulExistingLearnerData } from '../onboarding/onboardingStorage';
+import { DATA_MANAGEMENT_EVENTS } from '../../constants/storageKeys';
 import {
   formatNumberWithLocale,
   formatDateWithLocale,
@@ -49,7 +51,7 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
     updateDocumentLanguageMetadata(mode);
   }, [mode]);
 
-  // Cross-tab sync via storage event
+  // Cross-tab sync via storage event and same-tab sync via custom events
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.storageArea !== window.localStorage) {
@@ -64,8 +66,38 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children, initialMod
       }
     };
 
+    const handleLanguageUpdate = () => {
+      const stored = loadStoredLanguagePreference();
+      const resolved = resolveInitialUiLanguage({
+        storedPreference: stored,
+        hasExistingLearnerData: hasMeaningfulExistingLearnerData(),
+      });
+      setModeState(resolved);
+      updateDocumentLanguageMetadata(resolved);
+    };
+
+    const handleDataReset = (e: Event) => {
+      const detail = (e as CustomEvent<{ scope?: string }>)?.detail;
+      if (detail?.scope === 'all') {
+        // Factory reset: recompute initial language from clean slate
+        const resolved = resolveInitialUiLanguage({
+          storedPreference: null,
+          hasExistingLearnerData: false,
+        });
+        setModeState(resolved);
+        updateDocumentLanguageMetadata(resolved);
+      }
+    };
+
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener(LANGUAGE_UPDATED_EVENT, handleLanguageUpdate);
+    window.addEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(LANGUAGE_UPDATED_EVENT, handleLanguageUpdate);
+      window.removeEventListener(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, handleDataReset);
+    };
   }, []);
 
   const t = useCallback(

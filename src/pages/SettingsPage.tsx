@@ -162,6 +162,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           type: 'success',
           message: t('settings.toast.resetProgressSuccess'),
         });
+        setActiveModal(null);
       } else {
         setStatusFeedback({
           type: 'error',
@@ -175,7 +176,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       });
     } finally {
       setIsProcessing(false);
-      setActiveModal(null);
     }
   };
 
@@ -189,6 +189,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           type: 'success',
           message: t('settings.toast.clearVocabSuccess'),
         });
+        setActiveModal(null);
       } else {
         setStatusFeedback({
           type: 'error',
@@ -202,12 +203,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       });
     } finally {
       setIsProcessing(false);
-      setActiveModal(null);
     }
   };
 
   const handleEraseAll = async () => {
-    if (typedConfirmation.trim().toUpperCase() !== 'RESET') {
+    if (typedConfirmation.trim() !== 'RESET') {
       return;
     }
 
@@ -220,6 +220,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           type: 'success',
           message: t('settings.toast.eraseAllSuccess'),
         });
+        setActiveModal(null);
       } else {
         setStatusFeedback({
           type: 'error',
@@ -233,7 +234,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       });
     } finally {
       setIsProcessing(false);
-      setActiveModal(null);
     }
   };
 
@@ -688,10 +688,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 onClick={handleEraseAll}
                 disabled={
                   isProcessing ||
-                  typedConfirmation.trim().toUpperCase() !== 'RESET'
+                  typedConfirmation.trim() !== 'RESET'
                 }
                 className={`min-h-11 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs flex-1 ${
-                  typedConfirmation.trim().toUpperCase() === 'RESET' && !isProcessing
+                  typedConfirmation.trim() === 'RESET' && !isProcessing
                     ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white cursor-pointer'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200'
                 }`}

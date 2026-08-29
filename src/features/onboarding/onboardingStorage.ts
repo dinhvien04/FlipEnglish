@@ -46,24 +46,32 @@ export function loadOnboardingState(): OnboardingState | null {
   }
 }
 
-export function saveOnboardingState(state: OnboardingState): void {
-  if (typeof window === 'undefined') return;
+export function saveOnboardingState(state: OnboardingState): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    if (!validateOnboardingState(state)) return;
-    safeSetLocalStorage(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
-    window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
+    if (!validateOnboardingState(state)) return false;
+    const writeSuccess = safeSetLocalStorage(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+    if (writeSuccess) {
+      window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
+      return true;
+    }
+    return false;
   } catch {
-    // ignore storage quota errors
+    return false;
   }
 }
 
-export function clearOnboardingState(): void {
-  if (typeof window === 'undefined') return;
+export function clearOnboardingState(): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    safeRemoveLocalStorage(ONBOARDING_STORAGE_KEY);
-    window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
+    const removed = safeRemoveLocalStorage(ONBOARDING_STORAGE_KEY);
+    if (removed) {
+      window.dispatchEvent(new Event(ONBOARDING_UPDATED_EVENT));
+      return true;
+    }
+    return false;
   } catch {
-    // ignore
+    return false;
   }
 }
 

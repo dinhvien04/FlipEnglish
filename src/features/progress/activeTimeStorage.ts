@@ -135,9 +135,12 @@ export function saveActiveTime(record: ActiveTimeRecord): boolean {
       return false;
     }
 
-    safeSetLocalStorage(STORAGE_KEYS.ACTIVE_TIME, JSON.stringify(record));
-    emitActiveTimeUpdate();
-    return true;
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.ACTIVE_TIME, JSON.stringify(record));
+    if (writeSuccess) {
+      emitActiveTimeUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     console.warn('[ActiveTimeStorage] Failed to write active time to localStorage:', err);
     return false;

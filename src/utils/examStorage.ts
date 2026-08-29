@@ -124,8 +124,10 @@ export function getExamHistory(): ExamResultReport[] {
  */
 export function clearExamHistory(): void {
   try {
-    safeRemoveLocalStorage(EXAM_HISTORY_KEY);
-    window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+    const removed = safeRemoveLocalStorage(EXAM_HISTORY_KEY);
+    if (removed) {
+      window.dispatchEvent(new CustomEvent('flipenglish_exam_history_updated'));
+    }
   } catch (err) {
     console.error('Failed to clear exam history', err);
   }

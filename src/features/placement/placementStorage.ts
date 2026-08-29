@@ -440,8 +440,10 @@ export function savePlacementResultToHistory(report: PlacementResultReport): voi
       MAX_HISTORY_ITEMS
     );
 
-    safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
-    emitPlacementUpdate();
+    const writeSuccess = safeSetLocalStorage(PLACEMENT_HISTORY_KEY, JSON.stringify(newHistory));
+    if (writeSuccess) {
+      emitPlacementUpdate();
+    }
   } catch (err) {
     // ignore
   }

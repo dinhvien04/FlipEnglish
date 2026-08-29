@@ -119,9 +119,12 @@ export function saveLearnerStreak(streak: LearnerStreak): boolean {
       return false;
     }
 
-    safeSetLocalStorage(STORAGE_KEYS.STREAK, JSON.stringify(streak));
-    emitStreakUpdate();
-    return true;
+    const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.STREAK, JSON.stringify(streak));
+    if (writeSuccess) {
+      emitStreakUpdate();
+      return true;
+    }
+    return false;
   } catch (err) {
     console.warn('[StreakStorage] Failed to save streak to localStorage:', err);
     return false;

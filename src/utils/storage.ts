@@ -126,8 +126,10 @@ export const getOverallStats = (totalLessonsCount: number) => {
 
 export const clearAllProgress = () => {
   try {
-    safeRemoveLocalStorage(STORAGE_KEY);
-    window.dispatchEvent(new Event('flipenglish_progress_updated'));
+    const removed = safeRemoveLocalStorage(STORAGE_KEY);
+    if (removed) {
+      window.dispatchEvent(new Event('flipenglish_progress_updated'));
+    }
   } catch (err) {
     console.error('Failed to clear progress:', err);
   }

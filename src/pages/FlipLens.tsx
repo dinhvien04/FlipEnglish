@@ -16,8 +16,9 @@ import { generateQuiz } from '../utils/quizGenerator';
 import { FlashCard } from '../components/FlashCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { QuizQuestionCard } from '../components/QuizQuestionCard';
-import { getApiErrorMessage } from '../utils/apiError';
+import { classifyApiError } from '../utils/apiError';
 import { useAiStatus } from '../features/ai/useAiStatus';
+import { useI18n } from '../features/i18n';
 
 interface FlipLensProps {
   onBackToHome: () => void;
@@ -34,6 +35,7 @@ type FlipLensStep =
   | 'result';
 
 export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
+  const { t } = useI18n();
   const { aiEnabled } = useAiStatus();
   const [step, setStep] = useState<FlipLensStep>('upload');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -173,12 +175,8 @@ export const FlipLens: React.FC<FlipLensProps> = ({ onBackToHome }) => {
         return;
       }
       console.error('Error analyzing photo with Gemini:', err);
-      setErrorMessage(
-        getApiErrorMessage(
-          err,
-          "We couldn't analyze this photo right now. Please try another photo or return to the regular lessons."
-        )
-      );
+      const classified = classifyApiError(err);
+      setErrorMessage(t(classified.userMessageKey));
       setStep('preview');
     } finally {
       if (activeAbortControllerRef.current === abortController) {

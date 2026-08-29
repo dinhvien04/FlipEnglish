@@ -29,7 +29,7 @@ export const StorageWarningBanner: React.FC = () => {
     };
   }, []);
 
-  if (health.isHealthy) {
+  if (health.isHealthy || health.isWarningDismissed) {
     return null;
   }
 

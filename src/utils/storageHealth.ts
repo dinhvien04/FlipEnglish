@@ -7,8 +7,10 @@ export type StorageFailureType =
 
 export interface StorageHealthState {
   isHealthy: boolean;
+  isWarningDismissed: boolean;
   lastFailureType: StorageFailureType | null;
   lastFailedKey: string | null;
+  failedKeys: string[];
   failedWriteAttempts: number;
 }
 
@@ -16,8 +18,10 @@ export const STORAGE_HEALTH_EVENT = 'flipenglish_storage_health_changed';
 
 let currentHealth: StorageHealthState = {
   isHealthy: true,
+  isWarningDismissed: false,
   lastFailureType: null,
   lastFailedKey: null,
+  failedKeys: [],
   failedWriteAttempts: 0,
 };
 
@@ -71,21 +75,41 @@ function emitHealthUpdate(): void {
 }
 
 /**
- * Records a successful storage write and resets unhealthy state only if the write
- * resolved the failed key or was a dedicated health probe.
+ * Records a successful storage write and resets unhealthy state only if all tracked
+ * failed keys have been resolved or a dedicated health probe succeeded.
  */
 export function recordStorageSuccess(key: string): void {
   if (!currentHealth.isHealthy) {
-    if (
-      currentHealth.lastFailedKey === null ||
-      currentHealth.lastFailedKey === key ||
-      key === 'flipenglish_storage_health_probe'
-    ) {
+    if (key === 'flipenglish_storage_health_probe') {
       currentHealth = {
         isHealthy: true,
+        isWarningDismissed: false,
         lastFailureType: null,
         lastFailedKey: null,
+        failedKeys: [],
         failedWriteAttempts: 0,
+      };
+      emitHealthUpdate();
+      return;
+    }
+
+    // Filter out the recovered key from the set of failed keys
+    const remainingFailedKeys = currentHealth.failedKeys.filter((k) => k !== key);
+    if (remainingFailedKeys.length === 0) {
+      currentHealth = {
+        isHealthy: true,
+        isWarningDismissed: false,
+        lastFailureType: null,
+        lastFailedKey: null,
+        failedKeys: [],
+        failedWriteAttempts: 0,
+      };
+      emitHealthUpdate();
+    } else {
+      currentHealth = {
+        ...currentHealth,
+        failedKeys: remainingFailedKeys,
+        lastFailedKey: remainingFailedKeys[remainingFailedKeys.length - 1],
       };
       emitHealthUpdate();
     }
@@ -97,22 +121,28 @@ export function recordStorageSuccess(key: string): void {
  */
 export function recordStorageFailure(key: string, err: unknown): void {
   const failureType = categorizeStorageError(err);
+  const updatedFailedKeys = currentHealth.failedKeys.includes(key)
+    ? currentHealth.failedKeys
+    : [...currentHealth.failedKeys, key];
+
   currentHealth = {
     isHealthy: false,
+    isWarningDismissed: false, // Reset dismissed state on new failure so user is alerted
     lastFailureType: failureType,
     lastFailedKey: key,
+    failedKeys: updatedFailedKeys,
     failedWriteAttempts: currentHealth.failedWriteAttempts + 1,
   };
   emitHealthUpdate();
 }
 
 /**
- * Dismisses the active storage health warning from UI.
+ * Dismisses the visual storage health warning banner without claiming storage is technically healthy.
  */
 export function dismissStorageWarning(): void {
   currentHealth = {
     ...currentHealth,
-    isHealthy: true,
+    isWarningDismissed: true,
   };
   emitHealthUpdate();
 }
@@ -146,28 +176,37 @@ export function safeSetLocalStorage(key: string, value: string): boolean {
 }
 
 /**
- * Safe localStorage.getItem wrapper that catches SecurityErrors and returns null cleanly.
+ * Safe localStorage.getItem wrapper that catches SecurityErrors, records degradation, and returns null cleanly.
  */
 export function safeGetLocalStorage(key: string): string | null {
   try {
-    if (typeof localStorage === 'undefined') return null;
+    if (typeof localStorage === 'undefined') {
+      recordStorageFailure(key, new Error('localStorage is undefined'));
+      return null;
+    }
     return localStorage.getItem(key);
   } catch (err) {
     console.warn(`[FlipEnglish Storage] Failed to read key "${key}":`, err);
+    recordStorageFailure(key, err);
     return null;
   }
 }
 
 /**
- * Safe localStorage.removeItem wrapper that catches SecurityErrors and returns boolean.
+ * Safe localStorage.removeItem wrapper that catches SecurityErrors, records degradation, and returns boolean.
  */
 export function safeRemoveLocalStorage(key: string): boolean {
   try {
-    if (typeof localStorage === 'undefined') return false;
+    if (typeof localStorage === 'undefined') {
+      recordStorageFailure(key, new Error('localStorage is undefined'));
+      return false;
+    }
     localStorage.removeItem(key);
+    recordStorageSuccess(key);
     return true;
   } catch (err) {
     console.warn(`[FlipEnglish Storage] Failed to remove key "${key}":`, err);
+    recordStorageFailure(key, err);
     return false;
   }
 }

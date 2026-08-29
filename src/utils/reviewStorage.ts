@@ -16,7 +16,7 @@ import {
 } from './reviewScheduler';
 import { resolveCurriculumItem } from './curriculumIndex';
 import { ALL_CURRICULUM_LESSONS } from '../data/curriculum';
-import { safeGetLocalStorage, safeSetLocalStorage } from './storageHealth';
+import { safeGetLocalStorage, safeSetLocalStorage, safeRemoveLocalStorage } from './storageHealth';
 
 export const REVIEW_STORAGE_KEY = 'flipenglish_review_v1';
 export const REVIEW_UPDATED_EVENT = 'flipenglish_review_updated';
@@ -567,8 +567,10 @@ export function getLessonDueCount(lessonId: string, now: number = Date.now()): n
  */
 export function resetReviewStorage(): void {
   try {
-    localStorage.removeItem(REVIEW_STORAGE_KEY);
-    window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+    const removed = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
+    if (removed) {
+      window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
+    }
   } catch (err) {
     console.error('Failed to reset review storage:', err);
   }
