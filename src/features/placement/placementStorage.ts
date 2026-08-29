@@ -36,7 +36,7 @@ function emitPlacementUpdate() {
 }
 
 /**
- * Validates untrusted localStorage active session object with strict integrity guards
+ * Validates untrusted localStorage active or completed placement session object with strict integrity guards
  */
 export function validatePlacementSession(data: any): data is PlacementSession {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
@@ -45,17 +45,51 @@ export function validatePlacementSession(data: any): data is PlacementSession {
   if (data.status !== 'active' && data.status !== 'completed') return false;
   if (typeof data.sessionSeed !== 'number' || !Number.isFinite(data.sessionSeed) || !Number.isSafeInteger(data.sessionSeed)) return false;
   if (typeof data.startedAt !== 'number' || !Number.isFinite(data.startedAt) || data.startedAt <= 0 || data.startedAt > Date.now() + 86400000) return false;
-  if (data.completedAt !== undefined) {
-    if (typeof data.completedAt !== 'number' || !Number.isFinite(data.completedAt) || data.completedAt < data.startedAt || data.completedAt > Date.now() + 86400000) return false;
+
+  const isCompleted = data.status === 'completed';
+
+  if (isCompleted) {
+    if (typeof data.completedAt !== 'number' || !Number.isFinite(data.completedAt) || data.completedAt < data.startedAt || data.completedAt > Date.now() + 86400000) {
+      return false;
+    }
+    if (!data.resultReport || !validatePlacementResultReport(data.resultReport)) {
+      return false;
+    }
+    if (data.resultReport.sessionId !== data.id) {
+      return false;
+    }
+    if (data.resultReport.completedAt !== data.completedAt) {
+      return false;
+    }
+    if (data.currentStageIndex !== PLACEMENT_STAGE_COUNT - 1) {
+      return false;
+    }
+  } else {
+    // In an active session, completedAt should not normally be present
+    if (data.completedAt !== undefined) {
+      return false;
+    }
+    if (data.resultReport !== undefined) {
+      return false;
+    }
+    if (typeof data.currentStageIndex !== 'number' || data.currentStageIndex < 0 || data.currentStageIndex >= PLACEMENT_STAGE_COUNT) {
+      return false;
+    }
   }
-  if (typeof data.currentStageIndex !== 'number' || data.currentStageIndex < 0 || data.currentStageIndex >= PLACEMENT_STAGE_COUNT) return false;
+
   if (typeof data.currentQuestionInStageIndex !== 'number' || data.currentQuestionInStageIndex < 0 || data.currentQuestionInStageIndex >= PLACEMENT_STAGE_SIZE) return false;
   if (!ORDERED_CEFR_LEVELS.includes(data.currentLevel as CEFRLevel)) return false;
 
   // Stages array validation
   if (!Array.isArray(data.stages) || data.stages.length < 1 || data.stages.length > PLACEMENT_STAGE_COUNT) return false;
-  if (data.currentStageIndex >= data.stages.length) return false;
-  if (data.stages.length > data.currentStageIndex + 1) return false;
+
+  if (isCompleted) {
+    if (data.stages.length !== PLACEMENT_STAGE_COUNT) return false;
+  } else {
+    if (data.currentStageIndex >= data.stages.length) return false;
+    if (data.stages.length > data.currentStageIndex + 1) return false;
+  }
+
   if (data.currentLevel !== data.stages[data.currentStageIndex]?.level) return false;
 
   const allQuestionIds = new Set<string>();
@@ -68,8 +102,13 @@ export function validatePlacementSession(data: any): data is PlacementSession {
     if (!ORDERED_CEFR_LEVELS.includes(stage.level)) return false;
     if (typeof stage.isLocked !== 'boolean') return false;
 
-    if (sIdx < data.currentStageIndex && !stage.isLocked) return false;
-    if (sIdx === data.currentStageIndex && stage.isLocked) return false;
+    if (isCompleted) {
+      // In completed session, all past stages are locked
+      if (sIdx < data.currentStageIndex && !stage.isLocked) return false;
+    } else {
+      if (sIdx < data.currentStageIndex && !stage.isLocked) return false;
+      if (sIdx === data.currentStageIndex && stage.isLocked) return false;
+    }
 
     if (!Array.isArray(stage.questions) || stage.questions.length !== PLACEMENT_STAGE_SIZE) return false;
 
@@ -84,7 +123,12 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
   // Stage Results validation & consistency
   if (!Array.isArray(data.stageResults) || data.stageResults.length > PLACEMENT_STAGE_COUNT) return false;
-  if (data.stageResults.length !== data.currentStageIndex) return false;
+
+  if (isCompleted) {
+    if (data.stageResults.length !== PLACEMENT_STAGE_COUNT) return false;
+  } else {
+    if (data.stageResults.length !== data.currentStageIndex) return false;
+  }
 
   for (let srIdx = 0; srIdx < data.stageResults.length; srIdx++) {
     const sr = data.stageResults[srIdx];
@@ -354,10 +398,24 @@ export function isPlacementResultExportedToReview(reportId: string): boolean {
   if (typeof window === 'undefined' || !reportId) return false;
   try {
     const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return false;
-    return parsed.includes(reportId);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.includes(reportId)) {
+        return true;
+      }
+    }
+    const reviewRaw = safeGetLocalStorage('flipenglish_review_v1');
+    if (reviewRaw) {
+      const parsedReview = JSON.parse(reviewRaw);
+      if (
+        parsedReview &&
+        Array.isArray(parsedReview.exportedReportIds) &&
+        parsedReview.exportedReportIds.includes(reportId)
+      ) {
+        return true;
+      }
+    }
+    return false;
   } catch (err) {
     return false;
   }

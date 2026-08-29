@@ -334,6 +334,7 @@ export const enCatalog = {
   'review.dashboard.daysCount': '{count} days',
   'review.dashboard.recentAccuracy': 'Recent Accuracy',
   'review.dashboard.learningInterval': '10m - 1d',
+  'review.dashboard.resetError': 'Failed to reset review data. Local storage may be restricted.',
   'review.session.cardProgress': 'Reviewing {current} of {total}',
   'review.session.showAnswer': 'Show Answer',
   'review.session.ratePrompt': 'How well did you remember this word?',

@@ -20,6 +20,12 @@ export interface ReviewResumeContext {
   timestamp?: number;
 }
 
+export interface ReviewSessionClearResult {
+  removed: boolean;
+  tombstoneSaved: boolean;
+  resumeSafetyEstablished: boolean;
+}
+
 export type DictionaryReturnContext =
   | {
       source: 'learn';

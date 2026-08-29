@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlacementResultReport, RecommendedLessonItem } from './placementTypes';
+import { PlacementResultReport, PlacementPersistenceResult, RecommendedLessonItem } from './placementTypes';
 import { CEFRLevel, Lesson } from '../../types';
 import { LESSONS } from '../../data/lessons';
 import { resolveCurriculumItem } from '../../utils/curriculumIndex';
@@ -7,21 +7,14 @@ import {
   isPlacementResultExportedToReview,
   exportPlacementMissedToReview,
   savePlacementResultToHistory,
+  clearActivePlacement,
 } from './placementStorage';
 import { useI18n } from '../i18n';
 
 interface PlacementResultProps {
   report: PlacementResultReport;
-  initialPersistence?: {
-    latestSaved: boolean;
-    historySaved: boolean;
-    success: boolean;
-  };
-  onPersistenceChange?: (persistence: {
-    latestSaved: boolean;
-    historySaved: boolean;
-    success: boolean;
-  }) => void;
+  initialPersistence?: PlacementPersistenceResult;
+  onPersistenceChange?: (persistence: PlacementPersistenceResult) => void;
   onRetake: () => void;
   onStartCurriculum: (level: CEFRLevel) => void;
   onSelectLesson: (lesson: Lesson) => void;
@@ -44,11 +37,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   );
   const [exportError, setExportError] = useState<boolean>(false);
 
-  const [persistenceState, setPersistenceState] = useState<{
-    latestSaved: boolean;
-    historySaved: boolean;
-    success: boolean;
-  }>(() => {
+  const [persistenceState, setPersistenceState] = useState<PlacementPersistenceResult>(() => {
     if (initialPersistence !== undefined) {
       return initialPersistence;
     }
@@ -56,6 +45,11 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
     return {
       latestSaved: true,
       historySaved: true,
+      terminalStateSaved: true,
+      activeSessionCleared: true,
+      resultSaved: true,
+      resumeSafetyEstablished: true,
+      fullyCleaned: true,
       success: true,
     };
   });
@@ -97,9 +91,27 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
 
   const handleRetrySave = () => {
     const res = savePlacementResultToHistory(report);
-    setPersistenceState(res);
+    const cleared = clearActivePlacement();
+    const resultSaved = res.latestSaved && res.historySaved;
+    const terminalStateSaved = persistenceState.terminalStateSaved;
+    const resumeSafetyEstablished = cleared || terminalStateSaved;
+    const fullyCleaned = cleared;
+    const success = resultSaved && resumeSafetyEstablished;
+
+    const fullResult: PlacementPersistenceResult = {
+      latestSaved: res.latestSaved,
+      historySaved: res.historySaved,
+      terminalStateSaved,
+      activeSessionCleared: cleared,
+      resultSaved,
+      resumeSafetyEstablished,
+      fullyCleaned,
+      success,
+    };
+
+    setPersistenceState(fullResult);
     setRetryAttempted(true);
-    onPersistenceChange?.(res);
+    onPersistenceChange?.(fullResult);
   };
 
   return (

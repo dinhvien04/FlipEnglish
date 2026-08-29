@@ -51,6 +51,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   });
   const [sessionSummary, setSessionSummary] = useState<ReviewSessionSummary | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   // Keep parent session context in sync
   useEffect(() => {
@@ -168,11 +169,15 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
   };
 
   const handleConfirmReset = () => {
+    setResetError(null);
     const reviewCleared = resetReviewStorage();
-    const activeCleared = clearActiveReviewSession();
-    setShowResetConfirm(false);
-    if (reviewCleared && activeCleared) {
+    const clearResult = clearActiveReviewSession();
+    if (reviewCleared && clearResult.resumeSafetyEstablished) {
+      setShowResetConfirm(false);
+      setResetError(null);
       refreshStats();
+    } else {
+      setResetError(t('review.dashboard.resetError'));
     }
   };
 
@@ -426,39 +431,52 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
 
       {/* Maintenance / Reset Area */}
       {hasTrackedItems && (
-        <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-400">
+        <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
           <span>{stats.totalTracked} {t('review.dashboard.totalTracked')}</span>
 
           {!showResetConfirm ? (
             <button
               id="open-reset-confirm-btn"
               type="button"
-              onClick={() => setShowResetConfirm(true)}
-              className="text-2xs font-semibold text-slate-600 hover:text-rose-600 transition-colors cursor-pointer"
+              onClick={() => {
+                setResetError(null);
+                setShowResetConfirm(true);
+              }}
+              className="text-2xs font-semibold text-slate-600 hover:text-rose-600 transition-colors cursor-pointer self-start sm:self-auto min-h-11 inline-flex items-center"
             >
               Reset
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <span className="text-2xs text-rose-600 font-bold">
                 Reset review data?
               </span>
-              <button
-                id="confirm-reset-btn"
-                type="button"
-                onClick={handleConfirmReset}
-                className="px-2 py-1 bg-rose-600 text-white rounded font-bold text-2xs cursor-pointer"
-              >
-                Yes
-              </button>
-              <button
-                id="cancel-reset-btn"
-                type="button"
-                onClick={() => setShowResetConfirm(false)}
-                className="px-2 py-1 bg-slate-100 text-slate-700 rounded font-bold text-2xs cursor-pointer"
-              >
-                {t('ui.common.cancel')}
-              </button>
+              {resetError && (
+                <span className="text-2xs text-rose-600 font-bold bg-rose-50 border border-rose-200 px-2 py-1 rounded" role="alert">
+                  {resetError}
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  id="confirm-reset-btn"
+                  type="button"
+                  onClick={handleConfirmReset}
+                  className="min-h-11 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl font-bold text-xs cursor-pointer inline-flex items-center justify-center"
+                >
+                  Yes
+                </button>
+                <button
+                  id="cancel-reset-btn"
+                  type="button"
+                  onClick={() => {
+                    setShowResetConfirm(false);
+                    setResetError(null);
+                  }}
+                  className="min-h-11 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs cursor-pointer inline-flex items-center justify-center"
+                >
+                  {t('ui.common.cancel')}
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../../constants/storageKeys';
-import { LearnResumeContext, ReviewResumeContext } from '../../types/sessionResume';
+import { LearnResumeContext, ReviewResumeContext, ReviewSessionClearResult } from '../../types/sessionResume';
 import {
   validateLearnResumeContext,
   validateReviewResumeContext,
@@ -106,9 +106,10 @@ export function clearActiveLearnSession(): boolean {
 
 /**
  * Saves active Smart Review session context to localStorage with schema version and timestamp.
- * Dispatches CONTINUITY_EVENTS.SESSION_UPDATED on window.
+ * Dispatches CONTINUITY_EVENTS.SESSION_UPDATED on window on success.
+ * Returns boolean indicating write success.
  */
-export function saveActiveReviewSession(context: ReviewResumeContext): void {
+export function saveActiveReviewSession(context: ReviewResumeContext): boolean {
   try {
     const payload: ReviewResumeContext = {
       ...context,
@@ -118,15 +119,18 @@ export function saveActiveReviewSession(context: ReviewResumeContext): void {
 
     const validated = validateReviewResumeContext(payload);
     if (!validated) {
-      return;
+      return false;
     }
 
     const writeSuccess = safeSetLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE, JSON.stringify(validated));
     if (writeSuccess) {
       emitSessionUpdate();
+      return true;
     }
+    return false;
   } catch (err) {
     console.error('Failed to save active review session to localStorage:', err);
+    return false;
   }
 }
 
@@ -169,24 +173,39 @@ export function getActiveReviewSession(now: number = Date.now()): ReviewResumeCo
 }
 
 /**
- * Clears active Smart Review session from localStorage and emits update event if removal succeeded.
+ * Clears active Smart Review session from localStorage with verified removal and tombstone fallback.
+ * Returns ReviewSessionClearResult. Emits update event only when disk removal or tombstone write succeeds.
  */
-export function clearActiveReviewSession(): boolean {
+export function clearActiveReviewSession(): ReviewSessionClearResult {
   try {
     const removed = safeRemoveLocalStorage(STORAGE_KEYS.REVIEW_SESSION_ACTIVE);
     if (removed) {
       emitSessionUpdate();
-      return true;
+      return {
+        removed: true,
+        tombstoneSaved: false,
+        resumeSafetyEstablished: true,
+      };
     }
     // Fallback tombstone to ensure validateReviewResumeContext rejects it if removal fails
-    safeSetLocalStorage(
+    const tombstoneSaved = safeSetLocalStorage(
       STORAGE_KEYS.REVIEW_SESSION_ACTIVE,
       JSON.stringify({ schemaVersion: 1, hasCompleted: true, activeQueue: [], currentIndex: 0 })
     );
-    emitSessionUpdate();
-    return false;
+    if (tombstoneSaved) {
+      emitSessionUpdate();
+    }
+    return {
+      removed: false,
+      tombstoneSaved,
+      resumeSafetyEstablished: tombstoneSaved,
+    };
   } catch (err) {
     console.error('Failed to clear active review session from localStorage:', err);
-    return false;
+    return {
+      removed: false,
+      tombstoneSaved: false,
+      resumeSafetyEstablished: false,
+    };
   }
 }

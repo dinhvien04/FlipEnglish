@@ -336,6 +336,7 @@ export const viCatalog: Record<TranslationKey, string> = {
   'review.dashboard.daysCount': '{count} ngày',
   'review.dashboard.recentAccuracy': 'Độ chính xác gần đây',
   'review.dashboard.learningInterval': '10 phút - 1 ngày',
+  'review.dashboard.resetError': 'Không thể đặt lại dữ liệu ôn tập. Bộ nhớ cục bộ có thể bị hạn chế.',
   'review.session.cardProgress': 'Đang ôn thẻ {current} trên {total}',
   'review.session.showAnswer': 'Xem đáp án',
   'review.session.ratePrompt': 'Bạn nhớ từ này ở mức độ nào?',

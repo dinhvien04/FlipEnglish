@@ -5,6 +5,7 @@ import { ConversationScenario, ConversationTurn, ConversationEvaluation } from '
 import {
   PlacementSession,
   PlacementResultReport,
+  PlacementPersistenceResult,
   PLACEMENT_STAGE_SIZE,
 } from './features/placement/placementTypes';
 import {
@@ -121,11 +122,7 @@ export default function App() {
   // Placement States
   const [activePlacementSession, setActivePlacementSession] = useState<PlacementSession | null>(null);
   const [placementResultReport, setPlacementResultReport] = useState<PlacementResultReport | null>(null);
-  const [placementPersistenceState, setPlacementPersistenceState] = useState<{
-    latestSaved: boolean;
-    historySaved: boolean;
-    success: boolean;
-  } | null>(null);
+  const [placementPersistenceState, setPlacementPersistenceState] = useState<PlacementPersistenceResult | null>(null);
   const [pendingResumePlacement, setPendingResumePlacement] = useState<PlacementSession | null>(null);
   const [placementStartError, setPlacementStartError] = useState<string | null>(null);
   const [isStartingPlacement, setIsStartingPlacement] = useState<boolean>(false);
@@ -707,7 +704,7 @@ export default function App() {
 
   const handleFinishPlacementSession = (
     report: PlacementResultReport,
-    persistenceResult?: { latestSaved: boolean; historySaved: boolean; success: boolean }
+    persistenceResult?: PlacementPersistenceResult
   ) => {
     setPlacementResultReport(report);
     if (persistenceResult) {
@@ -747,18 +744,16 @@ export default function App() {
   };
 
   const handleViewPlacementResult = () => {
-    // Reset any transient failure state from previous attempts when viewing saved report
-    setPlacementPersistenceState(null);
-
-    // 1. Use in-memory result report if present
+    // 1. Use in-memory result report if present (preserve any existing persistence failure state)
     if (placementResultReport) {
       setCurrentView('placement-result');
       return;
     }
 
-    // 2. Otherwise load validated saved report from localStorage
+    // 2. Otherwise load validated saved report from localStorage (verified disk persistence)
     const savedReport = loadLatestPlacementReport();
     if (savedReport) {
+      setPlacementPersistenceState(null);
       setPlacementResultReport(savedReport);
       setCurrentView('placement-result');
       return;

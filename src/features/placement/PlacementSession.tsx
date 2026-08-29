@@ -174,12 +174,20 @@ export const PlacementSessionPage: React.FC<PlacementSessionProps> = ({
       // 3. Attempt removal of active session key
       const activeSessionCleared = clearActivePlacement();
 
+      const resultSaved = reportPersistence.latestSaved && reportPersistence.historySaved;
+      const resumeSafetyEstablished = terminalStateSaved || activeSessionCleared;
+      const fullyCleaned = activeSessionCleared;
+      const success = resultSaved && resumeSafetyEstablished;
+
       const persistenceResult: PlacementPersistenceResult = {
         latestSaved: reportPersistence.latestSaved,
         historySaved: reportPersistence.historySaved,
         terminalStateSaved,
         activeSessionCleared,
-        success: reportPersistence.success,
+        resultSaved,
+        resumeSafetyEstablished,
+        fullyCleaned,
+        success,
       };
 
       startTransition(() => {

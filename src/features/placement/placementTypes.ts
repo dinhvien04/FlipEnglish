@@ -80,6 +80,9 @@ export interface PlacementPersistenceResult {
   historySaved: boolean;
   terminalStateSaved: boolean;
   activeSessionCleared: boolean;
+  resultSaved: boolean;
+  resumeSafetyEstablished: boolean;
+  fullyCleaned: boolean;
   success: boolean;
 }
 

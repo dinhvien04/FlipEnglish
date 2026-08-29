@@ -642,14 +642,16 @@ export function exportMissedItemsToReview(
     updatedOrAdded++;
   }
 
+  let reportIdAdded = false;
   if (reportId) {
     const list = storage.exportedReportIds || [];
     if (!list.includes(reportId)) {
       storage.exportedReportIds = [reportId, ...list].slice(0, 50);
+      reportIdAdded = true;
     }
   }
 
-  if (updatedOrAdded > 0 || (reportId && !storage.exportedReportIds?.includes(reportId))) {
+  if (updatedOrAdded > 0 || reportIdAdded) {
     const saved = saveReviewStorage(storage);
     return {
       attempted: itemIds.length,
@@ -687,10 +689,12 @@ export function getLessonDueCount(lessonId: string, now: number = Date.now()): n
 
 /**
  * Resets Smart Review data without affecting lesson progress or exam scores.
+ * Also clears the placement review exports secondary key so placement reports can be re-exported.
  */
 export function resetReviewStorage(): boolean {
   try {
     const removed = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
+    safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
     if (removed) {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
       return true;
