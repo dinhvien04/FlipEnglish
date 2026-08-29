@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, CONTINUITY_EVENTS, DATA_MANAGEMENT_EVENTS } from '../../constants/storageKeys';
-import { safeRemoveLocalStorage, safeGetLocalStorage } from '../../utils/storageHealth';
+import { safeRemoveLocalStorage } from '../../utils/storageHealth';
 import { clearAllSavedWordsFromDb, clearAllCachedEntriesFromDb, clearAllMetadataFromDb } from '../dictionary/dictionaryCache';
 import { LANGUAGE_UPDATED_EVENT } from '../i18n/localeStorage';
 
@@ -63,23 +63,18 @@ export const ALL_FLIPENGLISH_STORAGE_KEYS: readonly string[] = [
 /**
  * Removes an array of keys safely from localStorage without touching unrelated keys.
  * Reports aggregated success and lists removed vs failed keys.
+ * Does NOT pre-read with safeGetLocalStorage to avoid SecurityError ambiguity.
  */
 function removeKeysSafely(keys: readonly string[]): { removedKeys: string[]; failedKeys: string[] } {
   const removedKeys: string[] = [];
   const failedKeys: string[] = [];
 
   for (const key of keys) {
-    const exists = safeGetLocalStorage(key) !== null;
-    if (exists) {
-      const removed = safeRemoveLocalStorage(key);
-      if (removed && safeGetLocalStorage(key) === null) {
-        removedKeys.push(key);
-      } else {
-        failedKeys.push(key);
-      }
-    } else {
-      // Key is already absent, consider it cleaned
+    const removed = safeRemoveLocalStorage(key);
+    if (removed) {
       removedKeys.push(key);
+    } else {
+      failedKeys.push(key);
     }
   }
 
@@ -88,19 +83,22 @@ function removeKeysSafely(keys: readonly string[]): { removedKeys: string[]; fai
 
 /**
  * Dispatches domain and centralized reset events to update runtime React state immediately.
+ * Only emits centralized USER_DATA_RESET when the scoped operation achieved full success.
  */
-function emitResetEvents(scope: DataResetScope): void {
+function emitResetEvents(scope: DataResetScope, isFullSuccess: boolean): void {
   if (typeof window === 'undefined') return;
 
   try {
-    // 1. Centralized reset event with typed scope detail
-    window.dispatchEvent(
-      new CustomEvent(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, {
-        detail: { scope },
-      })
-    );
+    // 1. Centralized reset event with typed scope detail - ONLY on 100% full success
+    if (isFullSuccess) {
+      window.dispatchEvent(
+        new CustomEvent(DATA_MANAGEMENT_EVENTS.USER_DATA_RESET, {
+          detail: { scope },
+        })
+      );
+    }
 
-    // 2. Domain-specific update events
+    // 2. Domain-specific update events for granular reactivity
     if (scope === 'learning' || scope === 'all') {
       window.dispatchEvent(new Event('flipenglish_progress_updated'));
       window.dispatchEvent(new Event('flipenglish_review_updated'));
@@ -117,7 +115,7 @@ function emitResetEvents(scope: DataResetScope): void {
       window.dispatchEvent(new Event('flipenglish_dictionary_updated'));
     }
 
-    if (scope === 'all') {
+    if (scope === 'all' && isFullSuccess) {
       window.dispatchEvent(new Event(CONTINUITY_EVENTS.REMINDERS_UPDATED));
       window.dispatchEvent(new Event('flipenglish_onboarding_updated'));
       window.dispatchEvent(new Event(LANGUAGE_UPDATED_EVENT));
@@ -136,9 +134,8 @@ export function resetLearningProgress(): DataManagementResult {
   const { removedKeys, failedKeys } = removeKeysSafely(FLIPENGLISH_LEARNING_STORAGE_KEYS);
   const success = failedKeys.length === 0;
 
-  // Always emit events for successfully removed keys to prevent in-memory state drift
   if (removedKeys.length > 0) {
-    emitResetEvents('learning');
+    emitResetEvents('learning', success);
   }
 
   return {
@@ -172,9 +169,8 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
 
   const success = failedKeys.length === 0 && idbSuccess;
 
-  // Always emit events for successfully removed domains
   if (removedKeys.length > 0) {
-    emitResetEvents('vocabulary');
+    emitResetEvents('vocabulary', success);
   }
 
   return {
@@ -235,9 +231,9 @@ export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
 
   const success = failedKeys.length === 0 && idbSavedSuccess && idbEntriesSuccess && idbMetaSuccess;
 
-  // Always emit events for successfully removed domains
+  // Always emit events for successfully removed domains, but only emit USER_DATA_RESET on full success
   if (removedKeys.length > 0) {
-    emitResetEvents('all');
+    emitResetEvents('all', success);
   }
 
   return {

@@ -1,33 +1,51 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ExamSession } from '../../types/exam';
 import { useI18n } from '../../features/i18n';
 
 interface ResumeExamModalProps {
   session: ExamSession;
   onResume: () => void;
+  onDismiss: () => void;
   onDiscard: () => void;
 }
 
 export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
   session,
   onResume,
+  onDismiss,
   onDiscard,
 }) => {
   const { t } = useI18n();
   const modalRef = useRef<HTMLDivElement>(null);
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const answeredCount = Object.keys(session.answers).length;
   const totalQuestions = session.questions.length;
-  const remainingMs = Math.max(0, session.endsAt - Date.now());
+  const remainingMs = Math.max(0, session.endsAt - now);
   const remainingMinutes = Math.floor(remainingMs / (60 * 1000));
   const remainingSeconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+  const isExpired = remainingMs <= 0;
 
-  // Accessibility: Focus trapping, Escape key dismiss (discard/close), focus autofocus
+  // Dynamic countdown timer ticking every second
+  useEffect(() => {
+    if (isExpired) return;
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isExpired]);
+
+  // Accessibility: Focus trapping, Escape key dismiss (safe close), autofocus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onDiscard();
+        if (showDiscardConfirm) {
+          setShowDiscardConfirm(false);
+        } else {
+          onDismiss();
+        }
         return;
       }
 
@@ -63,7 +81,7 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timer);
     };
-  }, [onDiscard]);
+  }, [onDismiss, showDiscardConfirm]);
 
   return (
     <div
@@ -101,36 +119,65 @@ export const ResumeExamModal: React.FC<ResumeExamModalProps> = ({
 
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-semibold">{t('studyPlan.resumeModal.examTimeRemaining')}</span>
-            <span className="font-bold font-mono text-slate-900">
-              {String(remainingMinutes).padStart(2, '0')}:{String(remainingSeconds).padStart(2, '0')}
+            <span className={`font-bold font-mono ${isExpired ? 'text-rose-600' : 'text-slate-900'}`}>
+              {isExpired
+                ? t('studyPlan.resumeModal.examExpired')
+                : `${String(remainingMinutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`}
             </span>
           </div>
         </div>
 
         <p id="resume-exam-modal-desc" className="text-xs text-slate-500 leading-relaxed">
-          {t('studyPlan.resumeModal.examDesc')}
+          {isExpired
+            ? t('studyPlan.resumeModal.examExpiredDesc')
+            : t('studyPlan.resumeModal.examDesc')}
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-          <button
-            type="button"
-            id="discard-active-exam-btn"
-            onClick={onDiscard}
-            className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
-          >
-            {t('studyPlan.resumeModal.examDiscard')}
-          </button>
+        {showDiscardConfirm ? (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
+            <p className="text-xs font-bold text-rose-900">
+              {t('studyPlan.resumeModal.examDiscardConfirmPrompt')}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDiscardConfirm(false)}
+                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('studyPlan.resumeModal.examKeep')}
+              </button>
+              <button
+                type="button"
+                id="confirm-discard-exam-btn"
+                onClick={onDiscard}
+                className="w-full sm:w-auto flex-1 min-h-10 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+              >
+                {t('studyPlan.resumeModal.examConfirmDiscard')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <button
+              type="button"
+              id="discard-active-exam-btn"
+              onClick={() => setShowDiscardConfirm(true)}
+              className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center"
+            >
+              {t('studyPlan.resumeModal.examDiscard')}
+            </button>
 
-          <button
-            ref={resumeBtnRef}
-            type="button"
-            id="resume-active-exam-btn"
-            onClick={onResume}
-            className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
-          >
-            {t('studyPlan.resumeModal.examResume')}
-          </button>
-        </div>
+            <button
+              ref={resumeBtnRef}
+              type="button"
+              id="resume-active-exam-btn"
+              onClick={onResume}
+              className="w-full sm:w-auto flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-2xs transition-all cursor-pointer active:scale-98 flex items-center justify-center"
+            >
+              {t('studyPlan.resumeModal.examResume')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

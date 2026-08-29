@@ -53,9 +53,8 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
   // Stages array validation
   if (!Array.isArray(data.stages) || data.stages.length < 1 || data.stages.length > PLACEMENT_STAGE_COUNT) return false;
-  // currentStageIndex must be within existing stages and currentLevel must match current stage's level
   if (data.currentStageIndex >= data.stages.length) return false;
-  if (data.stages.length > data.currentStageIndex + 1) return false; // no future unreached stages in active session
+  if (data.stages.length > data.currentStageIndex + 1) return false;
   if (data.currentLevel !== data.stages[data.currentStageIndex]?.level) return false;
 
   const allQuestionIds = new Set<string>();
@@ -68,18 +67,15 @@ export function validatePlacementSession(data: any): data is PlacementSession {
     if (!ORDERED_CEFR_LEVELS.includes(stage.level)) return false;
     if (typeof stage.isLocked !== 'boolean') return false;
 
-    // Previous stages must be locked
     if (sIdx < data.currentStageIndex && !stage.isLocked) return false;
-    // Current stage must be unlocked
     if (sIdx === data.currentStageIndex && stage.isLocked) return false;
 
-    // Each stage must have EXACTLY PLACEMENT_STAGE_SIZE (6) valid questions
     if (!Array.isArray(stage.questions) || stage.questions.length !== PLACEMENT_STAGE_SIZE) return false;
 
     for (const q of stage.questions) {
       if (!isValidPlacementQuestion(q)) return false;
-      if (q.level !== stage.level) return false; // question level must match stage level
-      if (allQuestionIds.has(q.id)) return false; // unique question IDs across stages
+      if (q.level !== stage.level) return false;
+      if (allQuestionIds.has(q.id)) return false;
       allQuestionIds.add(q.id);
       questionById.set(q.id, q);
     }
@@ -87,7 +83,6 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
   // Stage Results validation & consistency
   if (!Array.isArray(data.stageResults) || data.stageResults.length > PLACEMENT_STAGE_COUNT) return false;
-  // Number of stage results must match completed stages (which is data.currentStageIndex)
   if (data.stageResults.length !== data.currentStageIndex) return false;
 
   for (let srIdx = 0; srIdx < data.stageResults.length; srIdx++) {
@@ -100,12 +95,10 @@ export function validatePlacementSession(data: any): data is PlacementSession {
     if (sr.totalQuestions !== PLACEMENT_STAGE_SIZE) return false;
     if (typeof sr.correctCount !== 'number' || sr.correctCount < 0 || sr.correctCount > PLACEMENT_STAGE_SIZE) return false;
     if (typeof sr.scorePercentage !== 'number' || sr.scorePercentage < 0 || sr.scorePercentage > 100) return false;
-    // Strict score percentage formula consistency
     const expectedPercentage = Math.round((sr.correctCount / PLACEMENT_STAGE_SIZE) * 100);
     if (sr.scorePercentage !== expectedPercentage) return false;
 
     if (!Array.isArray(sr.questionIds) || sr.questionIds.length !== PLACEMENT_STAGE_SIZE) return false;
-    // Cross-link questionIds to corresponding stage's question IDs
     if (correspondingStage) {
       const stageQIds = correspondingStage.questions.map((q: any) => q.id);
       if (sr.questionIds.some((qid: string, idx: number) => qid !== stageQIds[idx])) return false;
@@ -113,12 +106,10 @@ export function validatePlacementSession(data: any): data is PlacementSession {
 
     if (!['up', 'same', 'down'].includes(sr.routingDecision)) return false;
 
-    // Strict routing consistency check
     const expected = routeNextLevel(sr.level, sr.correctCount, PLACEMENT_STAGE_SIZE);
     if (sr.routingDecision !== expected.decision) return false;
     if (sr.nextLevel !== expected.nextLevel) return false;
 
-    // Next stage level if it exists must match nextLevel
     if (data.stages[srIdx + 1] && data.stages[srIdx + 1].level !== expected.nextLevel) return false;
   }
 
@@ -128,11 +119,10 @@ export function validatePlacementSession(data: any): data is PlacementSession {
   if (answerKeys.length > PLACEMENT_TOTAL_QUESTIONS) return false;
 
   for (const qId of answerKeys) {
-    if (!allQuestionIds.has(qId)) return false; // answer key must match a generated question
+    if (!allQuestionIds.has(qId)) return false;
     const ansVal = data.answers[qId];
     if (typeof ansVal !== 'string' || ansVal.length > 500) return false;
 
-    // Strict membership check: answer must match one of the question's valid option texts
     const question = questionById.get(qId);
     if (!question) return false;
     const optionTexts = question.options.map((opt: any) => opt.text);
@@ -179,7 +169,7 @@ export function validatePlacementResultReport(data: any): data is PlacementResul
     if (sc.weightedScore !== undefined && (typeof sc.weightedScore !== 'number' || sc.weightedScore < 0 || sc.weightedScore > 100)) return false;
   }
 
-  // StagePath validation (must be exactly PLACEMENT_STAGE_COUNT = 4 for completed normal placement)
+  // StagePath validation
   if (!Array.isArray(data.stagePath) || data.stagePath.length !== PLACEMENT_STAGE_COUNT) return false;
   for (let sIdx = 0; sIdx < data.stagePath.length; sIdx++) {
     const sr = data.stagePath[sIdx];
@@ -197,7 +187,7 @@ export function validatePlacementResultReport(data: any): data is PlacementResul
     if (sr.nextLevel !== expected.nextLevel) return false;
   }
 
-  // Recommended Lessons validation (max 5, must resolve to real lessons)
+  // Recommended Lessons validation
   if (!Array.isArray(data.recommendedLessons) || data.recommendedLessons.length > 5) return false;
   for (const rec of data.recommendedLessons) {
     if (!rec || typeof rec !== 'object') return false;
@@ -208,7 +198,7 @@ export function validatePlacementResultReport(data: any): data is PlacementResul
     if (typeof rec.reason !== 'string' || !rec.reason.trim() || rec.reason.length > 500) return false;
   }
 
-  // Missed Target Items validation (max 24)
+  // Missed Target Items validation
   if (!Array.isArray(data.missedTargetItems) || data.missedTargetItems.length > PLACEMENT_TOTAL_QUESTIONS) return false;
   for (const item of data.missedTargetItems) {
     if (!item || typeof item !== 'object') return false;
@@ -233,7 +223,6 @@ export function loadActivePlacement(): PlacementSession | null {
     if (validatePlacementSession(parsed)) {
       return parsed;
     }
-    // Corrupt or outdated session format -> safely clear active
     clearActivePlacement();
     return null;
   } catch (err) {
@@ -247,35 +236,38 @@ export function loadActivePlacement(): PlacementSession | null {
  */
 export const getActivePlacement = loadActivePlacement;
 
-
 /**
- * Saves Active Placement Session safely to localStorage
+ * Saves Active Placement Session safely to localStorage. Returns boolean.
  */
-export function saveActivePlacement(session: PlacementSession): void {
-  if (typeof window === 'undefined') return;
+export function saveActivePlacement(session: PlacementSession): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    if (!validatePlacementSession(session)) return;
+    if (!validatePlacementSession(session)) return false;
     const writeSuccess = safeSetLocalStorage(ACTIVE_PLACEMENT_KEY, JSON.stringify(session));
     if (writeSuccess) {
       emitPlacementUpdate();
+      return true;
     }
+    return false;
   } catch (err) {
-    // Storage quota or serialization issue
+    return false;
   }
 }
 
 /**
- * Clears Active Placement Session safely
+ * Clears Active Placement Session safely. Returns boolean indicating success.
  */
-export function clearActivePlacement(): void {
-  if (typeof window === 'undefined') return;
+export function clearActivePlacement(): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     const removeSuccess = safeRemoveLocalStorage(ACTIVE_PLACEMENT_KEY);
     if (removeSuccess) {
       emitPlacementUpdate();
+      return true;
     }
+    return false;
   } catch (err) {
-    // ignore
+    return false;
   }
 }
 
@@ -414,10 +406,8 @@ export function loadPlacementHistory(): CompactPlacementHistoryItem[] {
 export function savePlacementResultToHistory(report: PlacementResultReport): void {
   if (typeof window === 'undefined') return;
   try {
-    // 1. Save dedicated full validated latest report
     saveLatestPlacementReport(report);
 
-    // 2. Save compact item to history
     const history = loadPlacementHistory();
     const matchedWeakWordIds = report.missedTargetItems
       .map((m) => m.wordId)
@@ -456,4 +446,3 @@ export function getLatestPlacementResult(): CompactPlacementHistoryItem | null {
   const history = loadPlacementHistory();
   return history.length > 0 ? history[0] : null;
 }
-

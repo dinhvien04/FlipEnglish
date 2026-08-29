@@ -21,6 +21,7 @@ import { Header } from './components/Header';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StorageWarningBanner } from './components/StorageWarningBanner';
 import { ResumeExamModal } from './components/exam/ResumeExamModal';
+import { ResumePlacementModal } from './components/placement/ResumePlacementModal';
 import { Home } from './pages/Home';
 import { LessonIntro } from './pages/LessonIntro';
 import { Learn } from './pages/Learn';
@@ -709,9 +710,18 @@ export default function App() {
     }
   };
 
-  const handleDiscardActivePlacement = () => {
-    clearActivePlacement();
+  const handleDismissActivePlacement = () => {
     setPendingResumePlacement(null);
+  };
+
+  const handleDiscardActivePlacement = () => {
+    const cleared = clearActivePlacement();
+    if (cleared) {
+      setPendingResumePlacement(null);
+    } else {
+      // Storage failed to remove key, dismiss modal to prevent broken state
+      setPendingResumePlacement(null);
+    }
   };
 
   const handleStartCurriculumAtLevel = (level: CEFRLevel) => {
@@ -815,15 +825,30 @@ export default function App() {
 
   const handleResumeActiveExam = () => {
     if (pendingResumeSession) {
+      if (pendingResumeSession.endsAt <= Date.now()) {
+        // Exam has already expired at action time
+        clearActiveExam();
+        setPendingResumeSession(null);
+        handleNavigateExamCenter();
+        return;
+      }
       setActiveExamSession(pendingResumeSession);
       setPendingResumeSession(null);
       setCurrentView('exam-session');
     }
   };
 
-  const handleDiscardActiveExam = () => {
-    clearActiveExam();
+  const handleDismissActiveExam = () => {
     setPendingResumeSession(null);
+  };
+
+  const handleDiscardActiveExam = () => {
+    const cleared = clearActiveExam();
+    if (cleared) {
+      setPendingResumeSession(null);
+    } else {
+      setPendingResumeSession(null);
+    }
   };
 
   // Start AI Practice on missed words from exam
@@ -965,53 +990,19 @@ export default function App() {
         <ResumeExamModal
           session={pendingResumeSession}
           onResume={handleResumeActiveExam}
+          onDismiss={handleDismissActiveExam}
           onDiscard={handleDiscardActiveExam}
         />
       )}
 
       {/* Resume Pending Active Placement Modal */}
       {pendingResumePlacement && currentView !== 'placement-session' && currentView !== 'exam-session' && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
-            <div className="space-y-2">
-              <span className="text-2xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                {t('studyPlan.resumeModal.placementBadge')}
-              </span>
-              <h3 className="text-xl font-black text-slate-900">
-                {t('studyPlan.resumeModal.placementTitle')}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                {t('studyPlan.resumeModal.placementDesc', {
-                  stage: pendingResumePlacement.currentStageIndex + 1,
-                  question:
-                    pendingResumePlacement.currentStageIndex * 6 +
-                    pendingResumePlacement.currentQuestionInStageIndex +
-                    1,
-                })}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                id="resume-placement-btn"
-                onClick={handleResumeActivePlacement}
-                className="flex-1 min-h-12 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
-              >
-                {t('studyPlan.resumeModal.placementResume')}
-              </button>
-
-              <button
-                type="button"
-                id="discard-placement-btn"
-                onClick={handleDiscardActivePlacement}
-                className="min-h-12 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center justify-center"
-              >
-                {t('studyPlan.resumeModal.placementStartOver')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ResumePlacementModal
+          session={pendingResumePlacement}
+          onResume={handleResumeActivePlacement}
+          onDismiss={handleDismissActivePlacement}
+          onStartOver={handleDiscardActivePlacement}
+        />
       )}
 
       {/* Sticky Header */}

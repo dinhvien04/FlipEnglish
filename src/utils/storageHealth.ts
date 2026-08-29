@@ -7,6 +7,7 @@ export type StorageFailureType =
 
 export interface StorageHealthState {
   isHealthy: boolean;
+  isStorageAccessible: boolean;
   isWarningDismissed: boolean;
   lastFailureType: StorageFailureType | null;
   lastFailedKey: string | null;
@@ -18,6 +19,7 @@ export const STORAGE_HEALTH_EVENT = 'flipenglish_storage_health_changed';
 
 let currentHealth: StorageHealthState = {
   isHealthy: true,
+  isStorageAccessible: true,
   isWarningDismissed: false,
   lastFailureType: null,
   lastFailedKey: null,
@@ -75,59 +77,59 @@ function emitHealthUpdate(): void {
 }
 
 /**
- * Records a successful storage write and resets unhealthy state only if all tracked
- * failed keys have been resolved or a dedicated health probe succeeded.
+ * Records a successful storage write.
+ * - If key is the diagnostic probe, updates isStorageAccessible = true without erasing genuine failed keys.
+ * - For real application keys, filters out the recovered key from failedKeys.
  */
 export function recordStorageSuccess(key: string): void {
-  if (!currentHealth.isHealthy) {
-    if (key === 'flipenglish_storage_health_probe') {
-      currentHealth = {
-        isHealthy: true,
-        isWarningDismissed: false,
-        lastFailureType: null,
-        lastFailedKey: null,
-        failedKeys: [],
-        failedWriteAttempts: 0,
-      };
-      emitHealthUpdate();
-      return;
-    }
-
-    // Filter out the recovered key from the set of failed keys
-    const remainingFailedKeys = currentHealth.failedKeys.filter((k) => k !== key);
-    if (remainingFailedKeys.length === 0) {
-      currentHealth = {
-        isHealthy: true,
-        isWarningDismissed: false,
-        lastFailureType: null,
-        lastFailedKey: null,
-        failedKeys: [],
-        failedWriteAttempts: 0,
-      };
-      emitHealthUpdate();
-    } else {
-      currentHealth = {
-        ...currentHealth,
-        failedKeys: remainingFailedKeys,
-        lastFailedKey: remainingFailedKeys[remainingFailedKeys.length - 1],
-      };
-      emitHealthUpdate();
-    }
+  if (key === 'flipenglish_storage_health_probe') {
+    const isHealthyNow = currentHealth.failedKeys.length === 0;
+    currentHealth = {
+      ...currentHealth,
+      isStorageAccessible: true,
+      isHealthy: isHealthyNow,
+      isWarningDismissed: isHealthyNow ? false : currentHealth.isWarningDismissed,
+      lastFailureType: isHealthyNow ? null : currentHealth.lastFailureType,
+      lastFailedKey: isHealthyNow ? null : currentHealth.lastFailedKey,
+    };
+    emitHealthUpdate();
+    return;
   }
+
+  const remainingFailedKeys = currentHealth.failedKeys.filter((k) => k !== key);
+  const nowHealthy = remainingFailedKeys.length === 0;
+
+  currentHealth = {
+    ...currentHealth,
+    isStorageAccessible: true,
+    isHealthy: nowHealthy,
+    isWarningDismissed: nowHealthy ? false : currentHealth.isWarningDismissed,
+    lastFailureType: nowHealthy ? null : currentHealth.lastFailureType,
+    lastFailedKey: nowHealthy ? null : remainingFailedKeys[remainingFailedKeys.length - 1],
+    failedKeys: remainingFailedKeys,
+    failedWriteAttempts: nowHealthy ? 0 : currentHealth.failedWriteAttempts,
+  };
+  emitHealthUpdate();
 }
 
 /**
  * Records a storage failure and triggers global health listeners.
+ * Re-shows warning only if a new key failed or failure type changed.
  */
 export function recordStorageFailure(key: string, err: unknown): void {
   const failureType = categorizeStorageError(err);
-  const updatedFailedKeys = currentHealth.failedKeys.includes(key)
-    ? currentHealth.failedKeys
-    : [...currentHealth.failedKeys, key];
+  const isNewKey = !currentHealth.failedKeys.includes(key);
+  const updatedFailedKeys = isNewKey
+    ? [...currentHealth.failedKeys, key]
+    : currentHealth.failedKeys;
+
+  const isMaterialChange = isNewKey || currentHealth.lastFailureType !== failureType;
 
   currentHealth = {
+    ...currentHealth,
     isHealthy: false,
-    isWarningDismissed: false, // Reset dismissed state on new failure so user is alerted
+    isStorageAccessible: false,
+    isWarningDismissed: isMaterialChange ? false : currentHealth.isWarningDismissed,
     lastFailureType: failureType,
     lastFailedKey: key,
     failedKeys: updatedFailedKeys,

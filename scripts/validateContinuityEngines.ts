@@ -248,8 +248,8 @@ localStorage.clear();
 dispatchedEvents.length = 0;
 
 const day1Date = new Date('2026-08-27T10:00:00');
-recordActiveStudySeconds(45, day1Date);
-recordActiveStudySeconds(75, day1Date);
+recordActiveStudySeconds(45, day1Date, true);
+recordActiveStudySeconds(75, day1Date, true);
 
 assert(getStoredActiveTime(day1Date).activeSeconds === 120, '120 active seconds accumulated on Day 1');
 assert(getActiveMinutesToday(day1Date) === 2, '2 active minutes calculated for Day 1');
@@ -264,17 +264,17 @@ assert(day2Time.activeSeconds === 0, 'Rollover resets activeSeconds to 0');
 assert(getActiveMinutesToday(day2Date) === 0, '0 active minutes on new day before study');
 
 // Accumulate on Day 2
-recordActiveStudySeconds(150, day2Date);
+recordActiveStudySeconds(150, day2Date, true);
 assert(getStoredActiveTime(day2Date).activeSeconds === 150, '150 active seconds accumulated on Day 2');
 assert(getActiveMinutesToday(day2Date) === 2, '2 active minutes calculated for 150s (Math.floor(150/60))');
 
 // Visibility gating test
 (globalThis as any).document.visibilityState = 'hidden';
-recordActiveStudySeconds(300, day2Date);
+recordActiveStudySeconds(300, day2Date, true);
 assert(getStoredActiveTime(day2Date).activeSeconds === 150, 'Active seconds NOT accumulated when page is hidden');
 
 (globalThis as any).document.visibilityState = 'visible';
-recordActiveStudySeconds(30, day2Date);
+recordActiveStudySeconds(30, day2Date, true);
 assert(getStoredActiveTime(day2Date).activeSeconds === 180, 'Active seconds accumulated when page is visible');
 assert(getActiveMinutesToday(day2Date) === 3, '3 active minutes after 180s');
 

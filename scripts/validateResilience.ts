@@ -30,6 +30,10 @@ import { validateLearnerStreak } from '../src/features/streak/streakStorage';
 import { validateActiveTimeRecord } from '../src/features/progress/activeTimeStorage';
 import { validateReminderPreferences } from '../src/features/reminders/reminderStorage';
 import { validateOnboardingState } from '../src/features/onboarding/onboardingStorage';
+import {
+  validateLearnResumeContext,
+  validateReviewResumeContext,
+} from '../src/features/continuity/sessionPersistenceValidation';
 
 // In-memory mock storage and window event harness for node execution
 const memoryStore: Record<string, string> = {};
@@ -156,7 +160,7 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
 
   // 2.3 QuotaExceededError simulation
   const quotaErr = new DOMException('Quota exceeded', 'QuotaExceededError');
-  recordStorageFailure('quota_exceeded', quotaErr);
+  recordStorageFailure(testKey, quotaErr);
   const quotaHealth = getStorageHealth();
   assert.strictEqual(quotaHealth.isHealthy, false);
   assert.strictEqual(quotaHealth.lastFailureType, 'quota_exceeded');
@@ -165,18 +169,23 @@ console.log('\n[Suite 2] Testing Storage Health Tracker & Safe Storage Wrappers.
   dismissStorageWarning();
   const dismissedHealth = getStorageHealth();
   assert.strictEqual(dismissedHealth.isWarningDismissed, true);
-  assert.strictEqual(dismissedHealth.isHealthy, false); // Technical health remains false until successful probe
+  assert.strictEqual(dismissedHealth.isHealthy, false); // Technical health remains false until successful probe/write
 
-  // 2.5 Probe recovery
+  // 2.5 Probe indicates physical storage accessibility but preserves unresolved failed keys
   recordStorageSuccess('flipenglish_storage_health_probe');
+  assert.strictEqual(getStorageHealth().isStorageAccessible, true);
+  assert.strictEqual(getStorageHealth().isHealthy, false); // Stays false because testKey failed earlier
+
+  // 2.6 Resolving the specific failed key restores isHealthy to true
+  recordStorageSuccess(testKey);
   assert.strictEqual(getStorageHealth().isHealthy, true);
   assert.strictEqual(getStorageHealth().isWarningDismissed, false);
 
-  // 2.6 Safe Remove
+  // 2.7 Safe Remove
   safeRemoveLocalStorage(testKey);
   assert.strictEqual(safeGetLocalStorage(testKey), null);
 
-  console.log('  PASS: Storage health tracking, quota simulation, warning dismissal separation, and safe operations verified.');
+  console.log('  PASS: Storage health tracking, quota simulation, warning dismissal separation, probe non-masking, and safe operations verified.');
 }
 
 // TEST 3: ErrorBoundary Categorization & Sanitization
@@ -217,6 +226,38 @@ console.log('\n[Suite 4] Testing Strict Schema Validation Invariants...');
   assert.strictEqual(validateOnboardingState({ status: 'completed', completedAt: Date.now() }), true);
   assert.strictEqual(validateOnboardingState({ status: 'unknown_invalid_status' }), false);
 
+  // 4.5 In-flight Learn & Review Session Persistence Validators
+  const validLearnSession = {
+    schemaVersion: 1,
+    lessonId: 'a1-1',
+    flashcardIndex: 3,
+    hasCompletedAll: false,
+    isReviewMistakesMode: false,
+    totalWords: 10,
+    timestamp: Date.now(),
+  };
+  const sanitizedLearn = validateLearnResumeContext(validLearnSession);
+  assert.ok(sanitizedLearn, 'Valid learn session must validate successfully');
+  assert.strictEqual(sanitizedLearn?.lessonId, 'a1-1');
+  assert.strictEqual(sanitizedLearn?.flashcardIndex, 3);
+
+  // Reject unknown schemaVersion or injected prototype properties
+  assert.strictEqual(
+    validateLearnResumeContext({ ...validLearnSession, schemaVersion: 2 }),
+    null,
+    'Unknown schemaVersion 2 must be rejected'
+  );
+  assert.strictEqual(
+    validateLearnResumeContext({ ...validLearnSession, unknownEvilKey: 'malicious' }),
+    null,
+    'Unrecognized keys must be rejected by allowlist'
+  );
+  assert.strictEqual(
+    validateLearnResumeContext({ ...validLearnSession, flashcardIndex: 12, totalWords: 10 }),
+    null,
+    'flashcardIndex exceeding totalWords must be rejected'
+  );
+
   console.log('  PASS: Domain storage validators reject corrupted/untrusted data gracefully.');
 }
 
@@ -236,6 +277,8 @@ console.log('\n[Suite 5] Testing Bilingual (EN / VI) Error Translation Key Parit
     'error.featureFallbackDesc',
     'error.chunkLoadTitle',
     'error.chunkLoadDesc',
+    'error.chunkOfflineTitle',
+    'error.chunkOfflineDesc',
     'error.storageWarningTitle',
     'error.storageWarningDesc',
     'error.storageQuotaDesc',

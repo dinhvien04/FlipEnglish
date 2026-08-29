@@ -38,14 +38,15 @@ function isValidReportObject(obj: any): obj is ExamResultReport {
 }
 
 /**
- * Save active exam session to localStorage
+ * Save active exam session to localStorage. Returns boolean indicating success.
  */
-export function saveActiveExam(session: ExamSession): void {
+export function saveActiveExam(session: ExamSession): boolean {
   try {
-    if (!isValidSessionObject(session)) return;
-    safeSetLocalStorage(ACTIVE_EXAM_KEY, JSON.stringify(session));
+    if (!isValidSessionObject(session)) return false;
+    return safeSetLocalStorage(ACTIVE_EXAM_KEY, JSON.stringify(session));
   } catch (err) {
     console.error('Failed to save active exam session to localStorage', err);
+    return false;
   }
 }
 
@@ -72,13 +73,14 @@ export function getActiveExam(): ExamSession | null {
 }
 
 /**
- * Clear active exam session
+ * Clear active exam session. Returns boolean indicating success.
  */
-export function clearActiveExam(): void {
+export function clearActiveExam(): boolean {
   try {
-    safeRemoveLocalStorage(ACTIVE_EXAM_KEY);
+    return safeRemoveLocalStorage(ACTIVE_EXAM_KEY);
   } catch (err) {
     console.error('Failed to clear active exam', err);
+    return false;
   }
 }
 
@@ -89,7 +91,6 @@ export function saveExamResultToHistory(report: ExamResultReport): void {
   try {
     if (!isValidReportObject(report)) return;
     const history = getExamHistory();
-    // Filter out if already saved
     const updated = [report, ...history.filter((item) => item.id !== report.id)].slice(
       0,
       MAX_HISTORY_ITEMS
