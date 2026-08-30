@@ -764,7 +764,7 @@ export function resetReviewStorage(): ReviewResetResult {
     const success = reviewRemoved && markerRemoved;
 
     // Truthful domain notification: if Review data was removed, listeners and UI must refresh stats
-    if (reviewRemoved) {
+    if (reviewRemoved && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
     }
 

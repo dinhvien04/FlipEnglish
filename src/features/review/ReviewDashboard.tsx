@@ -208,7 +208,7 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     const resetResult = resetReviewStorage();
     const clearResult = clearActiveReviewSession();
 
-    // Truthful UI update: if Review storage data was removed, always refresh in-memory stats
+    // Truthful UI update: if Review storage data was removed, refresh in-memory stats
     if (resetResult.reviewRemoved) {
       refreshStats();
     }
@@ -216,7 +216,6 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
     if (resetResult.success && clearResult.resumeSafetyEstablished) {
       setShowResetConfirm(false);
       setResetError(null);
-      refreshStats();
     } else {
       setResetError(t('review.dashboard.resetError'));
     }

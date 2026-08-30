@@ -425,8 +425,8 @@ export function isPlacementResultExportedToReview(reportId: string): boolean {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.includes(reportId)) {
           // Attempt backward-compatibility migration to canonical storage
-          migrateLegacyPlacementReviewExports();
-          return true;
+          const migrated = migrateLegacyPlacementReviewExports();
+          return migrated;
         }
       } catch {
         safeRemoveLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
@@ -450,7 +450,7 @@ export function exportPlacementMissedToReview(
   if (isPlacementResultExportedToReview(reportId)) {
     return {
       attempted: canonicalWordIds.length,
-      persisted: canonicalWordIds.length,
+      persisted: 0,
       failed: 0,
       exportMarkerSaved: true,
       success: true,

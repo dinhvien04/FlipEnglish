@@ -210,12 +210,17 @@ export function normalizeReviewResumeContext(
           canonicalItem.lastReviewedAt >= snapshotTime &&
           (canonicalReviewCount > snapshotItemReviewCount ||
             canonicalItem.lastReviewedAt > snapshotTime ||
-            (canonicalItem.lastReviewedAt === snapshotTime && canonicalReviewCount >= 1));
+            (canonicalItem.lastReviewedAt === snapshotTime &&
+              canonicalReviewCount > 0 &&
+              snapshotItemReviewCount === 0));
 
         if (isNewlyRatedAfterSnapshot) {
           // Reconcile rating breakdown for this skipped mutation
           if (canonicalItem.lastRating && typeof normalizedBreakdown[canonicalItem.lastRating] === 'number') {
             normalizedBreakdown[canonicalItem.lastRating]++;
+          } else {
+            // Default to 'good' if lastRating was missing/unrecognized to preserve sum invariant
+            normalizedBreakdown['good']++;
           }
           currentIndex++;
         } else {
