@@ -47,8 +47,8 @@ import {
   saveActiveReviewSession,
   clearActiveReviewSession,
   getActiveLearnSession,
-  getActiveReviewSession,
 } from './features/continuity/sessionPersistence';
+import { getReconciledActiveReviewSession } from './utils/sessionResume';
 import { recordMeaningfulLearningEvent } from './features/streak/streakEngine';
 import { recordActiveStudySeconds, recordUserInteraction } from './features/progress/activeTimeEngine';
 import { DATA_MANAGEMENT_EVENTS } from './constants/storageKeys';
@@ -953,7 +953,7 @@ export default function App() {
         break;
       }
       case 'active-review': {
-        const savedSession = getActiveReviewSession();
+        const savedSession = getReconciledActiveReviewSession();
         if (savedSession && savedSession.activeQueue && savedSession.activeQueue.length > 0) {
           setSelectedLessonId(null);
           setTemporaryLesson(null);

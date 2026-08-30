@@ -72,3 +72,10 @@ export interface ReviewBatchAddResult {
   added: number;
   success: boolean;
 }
+
+export interface ReviewResetResult {
+  reviewRemoved: boolean;
+  legacyMarkerRemoved: boolean;
+  success: boolean;
+}
+

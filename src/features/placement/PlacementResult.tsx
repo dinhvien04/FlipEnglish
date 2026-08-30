@@ -37,25 +37,16 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
   );
   const [exportError, setExportError] = useState<boolean>(false);
 
-  const [persistenceState, setPersistenceState] = useState<PlacementPersistenceResult>(() => {
+  const [persistenceState, setPersistenceState] = useState<PlacementPersistenceResult | null>(() => {
     if (initialPersistence !== undefined) {
       return initialPersistence;
     }
-    // Viewing existing/history report or default
-    return {
-      latestSaved: true,
-      historySaved: true,
-      terminalStateSaved: true,
-      activeSessionCleared: true,
-      resultSaved: true,
-      resumeSafetyEstablished: true,
-      fullyCleaned: true,
-      success: true,
-    };
+    // Viewing existing/history report: no live teardown in-flight, report is already durable
+    return null;
   });
   const [retryAttempted, setRetryAttempted] = useState<boolean>(false);
 
-  const isFullyPersisted = persistenceState.success;
+  const isFullyPersisted = persistenceState === null || persistenceState.success;
 
   const levelBadgeClass: Record<CEFRLevel, { bg: string; text: string; border: string }> = {
     A1: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
@@ -93,7 +84,7 @@ export const PlacementResultPage: React.FC<PlacementResultProps> = ({
     const res = savePlacementResultToHistory(report);
     const cleared = clearActivePlacement();
     const resultSaved = res.latestSaved && res.historySaved;
-    const terminalStateSaved = persistenceState.terminalStateSaved;
+    const terminalStateSaved = persistenceState ? persistenceState.terminalStateSaved : true;
     const resumeSafetyEstablished = cleared || terminalStateSaved;
     const fullyCleaned = cleared;
     const success = resultSaved && resumeSafetyEstablished;

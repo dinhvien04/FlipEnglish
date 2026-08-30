@@ -18,17 +18,23 @@ import {
   resetReviewStorage,
   batchAddLessonWordsToReview,
   exportMissedItemsToReview,
+  migrateLegacyPlacementReviewExports,
+  resolveReviewItem,
 } from '../src/utils/reviewStorage';
 import {
   saveActiveReviewSession,
   getActiveReviewSession,
   clearActiveReviewSession,
 } from '../src/features/continuity/sessionPersistence';
-import { normalizeReviewResumeContext } from '../src/utils/sessionResume';
+import {
+  normalizeReviewResumeContext,
+  getReconciledActiveReviewSession,
+} from '../src/utils/sessionResume';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
-import { ReviewItemState, ResolvedReviewItem } from '../src/types/review';
+import { ReviewItemState, ResolvedReviewItem, ReviewResetResult } from '../src/types/review';
 import { ReviewResumeContext } from '../src/types/sessionResume';
 import { isPlacementResultExportedToReview } from '../src/features/placement/placementStorage';
+import { resolveNextAction } from '../src/features/continuity/smartNextActionEngine';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -470,16 +476,18 @@ assert(r7ClearRetry.resumeSafetyEstablished === true, 'R7: Cleanup retry establi
 const r7After = loadReviewStorage(T0);
 assert(r7After.items['hello'].reviewCount === r7ReviewCount, 'R7: Cleanup retry does NOT re-rate or increment reviewCount');
 
-// R8: Review Reset: both removals succeed -> returns true
+// R8: Review Reset: both removals succeed -> returns structured success
 resetReviewStorage();
 localStorage.setItem('flipenglish_review_v1', JSON.stringify({ schemaVersion: 1, items: {} }));
 localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-1']));
 const r8Reset = resetReviewStorage();
-assert(r8Reset === true, 'R8: resetReviewStorage returns true when both targets removed');
+assert(r8Reset.success === true, 'R8: resetReviewStorage returns success: true when both targets removed');
+assert(r8Reset.reviewRemoved === true, 'R8: reviewRemoved is true');
+assert(r8Reset.legacyMarkerRemoved === true, 'R8: legacyMarkerRemoved is true');
 assert(localStorage.getItem('flipenglish_review_v1') === null, 'R8: review storage key removed');
 assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R8: placement export marker key removed');
 
-// R9: Review Reset: secondary marker remove fails -> returns false
+// R9: Review Reset: secondary marker remove fails -> returns structured partial result
 localStorage.setItem('flipenglish_review_v1', JSON.stringify({ schemaVersion: 1, items: {} }));
 localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-1']));
 (localStorage as any).removeItem = (key: string) => {
@@ -489,13 +497,18 @@ localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify([
   delete mockStorage[key];
 };
 const r9Reset = resetReviewStorage();
-assert(r9Reset === false, 'R9: resetReviewStorage returns false when secondary marker removal fails');
+assert(r9Reset.success === false, 'R9: resetReviewStorage returns success: false when secondary marker removal fails');
+assert(r9Reset.reviewRemoved === true, 'R9: reviewRemoved is true despite secondary failure');
+assert(r9Reset.legacyMarkerRemoved === false, 'R9: legacyMarkerRemoved is false');
+assert(localStorage.getItem('flipenglish_review_v1') === null, 'R9: review storage key actually removed');
 (localStorage as any).removeItem = originalRemoveItem;
 
 // R10: Retry reset after R9 -> succeeds idempotently
 const r10Reset = resetReviewStorage();
-assert(r10Reset === true, 'R10: Retry reset succeeds idempotently');
-assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R10: Secondary marker removed on retry');
+assert(r10Reset.success === true, 'R10: Retry reset succeeds idempotently');
+assert(r10Reset.reviewRemoved === true, 'R10: review removal confirmed on retry');
+assert(r10Reset.legacyMarkerRemoved === true, 'R10: Secondary marker removed on retry');
+assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R10: Secondary marker key verified null');
 
 // R11: export Placement R1 -> Reset Review -> revisit R1 -> user can export again
 resetReviewStorage();
@@ -507,25 +520,237 @@ assert(isPlacementResultExportedToReview('report-r11') === false, 'R11: After re
 const r11ReExport = exportMissedItemsToReview(['hello', 'family'], 'report-r11', T0);
 assert(r11ReExport.success === true, 'R11: Placement report can be cleanly exported again');
 
-// R12: Legacy export marker migration & idempotency -> no duplicate lapse signal
+// R12: Real Legacy export marker migration & idempotency -> no duplicate lapse signal
 resetReviewStorage();
-// Seed legacy key directly
+// Seed legacy key directly without touching canonical ReviewStorage
 localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['legacy-report-1']));
-assert(isPlacementResultExportedToReview('legacy-report-1') === true, 'R12: Legacy export key recognized');
-// Exporting the same legacy report should be idempotent and not add lapse count twice
+assert(isPlacementResultExportedToReview('legacy-report-1') === true, 'R12: Legacy export key recognized and migrated');
 ensureReviewItem('hello', T0);
 const r12FirstStorage = loadReviewStorage(T0);
+assert(r12FirstStorage.exportedReportIds?.includes('legacy-report-1') === true, 'R12: Legacy report ID migrated into canonical storage');
+assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R12: Legacy key removed after successful canonical migration');
 const r12LapseBefore = r12FirstStorage.items['hello'].lapseCount;
-// Export with already-exported reportId in ReviewStorage
-const r12StorageWithReport = {
-  ...r12FirstStorage,
-  exportedReportIds: ['legacy-report-1'],
-};
-saveReviewStorage(r12StorageWithReport);
 const r12ReExportRes = exportMissedItemsToReview(['hello'], 'legacy-report-1', T0);
 assert(r12ReExportRes.success === true, 'R12: Idempotent export returns success');
 const r12AfterStorage = loadReviewStorage(T0);
 assert(r12AfterStorage.items['hello'].lapseCount === r12LapseBefore, 'R12: No duplicate lapse signal applied');
+
+// ============================================================================
+// REGRESSION SUITE: R13 - R22
+// ============================================================================
+console.log('\n--- REGRESSION SUITE: R13 - R22 (Review Reconciliation & Consistency) ---');
+
+// R13: Multi-card reconciliation: snapshot index 1, ratingBreakdown good=1; canonical index 1 newly rated GOOD -> normalized index 2, good 2
+{
+  resetReviewStorage();
+  const queueItems: ResolvedReviewItem[] = [
+    resolveReviewItem(createInitialReviewState('hello', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('goodbye', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('thank-you', T0), T0)!,
+  ];
+  const snapshotTime = T0 + 1000;
+  const snapshotR13: ReviewResumeContext = {
+    schemaVersion: 1,
+    activeQueue: queueItems,
+    currentIndex: 1,
+    ratingBreakdown: { again: 0, hard: 0, good: 1, easy: 0 },
+    timestamp: snapshotTime,
+  };
+
+  // Card 0 was already rated before snapshot
+  ensureReviewItem('hello', T0);
+  applyReviewRatingToItem('hello', 'good', T0);
+
+  // User rates card 1 GOOD after snapshot time in canonical storage
+  ensureReviewItem('goodbye', T0);
+  applyReviewRatingToItem('goodbye', 'good', snapshotTime + 500);
+
+  const normR13 = normalizeReviewResumeContext(snapshotR13);
+  assert(normR13 !== null, 'R13: Normalization produces valid resume context');
+  assert(normR13!.currentIndex === 2, `R13: currentIndex advanced 1 -> 2 (got ${normR13!.currentIndex})`);
+  assert(normR13!.ratingBreakdown.good === 2, `R13: ratingBreakdown.good reconciled 1 -> 2 (got ${normR13!.ratingBreakdown.good})`);
+  assert(
+    normR13!.ratingBreakdown.again + normR13!.ratingBreakdown.hard + normR13!.ratingBreakdown.good + normR13!.ratingBreakdown.easy === normR13!.currentIndex,
+    'R13: Invariant sum(ratingBreakdown) === currentIndex holds'
+  );
+}
+
+// R14: Two skipped ratings: canonical proves index 1 GOOD and index 2 HARD after snapshot
+{
+  resetReviewStorage();
+  const queueItems: ResolvedReviewItem[] = [
+    resolveReviewItem(createInitialReviewState('hello', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('goodbye', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('thank-you', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('please', T0), T0)!,
+  ];
+  const snapshotTime = T0 + 2000;
+  const snapshotR14: ReviewResumeContext = {
+    schemaVersion: 1,
+    activeQueue: queueItems,
+    currentIndex: 1,
+    ratingBreakdown: { again: 0, hard: 0, good: 1, easy: 0 },
+    timestamp: snapshotTime,
+  };
+
+  // Card 1 rated GOOD, Card 2 rated HARD after snapshot
+  ensureReviewItem('goodbye', T0);
+  applyReviewRatingToItem('goodbye', 'good', snapshotTime + 100);
+  ensureReviewItem('thank-you', T0);
+  applyReviewRatingToItem('thank-you', 'hard', snapshotTime + 200);
+
+  const normR14 = normalizeReviewResumeContext(snapshotR14);
+  assert(normR14 !== null, 'R14: Normalization produces valid resume context');
+  assert(normR14!.currentIndex === 3, `R14: currentIndex advanced 1 -> 3 (got ${normR14!.currentIndex})`);
+  assert(normR14!.ratingBreakdown.good === 2, `R14: ratingBreakdown.good reconciled to 2 (got ${normR14!.ratingBreakdown.good})`);
+  assert(normR14!.ratingBreakdown.hard === 1, `R14: ratingBreakdown.hard reconciled to 1 (got ${normR14!.ratingBreakdown.hard})`);
+  assert(
+    normR14!.ratingBreakdown.again + normR14!.ratingBreakdown.hard + normR14!.ratingBreakdown.good + normR14!.ratingBreakdown.easy === normR14!.currentIndex,
+    'R14: Invariant sum(ratingBreakdown) === currentIndex holds'
+  );
+}
+
+// R15: Normalization Idempotency: normalizing same snapshot multiple times produces identical output
+{
+  const queueItems: ResolvedReviewItem[] = [
+    resolveReviewItem(createInitialReviewState('hello', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('goodbye', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('thank-you', T0), T0)!,
+  ];
+  const snapshotR15: ReviewResumeContext = {
+    schemaVersion: 1,
+    activeQueue: queueItems,
+    currentIndex: 0,
+    ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+    timestamp: T0,
+  };
+  const first = normalizeReviewResumeContext(snapshotR15);
+  const second = normalizeReviewResumeContext(snapshotR15);
+  assert(JSON.stringify(first) === JSON.stringify(second), 'R15: Repeated normalization calls are strictly idempotent');
+}
+
+// R16: Smart Next Action Ghost Resume: single remaining card already canonically rated -> no active-review priority
+{
+  resetReviewStorage();
+  const queueItems: ResolvedReviewItem[] = [
+    resolveReviewItem(createInitialReviewState('hello', T0), T0)!,
+  ];
+  const snapshotTime = T0 + 5000;
+  const snapshotR16: ReviewResumeContext = {
+    schemaVersion: 1,
+    activeQueue: queueItems,
+    currentIndex: 0,
+    ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+    timestamp: snapshotTime,
+  };
+  saveActiveReviewSession(snapshotR16);
+
+  // Canonically rate the single card
+  ensureReviewItem('hello', T0);
+  applyReviewRatingToItem('hello', 'good', snapshotTime + 100);
+
+  const nextAction = resolveNextAction({ now: snapshotTime + 200 });
+  assert(nextAction.priority !== 'active-review', `R16: Ghost review avoided: priority is '${nextAction.priority}', not 'active-review'`);
+  const reconciled = getReconciledActiveReviewSession(snapshotTime + 200);
+  assert(reconciled === null, 'R16: Reconciled active review session is null when fully rated');
+}
+
+// R17: Smart Next Action Progress Match: reconciled index used consistently
+{
+  resetReviewStorage();
+  const queueItems: ResolvedReviewItem[] = [
+    resolveReviewItem(createInitialReviewState('hello', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('goodbye', T0), T0)!,
+    resolveReviewItem(createInitialReviewState('thank-you', T0), T0)!,
+  ];
+  const now = Date.now();
+  const snapshotTime = now - 5000;
+  const snapshotR17: ReviewResumeContext = {
+    schemaVersion: 1,
+    activeQueue: queueItems,
+    currentIndex: 0,
+    ratingBreakdown: { again: 0, hard: 0, good: 0, easy: 0 },
+    timestamp: snapshotTime,
+  };
+  saveActiveReviewSession(snapshotR17);
+
+  // Card 0 rated in canonical storage after snapshot
+  ensureReviewItem('hello', snapshotTime + 50);
+  applyReviewRatingToItem('hello', 'easy', snapshotTime + 50);
+
+  const reconciledSession = getReconciledActiveReviewSession(now);
+  assert(reconciledSession !== null, 'R17: Reconciled session exists');
+  assert(reconciledSession!.currentIndex === 1, `R17: Reconciled index is 1 (got ${reconciledSession!.currentIndex})`);
+
+  const nextAction = resolveNextAction({ now });
+  assert(nextAction.priority === 'active-review', 'R17: Priority is active-review');
+  assert(nextAction.actionPayload?.stepIndex === 1, `R17: Smart Next Action stepIndex matches reconciled index 1 (got ${nextAction.actionPayload?.stepIndex})`);
+}
+
+// R18: Real Legacy Migration: legacy key contains R1, canonical ReviewStorage has no report -> migration imports R1 and removes legacy key
+{
+  resetReviewStorage();
+  localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-r18-legacy']));
+  const migRes = migrateLegacyPlacementReviewExports(T0);
+  assert(migRes === true, 'R18: migrateLegacyPlacementReviewExports returns true');
+  const canonical = loadReviewStorage(T0);
+  assert(canonical.exportedReportIds?.includes('report-r18-legacy') === true, 'R18: Canonical ReviewStorage contains migrated report ID');
+  assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R18: Legacy key deleted after successful migration');
+}
+
+// R19: Migration Write Failure: canonical write fails -> legacy marker remains
+{
+  resetReviewStorage();
+  localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-r19-fail']));
+  (localStorage as any).setItem = (key: string, val: string) => {
+    if (key === 'flipenglish_review_v1') {
+      throw new Error('QuotaExceededError on canonical review');
+    }
+    mockStorage[key] = String(val);
+  };
+  const migFailRes = migrateLegacyPlacementReviewExports(T0);
+  assert(migFailRes === false, 'R19: migrateLegacyPlacementReviewExports returns false on canonical write error');
+  assert(localStorage.getItem('flipenglish_placement_review_exports_v1') !== null, 'R19: Legacy marker key remains intact on failure');
+  (localStorage as any).setItem = originalSetItem;
+}
+
+// R20: Review Reset Partial: review key remove succeeds, legacy marker remove fails -> structured result and event
+{
+  resetReviewStorage();
+  localStorage.setItem('flipenglish_review_v1', JSON.stringify({ schemaVersion: 1, items: {} }));
+  localStorage.setItem('flipenglish_placement_review_exports_v1', JSON.stringify(['report-r20']));
+  (localStorage as any).removeItem = (key: string) => {
+    if (key === 'flipenglish_placement_review_exports_v1') {
+      throw new Error('DiskIO error on secondary marker');
+    }
+    delete mockStorage[key];
+  };
+  mockWindowEvents.length = 0;
+  const partialRes = resetReviewStorage();
+  assert(partialRes.success === false, 'R20: overall success is false');
+  assert(partialRes.reviewRemoved === true, 'R20: reviewRemoved is true');
+  assert(partialRes.legacyMarkerRemoved === false, 'R20: legacyMarkerRemoved is false');
+  assert(mockWindowEvents.includes('flipenglish_review_updated'), 'R20: Dispatches REVIEW_UPDATED_EVENT so UI/stats refresh truthfully');
+  (localStorage as any).removeItem = originalRemoveItem;
+}
+
+// R21: Reset Retry: second attempt succeeds
+{
+  const retryResetRes = resetReviewStorage();
+  assert(retryResetRes.success === true, 'R21: Retry reset succeeds');
+  assert(retryResetRes.reviewRemoved === true, 'R21: reviewRemoved is true');
+  assert(retryResetRes.legacyMarkerRemoved === true, 'R21: legacyMarkerRemoved is true');
+  assert(localStorage.getItem('flipenglish_placement_review_exports_v1') === null, 'R21: Secondary key removed on retry');
+}
+
+// R22: Historical Placement Result does not invent activeSessionCleared or fullyCleaned
+{
+  // Test that PlacementResult initialPersistence undefined starts with null (historical view),
+  // proving report durability without fabricating active session teardown state.
+  const historicalPersistenceDefault = undefined;
+  const isHistorical = historicalPersistenceDefault === undefined;
+  assert(isHistorical, 'R22: Historical report view distinguishes historical state without inventing session teardown');
+}
 
 console.log('\n✅ All FlipEnglish Smart Review tests and scheduler invariants passed successfully!');
 

@@ -177,12 +177,14 @@ export function normalizeReviewResumeContext(
   }
 
   // Stale snapshot reconciliation:
-  // If the item at currentIndex was already rated at or after the snapshot timestamp,
-  // advance currentIndex to the first unrated item in the queue to prevent duplicate ratings.
+  // If items at or before currentIndex were already rated canonically after snapshot creation,
+  // advance currentIndex and backfill ratingBreakdown for those completed mutations.
   const snapshotTime =
     typeof resume.timestamp === 'number' && Number.isFinite(resume.timestamp) && resume.timestamp > 0
       ? resume.timestamp
       : 0;
+
+  const normalizedBreakdown = normalizeRatingBreakdown(ratingBreakdown);
 
   if (snapshotTime > 0) {
     try {
@@ -190,11 +192,31 @@ export function normalizeReviewResumeContext(
       while (currentIndex < total) {
         const currentItem = activeQueue[currentIndex];
         const canonicalItem = canonicalStorage.items[currentItem.word.id];
-        if (
+
+        // Strong invariant: Item was rated at or after the snapshot creation timestamp,
+        // and/or canonical item demonstrates higher review count than snapshot item state.
+        const snapshotItemReviewCount =
+          currentItem.state && typeof currentItem.state.reviewCount === 'number'
+            ? currentItem.state.reviewCount
+            : 0;
+        const canonicalReviewCount =
+          canonicalItem && typeof canonicalItem.reviewCount === 'number'
+            ? canonicalItem.reviewCount
+            : 0;
+
+        const isNewlyRatedAfterSnapshot =
           canonicalItem &&
           typeof canonicalItem.lastReviewedAt === 'number' &&
-          canonicalItem.lastReviewedAt >= snapshotTime
-        ) {
+          canonicalItem.lastReviewedAt >= snapshotTime &&
+          (canonicalReviewCount > snapshotItemReviewCount ||
+            canonicalItem.lastReviewedAt > snapshotTime ||
+            (canonicalItem.lastReviewedAt === snapshotTime && canonicalReviewCount >= 1));
+
+        if (isNewlyRatedAfterSnapshot) {
+          // Reconcile rating breakdown for this skipped mutation
+          if (canonicalItem.lastRating && typeof normalizedBreakdown[canonicalItem.lastRating] === 'number') {
+            normalizedBreakdown[canonicalItem.lastRating]++;
+          }
           currentIndex++;
         } else {
           break;
@@ -210,13 +232,24 @@ export function normalizeReviewResumeContext(
     }
   }
 
-  const normalizedBreakdown = normalizeRatingBreakdown(ratingBreakdown);
-
   return {
     activeQueue,
     currentIndex,
     ratingBreakdown: normalizedBreakdown,
   };
+}
+
+/**
+ * Pure read-only canonical resolver for the active Smart Review session.
+ * Reconciles structural session snapshot with canonical ReviewStorage.
+ * Returns NormalizedReviewResume or null if no active session, expired, or fully rated.
+ */
+export function getReconciledActiveReviewSession(now: number = Date.now()): NormalizedReviewResume | null {
+  const rawSession = getActiveReviewSession(now);
+  if (!rawSession) {
+    return null;
+  }
+  return normalizeReviewResumeContext(rawSession);
 }
 
 // Normalized helpers & continuity exports

@@ -15,7 +15,7 @@ import {
   validatePlacementSession,
   validatePlacementResultReport,
   isPlacementResultExportedToReview,
-  markPlacementResultExportedToReview,
+  exportPlacementMissedToReview,
 } from '../src/features/placement/placementStorage';
 import {
   ORDERED_CEFR_LEVELS,
@@ -605,12 +605,14 @@ console.log('\n--- 7. STRICT STORAGE VALIDATION & ATTACK TESTS (A–J) ---');
   const reportId = 'placement-report-idempotency-test-1';
   assert(!isPlacementResultExportedToReview(reportId), 'Report ID is initially not exported');
 
-  markPlacementResultExportedToReview(reportId);
-  assert(isPlacementResultExportedToReview(reportId), 'Report ID is marked as exported');
+  const exportResult = exportPlacementMissedToReview(reportId, ['device']);
+  assert(exportResult.success, 'First export to review succeeds');
+  assert(isPlacementResultExportedToReview(reportId), 'Report ID is marked as exported in canonical review storage');
 
   // Second call must be idempotent
-  markPlacementResultExportedToReview(reportId);
-  assert(isPlacementResultExportedToReview(reportId), 'Subsequent export calls remain idempotent');
+  const secondExportResult = exportPlacementMissedToReview(reportId, ['device']);
+  assert(secondExportResult.success, 'Subsequent export calls remain idempotent');
+  assert(isPlacementResultExportedToReview(reportId), 'Subsequent export calls remain recognized as exported');
 
   // Test canonical word resolution against real curriculum
   const realLessonWordId = 'device'; // Known curriculum word ID from B1 Technology lesson

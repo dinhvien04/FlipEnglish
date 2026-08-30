@@ -391,19 +391,21 @@ function validateHistoryItem(item: any): item is CompactPlacementHistoryItem {
   return true;
 }
 
+import {
+  exportMissedItemsToReview,
+  migrateLegacyPlacementReviewExports,
+} from '../../utils/reviewStorage';
+import { ReviewExportResult } from '../../types/review';
+
 /**
- * Checks whether a given placement report ID was already exported to Smart Review
+ * Checks whether a given placement report ID was already exported to Smart Review.
+ * Uses canonical `ReviewStorage.exportedReportIds` as the primary source of truth.
+ * Migrates legacy `flipenglish_placement_review_exports_v1` on read if present.
  */
 export function isPlacementResultExportedToReview(reportId: string): boolean {
   if (typeof window === 'undefined' || !reportId) return false;
   try {
-    const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.includes(reportId)) {
-        return true;
-      }
-    }
+    // 1. Check canonical ReviewStorage
     const reviewRaw = safeGetLocalStorage('flipenglish_review_v1');
     if (reviewRaw) {
       const parsedReview = JSON.parse(reviewRaw);
@@ -415,42 +417,31 @@ export function isPlacementResultExportedToReview(reportId: string): boolean {
         return true;
       }
     }
-    return false;
-  } catch (err) {
-    return false;
-  }
-}
 
-import { exportMissedItemsToReview } from '../../utils/reviewStorage';
-import { ReviewExportResult } from '../../types/review';
-
-/**
- * Marks a placement report ID as exported to Smart Review (max 20 stored)
- */
-export function markPlacementResultExportedToReview(reportId: string): boolean {
-  if (typeof window === 'undefined' || !reportId) return false;
-  try {
+    // 2. Check legacy key with migration attempt
     const raw = safeGetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
-    let list: string[] = [];
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        list = parsed.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.includes(reportId)) {
+          // Attempt backward-compatibility migration to canonical storage
+          migrateLegacyPlacementReviewExports();
+          return true;
+        }
+      } catch {
+        safeRemoveLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY);
       }
     }
-    if (!list.includes(reportId)) {
-      list.unshift(reportId);
-      list = list.slice(0, MAX_EXPORTED_REPORTS);
-      return safeSetLocalStorage(PLACEMENT_REVIEW_EXPORTS_KEY, JSON.stringify(list));
-    }
-    return true;
+
+    return false;
   } catch (err) {
     return false;
   }
 }
 
 /**
- * Atomically exports placement missed items to Smart Review and records the export marker idempotently.
+ * Atomically exports placement missed items to Smart Review and records the export marker idempotently
+ * directly in canonical `ReviewStorage.exportedReportIds`.
  */
 export function exportPlacementMissedToReview(
   reportId: string,
@@ -467,17 +458,13 @@ export function exportPlacementMissedToReview(
   }
 
   const exportRes = exportMissedItemsToReview(canonicalWordIds, reportId);
-  let markerSaved = false;
-  if (exportRes.success) {
-    markerSaved = markPlacementResultExportedToReview(reportId);
-  }
 
   return {
     attempted: exportRes.attempted,
     persisted: exportRes.persisted,
     failed: exportRes.failed,
-    exportMarkerSaved: markerSaved,
-    success: exportRes.success && markerSaved,
+    exportMarkerSaved: exportRes.success,
+    success: exportRes.success,
   };
 }
 

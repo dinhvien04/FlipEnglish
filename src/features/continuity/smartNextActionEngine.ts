@@ -2,7 +2,7 @@ import { AppView, CEFRLevel, Lesson } from '../../types';
 import { NextActionRecommendation, ActiveSessionSummary } from '../../types/continuity';
 import { getActiveExam } from '../../utils/examStorage';
 import { getActivePlacement } from '../placement/placementStorage';
-import { getActiveLearnSession, getActiveReviewSession } from '../../utils/sessionResume';
+import { getActiveLearnSession, getReconciledActiveReviewSession } from '../../utils/sessionResume';
 import { loadReviewStorage } from '../../utils/reviewStorage';
 import { getOrGenerateTodayPlan } from '../studyPlan/studyPlanStorage';
 import { StudyPlanTask } from '../studyPlan/studyPlanTypes';
@@ -38,7 +38,7 @@ export function getActiveSessionSummary(now: number = Date.now()): ActiveSession
       !activeLearn.hasCompletedAll
   );
 
-  const activeReview = getActiveReviewSession();
+  const activeReview = getReconciledActiveReviewSession(now);
   const hasActiveReview = Boolean(
     activeReview &&
       Array.isArray(activeReview.activeQueue) &&
@@ -223,7 +223,7 @@ export function resolveNextAction(context?: NextActionContext): NextActionRecomm
   // ---------------------------------------------------------------------------
   // Priority 4: In-progress Smart Review session
   // ---------------------------------------------------------------------------
-  const activeReview = getActiveReviewSession();
+  const activeReview = getReconciledActiveReviewSession(now);
   if (
     activeReview &&
     Array.isArray(activeReview.activeQueue) &&

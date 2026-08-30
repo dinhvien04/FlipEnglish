@@ -8,6 +8,7 @@ import {
   ReviewLogEntry,
   ReviewExportResult,
   ReviewBatchAddResult,
+  ReviewResetResult,
 } from '../types/review';
 import {
   clampInterval,
@@ -688,22 +689,96 @@ export function getLessonDueCount(lessonId: string, now: number = Date.now()): n
 }
 
 /**
- * Resets Smart Review data without affecting lesson progress or exam scores.
- * Also clears the placement review exports secondary key so placement reports can be re-exported.
- * Returns true only when BOTH required storage targets are successfully removed.
+ * Migrates legacy Placement review export markers from `flipenglish_placement_review_exports_v1`
+ * into canonical `ReviewStorage.exportedReportIds`.
+ * Performs metadata-only migration without applying review mistake signals.
+ * Deletes the legacy key only AFTER canonical save succeeds.
  */
-export function resetReviewStorage(): boolean {
+export function migrateLegacyPlacementReviewExports(now: number = Date.now()): boolean {
+  try {
+    const rawLegacy = safeGetLocalStorage('flipenglish_placement_review_exports_v1');
+    if (!rawLegacy) {
+      return true;
+    }
+
+    let legacyIds: string[] = [];
+    try {
+      const parsed = JSON.parse(rawLegacy);
+      if (Array.isArray(parsed)) {
+        for (const id of parsed.slice(0, 50)) {
+          if (typeof id === 'string' && id.trim().length > 0 && id.length <= 100) {
+            legacyIds.push(id.trim());
+          }
+        }
+      }
+    } catch {
+      // Corrupt legacy data - safe to purge
+      safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
+      return true;
+    }
+
+    if (legacyIds.length === 0) {
+      safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
+      return true;
+    }
+
+    const storage = loadReviewStorage(now);
+    const existing = new Set(storage.exportedReportIds || []);
+    let modified = false;
+
+    for (const id of legacyIds) {
+      if (!existing.has(id)) {
+        existing.add(id);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      storage.exportedReportIds = Array.from(existing).slice(0, 50);
+      const saved = saveReviewStorage(storage);
+      if (saved) {
+        safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
+        return true;
+      }
+      return false;
+    }
+
+    // All legacy IDs were already present in canonical storage
+    safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
+    return true;
+  } catch (err) {
+    console.error('Failed to migrate legacy placement review exports:', err);
+    return false;
+  }
+}
+
+/**
+ * Resets Smart Review data without affecting lesson progress or exam scores.
+ * Also clears the legacy placement review exports secondary key so placement reports can be re-exported.
+ * Returns structured ReviewResetResult. Dispatches REVIEW_UPDATED_EVENT if review data was removed.
+ */
+export function resetReviewStorage(): ReviewResetResult {
   try {
     const reviewRemoved = safeRemoveLocalStorage(REVIEW_STORAGE_KEY);
     const markerRemoved = safeRemoveLocalStorage('flipenglish_placement_review_exports_v1');
     const success = reviewRemoved && markerRemoved;
-    if (success) {
+
+    // Truthful domain notification: if Review data was removed, listeners and UI must refresh stats
+    if (reviewRemoved) {
       window.dispatchEvent(new Event(REVIEW_UPDATED_EVENT));
-      return true;
     }
-    return false;
+
+    return {
+      reviewRemoved,
+      legacyMarkerRemoved: markerRemoved,
+      success,
+    };
   } catch (err) {
     console.error('Failed to reset review storage:', err);
-    return false;
+    return {
+      reviewRemoved: false,
+      legacyMarkerRemoved: false,
+      success: false,
+    };
   }
 }
