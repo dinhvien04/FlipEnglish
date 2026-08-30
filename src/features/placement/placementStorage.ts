@@ -9,7 +9,6 @@ import {
   CompactPlacementHistoryItem,
   PlacementSkill,
   PlacementConfidence,
-  PlacementPersistenceResult,
 } from './placementTypes';
 import { isValidPlacementQuestion } from './placementValidation';
 import { routeNextLevel } from './placementEngine';
@@ -25,7 +24,6 @@ const PLACEMENT_HISTORY_KEY = 'flipenglish_placement_history_v1';
 export const PLACEMENT_LATEST_REPORT_KEY = 'flipenglish_placement_latest_report_v1';
 export const PLACEMENT_REVIEW_EXPORTS_KEY = 'flipenglish_placement_review_exports_v1';
 const MAX_HISTORY_ITEMS = 5;
-const MAX_EXPORTED_REPORTS = 20;
 
 export const PLACEMENT_UPDATED_EVENT = 'flipenglish_placement_updated';
 

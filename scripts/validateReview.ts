@@ -31,7 +31,7 @@ import {
   getReconciledActiveReviewSession,
 } from '../src/utils/sessionResume';
 import { resolveCurriculumItem } from '../src/utils/curriculumIndex';
-import { ReviewItemState, ResolvedReviewItem, ReviewResetResult } from '../src/types/review';
+import { ReviewItemState, ResolvedReviewItem } from '../src/types/review';
 import { ReviewResumeContext } from '../src/types/sessionResume';
 import { isPlacementResultExportedToReview } from '../src/features/placement/placementStorage';
 import { resolveNextAction } from '../src/features/continuity/smartNextActionEngine';

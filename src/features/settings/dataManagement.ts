@@ -158,7 +158,7 @@ export function resetLearningProgress(): DataManagementResult {
 export async function clearSavedVocabulary(): Promise<DataManagementResult> {
   const { removedKeys, failedKeys } = removeKeysSafely(FLIPENGLISH_VOCABULARY_STORAGE_KEYS);
 
-  let idbSuccess = true;
+  let idbSuccess: boolean;
   try {
     idbSuccess = await clearAllSavedWordsFromDb();
     if (!idbSuccess) {
@@ -195,9 +195,9 @@ export async function clearSavedVocabulary(): Promise<DataManagementResult> {
 export async function eraseAllFlipEnglishData(): Promise<DataManagementResult> {
   const { removedKeys, failedKeys } = removeKeysSafely(ALL_FLIPENGLISH_STORAGE_KEYS);
 
-  let idbSavedSuccess = true;
-  let idbEntriesSuccess = true;
-  let idbMetaSuccess = true;
+  let idbSavedSuccess: boolean;
+  let idbEntriesSuccess: boolean;
+  let idbMetaSuccess: boolean;
 
   try {
     idbSavedSuccess = await clearAllSavedWordsFromDb();

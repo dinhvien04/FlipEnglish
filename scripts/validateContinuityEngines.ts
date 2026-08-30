@@ -23,11 +23,10 @@ import {
   recordActiveStudySeconds,
   getActiveMinutesToday,
   recordUserActivity,
-  recordUserInteraction,
   isUserActive,
 } from '../src/features/progress/activeTimeEngine';
 import { MeaningfulLearningEvent } from '../src/types/streak';
-import { STORAGE_KEYS, CONTINUITY_EVENTS } from '../src/constants/storageKeys';
+import { CONTINUITY_EVENTS } from '../src/constants/storageKeys';
 
 // Mock localStorage and window events for node environment
 const memoryStore: Record<string, string> = {};

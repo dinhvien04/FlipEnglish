@@ -24,7 +24,6 @@ import { getExamHistory } from '../../utils/examStorage';
 import {
   safeGetLocalStorage,
   safeSetLocalStorage,
-  safeRemoveLocalStorage,
 } from '../../utils/storageHealth';
 
 export const STUDY_PLAN_SETTINGS_KEY = 'flipenglish_study_plan_settings_v1';

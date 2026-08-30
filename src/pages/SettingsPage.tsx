@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useI18n, UiLanguageMode, LanguageChoiceGroup } from '../features/i18n';
+import { useI18n, LanguageChoiceGroup } from '../features/i18n';
 import { useReminders } from '../features/reminders/useReminders';
 import { StudyReminderModal } from '../features/reminders/StudyReminderModal';
 import { StudyPlanSettingsModal } from '../features/studyPlan/StudyPlanSettings';

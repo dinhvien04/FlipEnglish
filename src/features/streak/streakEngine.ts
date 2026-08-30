@@ -70,8 +70,8 @@ export function recordMeaningfulLearningEvent(
     };
   }
 
-  let newCurrentStreak = 1;
-  let streakIncremented = true;
+  let newCurrentStreak: number;
+  let streakIncremented: boolean;
 
   if (lastActiveDateKey === null) {
     // Case 2: Initial streak entry

@@ -42,10 +42,7 @@ import {
 } from './types/sessionResume';
 import { NextActionRecommendation } from './types/continuity';
 import {
-  saveActiveLearnSession,
   clearActiveLearnSession,
-  saveActiveReviewSession,
-  clearActiveReviewSession,
   getActiveLearnSession,
 } from './features/continuity/sessionPersistence';
 import { getReconciledActiveReviewSession } from './utils/sessionResume';

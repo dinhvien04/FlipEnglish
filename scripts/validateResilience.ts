@@ -10,7 +10,7 @@
  */
 
 import assert from 'node:assert';
-import { classifyApiError, NormalizedApiError, ApiFailureKind } from '../src/utils/apiError';
+import { classifyApiError } from '../src/utils/apiError';
 import {
   getStorageHealth,
   recordStorageFailure,
@@ -19,13 +19,10 @@ import {
   safeGetLocalStorage,
   safeSetLocalStorage,
   safeRemoveLocalStorage,
-  STORAGE_HEALTH_EVENT,
 } from '../src/utils/storageHealth';
 import { ErrorBoundaryClass } from '../src/components/ErrorBoundary';
 import { enCatalog } from '../src/features/i18n/locales/en';
 import { viCatalog } from '../src/features/i18n/locales/vi';
-import { validatePlacementSession, validatePlacementResultReport } from '../src/features/placement/placementStorage';
-import { validateStudyPlanSettings, validateTodayStudyPlan } from '../src/features/studyPlan/studyPlanStorage';
 import { validateLearnerStreak } from '../src/features/streak/streakStorage';
 import { validateActiveTimeRecord } from '../src/features/progress/activeTimeStorage';
 import { validateReminderPreferences } from '../src/features/reminders/reminderStorage';

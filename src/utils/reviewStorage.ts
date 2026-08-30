@@ -6,7 +6,6 @@ import {
   ResolvedReviewItem,
   ReviewDashboardStats,
   ReviewLogEntry,
-  ReviewExportResult,
   ReviewBatchAddResult,
   ReviewResetResult,
 } from '../types/review';
